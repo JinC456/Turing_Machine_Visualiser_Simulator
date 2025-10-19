@@ -1,0 +1,32 @@
+{
+  "name": "turing_machine_visualiser_simulator",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JinC456/Turing_Machine_Visualiser_Simulator.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/JinC456/Turing_Machine_Visualiser_Simulator/issues"
+  },
+  "homepage": "https://github.com/JinC456/Turing_Machine_Visualiser_Simulator#readme",
+  "dependencies": {
+    "cytoscape": "^3.33.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "reactflow": "^11.11.4"
+  },
+  "devDependencies": {
+    "vite": "^7.1.10"
+  }
+}
