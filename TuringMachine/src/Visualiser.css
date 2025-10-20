@@ -1,0 +1,100 @@
+.visualiser {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: sans-serif;
+}
+
+.tape-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.tape {
+  display: flex;
+  gap: 5px;
+}
+
+.cell {
+  width: 30px;
+  height: 30px;
+  border: 1px solid black;
+}
+
+.cell.active {
+  background-color: yellow;
+}
+
+.diagram-container {
+  display: flex;
+  width: 100%;
+  justify-content: space-around;
+  align-items: flex-start;
+  margin-top: 20px;
+}
+
+.node-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: center; 
+  gap: 12px;
+  position: relative;  
+
+.node-container {
+  position: relative;
+}
+}
+
+.arrow {
+  position: absolute;
+  left: -20px;  /* adjust distance to node */
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 20px;
+  color: black;
+}
+
+.node {
+  width: 40px;
+  height: 40px;
+  border: 2px solid black;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+
+.inner-circle {
+  width: 24px;     
+  height: 24px;
+  border: 2px solid black;
+  border-radius: 50%;
+}
+
+.node.accept {
+  background-color: green;
+}
+
+.node.reject {
+  background-color: red;
+}
+
+.node.start {
+  background-color: white;
+}
+
+.node.normal {
+  background-color: white;
+}
+
+
+.diagram-canvas {
+  width: 500px;
+  height: 300px;
+  border: 1px solid #aaa;
+  position: relative; 
+  background-color: #f9f9f9;
+}
