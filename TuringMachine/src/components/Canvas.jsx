@@ -7,13 +7,14 @@ export default function Canvas({ nodes, setNodes, draggingNode, setDraggingNode,
     setOffset({ x: e.clientX - n.x, y: e.clientY - n.y });
   };
 
+  //adds node to array
   const handleDrop = (e) => {
     e.preventDefault();
     const type = e.dataTransfer.getData("node-type");
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    const id = Date.now();
+    const id = Date.now(); //create unique Id for node
     setNodes([...nodes, { id, type, x: x - 20, y: y - 20 }]);
   };
 

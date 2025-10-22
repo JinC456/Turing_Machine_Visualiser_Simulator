@@ -9,16 +9,18 @@ export default function DiagramContainer() {
   const [draggingNode, setDraggingNode] = useState(null);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
 
+  // moves node as it gets dragged + updates position based off mouse coordinates
   useEffect(() => {
     const handleMouseMove = (e) => {
       if (draggingNode !== null) {
         setNodes((prevNodes) =>
-          prevNodes.map((n) =>
-            n.id === draggingNode
-              ? { ...n, x: e.clientX - offset.x, y: e.clientY - offset.y }
-              : n
-          )
-        );
+          prevNodes.map((n) => {
+            if (n.id === draggingNode) {
+              return { ...n, x: e.clientX - offset.x, y: e.clientY - offset.y }; //update x and y only
+            } else {
+              return n;
+            }
+          }));
       }
     };
 
@@ -33,6 +35,7 @@ export default function DiagramContainer() {
     };
   }, [draggingNode, offset]);
 
+  //clears all nodes and edges
   const handleClearAll = () => {
     setNodes([]);
     setEdges([]);
