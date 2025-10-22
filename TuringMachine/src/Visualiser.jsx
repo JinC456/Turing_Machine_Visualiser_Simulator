@@ -5,6 +5,7 @@ import TapeContainer from './components/TapeContainer';
 import DiagramContainer from './components/DiagramContainer';
 import './Visualiser.css';
 
+
 export default function Visualiser() {
   // Example placeholder states (empty arrays or defaults)
   const [nodes, setNodes] = useState([]);       // For diagram nodes
@@ -16,12 +17,10 @@ export default function Visualiser() {
   return (
     <div className="visualiser">
       
-      {/* Tape container */}
       <div className="tape-container">
         <TapeContainer tape={tape} head={head} />
       </div>
 
-      {/* Diagram container */}
       <div className="diagram-container">
         <DiagramContainer 
           nodes={nodes} 
@@ -29,6 +28,7 @@ export default function Visualiser() {
           setNodes={setNodes} 
           setEdges={setEdges} 
         />
+
       </div>
 
     </div>

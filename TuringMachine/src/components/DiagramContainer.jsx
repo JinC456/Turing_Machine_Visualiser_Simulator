@@ -1,11 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import NodeMenu from "./NodeMenu";
+import DiagramControls from "./DiagramControls"; 
 
 export default function DiagramContainer() {
   const [nodes, setNodes] = useState([]); 
+  const [edges, setEdges] = useState([]); 
+  const [draggingNode, setDraggingNode] = useState(null);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
 
   const addNodeToDiagram = (type, x, y) => {
-    setNodes([...nodes, { type, x: x - 20, y: y - 20 }]); // center node
+    const id = Date.now(); // unique id
+    setNodes([...nodes, { id, type, x: x - 20, y: y - 20 }]); 
   };
 
   const handleDrop = (e) => {
@@ -17,18 +22,46 @@ export default function DiagramContainer() {
     addNodeToDiagram(type, x, y);
   };
 
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (draggingNode !== null) {
+        setNodes((prevNodes) =>
+          prevNodes.map((n) =>
+            n.id === draggingNode
+              ? { ...n, x: e.clientX - offset.x, y: e.clientY - offset.y }
+              : n
+          )
+        );
+      }
+    };
+
+    const handleMouseUp = () => setDraggingNode(null);
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [draggingNode, offset]);
+
+  const handleClearAll = () => {
+    setNodes([]);
+    setEdges([]);
+  };
+
   return (
     <div className="diagram-container">
       <NodeMenu />
-
       <div
         className="diagram-canvas"
         onDragOver={(e) => e.preventDefault()}
         onDrop={handleDrop}
       >
-        {nodes.map((n, i) => (
+        {nodes.map((n) => (
           <div
-            key={i}
+            key={n.id}
             className="node-container"
             style={{
               position: "absolute",
@@ -36,7 +69,11 @@ export default function DiagramContainer() {
               top: n.y,
               display: "flex",
               alignItems: "center",
-              gap: "6px",
+              cursor: "grab",
+            }}
+            onMouseDown={(e) => {
+              setDraggingNode(n.id);
+              setOffset({ x: e.clientX - n.x, y: e.clientY - n.y });
             }}
           >
             {n.type === "start" && <span className="arrow">→</span>}
@@ -46,11 +83,7 @@ export default function DiagramContainer() {
           </div>
         ))}
       </div>
-
-      <div className="diagram-controls">
-        <button>Save</button>
-        <button>Delete</button>
-      </div>
+      <DiagramControls handleClearAll={handleClearAll} />
     </div>
   );
 }
