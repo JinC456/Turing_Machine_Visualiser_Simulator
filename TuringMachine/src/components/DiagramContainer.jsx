@@ -15,6 +15,13 @@ import StartNode from "./StartNode";
 import NormalNode from "./NormalNode";
 import AcceptNode from "./AcceptNode";
 
+import DraggableEdge from './DraggableEdge';
+
+const edgeTypes = {
+  controllable: DraggableEdge,
+};
+
+
 const nodeTypes = {
   start: StartNode,
   normal: NormalNode,
@@ -31,10 +38,14 @@ export default function DiagramContainer({ nodes, edges, setNodes, setEdges }) {
 
   const { project } = useReactFlow();
 
-  const onConnect = useCallback(
-    (params) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges]
-  );
+const onConnect = useCallback(
+  (params) =>
+    setEdges((eds) =>
+      addEdge({ ...params, type: 'controllable' }, eds)
+    ),
+  [setEdges]
+);
+
 
   const onDragOver = useCallback((event) => {
     event.preventDefault();
@@ -85,6 +96,7 @@ export default function DiagramContainer({ nodes, edges, setNodes, setEdges }) {
           nodes={rfNodes}
           edges={rfEdges}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}  
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
