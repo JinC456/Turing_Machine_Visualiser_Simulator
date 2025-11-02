@@ -1,8 +1,16 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useReactFlow, useStoreApi } from 'reactflow';
 import Draggable from 'react-draggable';
 
-export default function DraggableEdge({
+function findControlPoint(sourceX, sourceY, targetX, targetY, px, py, t) {
+  const cx =
+    (px - (1 - t) ** 2 * sourceX - t ** 2 * targetX) / (2 * t * (1 - t));
+  const cy =
+    (py - (1 - t) ** 2 * sourceY - t ** 2 * targetY) / (2 * t * (1 - t));
+  return { cx, cy };
+}
+
+export default function OnCurveDraggableEdge({
   id,
   sourceX,
   sourceY,
@@ -14,50 +22,58 @@ export default function DraggableEdge({
   const { setEdges } = useReactFlow();
   const store = useStoreApi();
 
-  // Fetch latest edge data from store to avoid snapping
   const edges = store.getState().edges;
-  const edge = edges.find(e => e.id === id);
+  const edge = edges.find((e) => e.id === id);
 
-  const controlX = (sourceX + targetX) / 2; // keep fixed
-  const controlY = edge?.data?.controlY ?? (sourceY + targetY) / 2;
+  const t = edge?.data?.t ?? 0.5;
+  const px = edge?.data?.px ?? (sourceX + targetX) / 2;
+  const py = edge?.data?.py ?? (sourceY + targetY) / 2;
+
+  const { cx, cy } = findControlPoint(sourceX, sourceY, targetX, targetY, px, py, t);
+
+  const path = `M${sourceX},${sourceY} Q${cx},${cy} ${targetX},${targetY}`;
 
   const onDrag = (e, dragData) => {
     const { transform } = store.getState();
     const zoom = transform[2];
+    const deltaX = dragData.deltaX / zoom;
     const deltaY = dragData.deltaY / zoom;
 
+    const newPx = px + deltaX;
+    const newPy = py + deltaY;
+
+
     setEdges((eds) =>
-      eds.map((e) => {
-        if (e.id === id) {
-          return {
-            ...e,
-            data: {
-              ...e.data,
-              controlY: (e.data?.controlY ?? (sourceY + targetY) / 2) + deltaY,
-            },
-          };
-        }
-        return e;
-      })
+      eds.map((edge) =>
+        edge.id === id
+          ? {
+              ...edge,
+              data: {
+                ...edge.data,
+                px: newPx,
+                py: newPy,
+                t,
+              },
+            }
+          : edge
+      )
     );
   };
-
-  const path = `M${sourceX},${sourceY} Q${controlX},${controlY} ${targetX},${targetY}`;
 
   return (
     <>
       <path
         d={path}
-        className="react-flow__edge-path"
-        markerEnd={markerEnd}
         stroke="#333"
         strokeWidth={2}
         fill="none"
+        markerEnd={markerEnd}
       />
 
+      <path d={path} stroke="transparent" strokeWidth={20} fill="none" />
+
       <Draggable
-        axis="y"
-        position={{ x: controlX, y: controlY }}
+        position={{ x: px, y: py }}
         onDrag={onDrag}
         onStart={(e) => e.stopPropagation()}
         onStop={(e) => e.stopPropagation()}
