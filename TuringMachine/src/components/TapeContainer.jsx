@@ -1,14 +1,17 @@
 import React from "react";
 import PlaybackControls from "./PlaybackControls";
-import TapeDisplay from "./TapeDisplay";
 
-export default function TapeContainer() {
+export default function TapeContainer({ tape, head }) {
   return (
     <div className="tape-container">
       <div className="tape">
+        {tape.map((symbol, index) => (
+          <div key={index} className={`cell ${index === head ? "active" : ""}`}>
+            {symbol}
+          </div>
+        ))}
       </div>
-    <TapeDisplay/>
-    <PlaybackControls/>
+      <PlaybackControls />
     </div>
   );
 }

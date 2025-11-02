@@ -1,3 +1,4 @@
+
 .visualiser {
   display: flex;
   flex-direction: column;
@@ -21,54 +22,54 @@
   width: 30px;
   height: 30px;
   border: 1px solid black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
 }
 
 .cell.active {
   background-color: yellow;
 }
 
-.diagram-container {
+
+.diagram-container-wrapper {
   display: flex;
-  width: 100%;
-  justify-content: space-around;
   align-items: flex-start;
-  margin-top: 20px;
+  gap: 20px;
 }
-
-.diagram-canvas {
-  width: 1000px;
-  height: 500px;
-  border: 1px solid #aaa;
-  position: relative; 
-  background-color: #f9f9f9;
-}
-
 
 
 .node-menu {
   display: flex;
   flex-direction: column;
-  align-items: center; 
+  align-items: center;
   gap: 12px;
-  position: relative;  
 }
 
 .node-container {
   position: relative;
+  cursor: grab;
+  transition: transform 0.2s ease;
+}
+
+.node-container:active {
+  cursor: grabbing;
+  transform: scale(1.05);
 }
 
 
 .arrow {
   position: absolute;
-  left: -20px;  /* adjust distance to node */
+  left: -20px;
   top: 50%;
   transform: translateY(-50%);
   font-size: 20px;
   color: black;
   user-select: none;
-  -webkit-user-drag: none;
   pointer-events: none;
 }
+
 
 .node {
   width: 40px;
@@ -82,36 +83,39 @@
 
 
 .inner-circle {
-  width: 24px;     
+  width: 24px;
   height: 24px;
   border: 2px solid black;
   border-radius: 50%;
 }
 
-.node.accept {
-  background-color: green;
+
+.accept {
+  background-color: #6ad66a;
 }
 
-.node.reject {
-  background-color: red;
-}
-
-.node.start {
+.start {
   background-color: white;
 }
 
-.node.normal {
+.normal {
   background-color: white;
 }
 
 .diagram-controls {
   display: flex;
   flex-direction: column;
-  align-items: center; 
+  align-items: center;
   gap: 12px;
-  position: relative;
-  max-height: 300px; 
+  max-height: 300px;
   overflow: auto;
 }
 
 
+/* React Flow canvas fallback */
+.reactflow-wrapper {
+  width: 800px;
+  height: 500px;
+  border: 1px solid #aaa;
+  background-color: #f9f9f9;
+}

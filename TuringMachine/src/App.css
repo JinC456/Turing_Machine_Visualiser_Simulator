@@ -12,3 +12,7 @@ body {
   background-color: #fff;
   border-radius: 5px;
 }
+
+.draggable {
+  cursor: move;
+}
