@@ -71,6 +71,7 @@
 }
 
 
+
 .node {
   width: 40px;
   height: 40px;
@@ -89,7 +90,6 @@
   border-radius: 50%;
 }
 
-
 .accept {
   background-color: #6ad66a;
 }
@@ -102,6 +102,38 @@
   background-color: white;
 }
 
+
+.react-flow__handle {
+  opacity: 0;
+  transition: opacity 0.2s;
+  width: 1px;
+  height: 1px;
+}
+
+.node:hover .react-flow__handle {
+  opacity: 1;
+}
+
+.react-flow__handle-left {
+  left: 0.5px;
+}
+
+.react-flow__handle-right {
+  right: 0.5px;
+}
+
+.react-flow__handle-top {
+ top: 0.5px;
+}
+
+.react-flow__handle-bottom {
+  bottom: 0.5px;
+}
+
+
+
+
+
 .diagram-controls {
   display: flex;
   flex-direction: column;
@@ -111,11 +143,11 @@
   overflow: auto;
 }
 
-
-/* React Flow canvas fallback */
 .reactflow-wrapper {
   width: 800px;
   height: 500px;
   border: 1px solid #aaa;
   background-color: #f9f9f9;
 }
+
+

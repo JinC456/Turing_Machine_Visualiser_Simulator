@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { useReactFlow, useStoreApi } from 'reactflow';
 import Draggable from 'react-draggable';
 
@@ -10,14 +10,16 @@ function findControlPoint(sourceX, sourceY, targetX, targetY, px, py, t) {
   return { cx, cy };
 }
 
-export default function OnCurveDraggableEdge({
+export default function DraggableEdge({
   id,
   sourceX,
   sourceY,
   targetX,
   targetY,
+  markerStart,
   markerEnd,
   data,
+  selected,
 }) {
   const { setEdges } = useReactFlow();
   const store = useStoreApi();
@@ -26,8 +28,11 @@ export default function OnCurveDraggableEdge({
   const edge = edges.find((e) => e.id === id);
 
   const t = edge?.data?.t ?? 0.5;
-  const px = edge?.data?.px ?? (sourceX + targetX) / 2;
-  const py = edge?.data?.py ?? (sourceY + targetY) / 2;
+
+  const px =
+    sourceX + (edge?.data?.pxOffset ?? (edge?.data?.px ? edge.data.px - sourceX : (targetX - sourceX) / 2));
+  const py =
+    sourceY + (edge?.data?.pyOffset ?? (edge?.data?.py ? edge.data.py - sourceY : (targetY - sourceY) / 2));
 
   const { cx, cy } = findControlPoint(sourceX, sourceY, targetX, targetY, px, py, t);
 
@@ -39,9 +44,8 @@ export default function OnCurveDraggableEdge({
     const deltaX = dragData.deltaX / zoom;
     const deltaY = dragData.deltaY / zoom;
 
-    const newPx = px + deltaX;
-    const newPy = py + deltaY;
-
+    const newPxOffset = (px - sourceX) + deltaX;
+    const newPyOffset = (py - sourceY) + deltaY;
 
     setEdges((eds) =>
       eds.map((edge) =>
@@ -50,8 +54,8 @@ export default function OnCurveDraggableEdge({
               ...edge,
               data: {
                 ...edge.data,
-                px: newPx,
-                py: newPy,
+                pxOffset: newPxOffset,
+                pyOffset: newPyOffset,
                 t,
               },
             }
@@ -67,26 +71,29 @@ export default function OnCurveDraggableEdge({
         stroke="#333"
         strokeWidth={2}
         fill="none"
+        markerStart={markerStart}
         markerEnd={markerEnd}
+        style={selected ? { stroke: 'blue', strokeWidth: 3 } : {}}
       />
-
       <path d={path} stroke="transparent" strokeWidth={20} fill="none" />
 
-      <Draggable
-        position={{ x: px, y: py }}
-        onDrag={onDrag}
-        onStart={(e) => e.stopPropagation()}
-        onStop={(e) => e.stopPropagation()}
-      >
-        <circle
-          r={8}
-          fill="white"
-          stroke="blue"
-          strokeWidth={2}
-          cursor="grab"
-          style={{ pointerEvents: 'all' }}
-        />
-      </Draggable>
+      {selected && (
+        <Draggable
+          position={{ x: px, y: py }}
+          onDrag={onDrag}
+          onStart={(e) => e.stopPropagation()}
+          onStop={(e) => e.stopPropagation()}
+        >
+          <circle
+            r={8}
+            fill="white"
+            stroke="blue"
+            strokeWidth={2}
+            cursor="grab"
+            style={{ pointerEvents: 'all' }}
+          />
+        </Draggable>
+      )}
     </>
   );
 }
