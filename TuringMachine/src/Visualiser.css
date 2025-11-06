@@ -6,31 +6,9 @@
   font-family: sans-serif;
 }
 
-.tape-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 20px;
-}
 
-.tape {
-  display: flex;
-  gap: 5px;
-}
 
-.cell {
-  width: 30px;
-  height: 30px;
-  border: 1px solid black;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-weight: bold;
-}
 
-.cell.active {
-  background-color: yellow;
-}
 
 
 .diagram-container-wrapper {
@@ -114,26 +92,6 @@
   opacity: 1;
 }
 
-.react-flow__handle-left {
-  left: 0.5px;
-}
-
-.react-flow__handle-right {
-  right: 0.5px;
-}
-
-.react-flow__handle-top {
- top: 0.5px;
-}
-
-.react-flow__handle-bottom {
-  bottom: 0.5px;
-}
-
-
-
-
-
 .diagram-controls {
   display: flex;
   flex-direction: column;
@@ -150,4 +108,132 @@
   background-color: #f9f9f9;
 }
 
+.diagram-container {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
 
+.edge-path {
+  stroke: #333;
+  stroke-width: 2;
+  fill: none;
+  transition: stroke 0.2s ease, stroke-width 0.2s ease;
+}
+
+.edge-path.selected {
+  stroke: black;
+  stroke-width: 3;
+}
+
+.edge-hitbox {
+  stroke: transparent;
+  stroke-width: 20;
+  fill: none;
+  pointer-events: stroke;
+}
+
+.edge-handle {
+  r: 8px;
+  fill: white;
+  stroke: blue;
+  stroke-width: 2px;
+  cursor: grab;
+  pointer-events: all;
+}
+
+/*holds the buttons + the tape UI. */
+.tape-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  padding: 20px;
+  padding-top: 30px; 
+  padding-bottom: 40px; 
+  min-width: 700px;
+}
+
+.tape-wrapper {
+  display: flex;
+  align-items: center;
+  /* position: relative;  <-- REMOVE THIS. It's not needed anymore. */
+  width: 520px;
+  height: 50px;
+  border: 2px solid black;
+  padding-bottom: 5px;
+  padding-top: 5px;
+  overflow: hidden; /* This is crucial for the tape viewport */
+  background-color: #f8f8f8;
+}
+
+.tape-header {
+  position: absolute;
+  top: -10px; /* Positions it nicely inside the container's 70px top padding */
+  left: 50%;
+  transform: translateX(-50%); /* This combo is for perfect centering */
+  z-index: 10;
+  color: black;
+  font-family: sans-serif;
+  text-align: center;
+}
+
+.tape-pointer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.tape-start-label {
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.tape-arrow {
+  font-size: 24px;
+  line-height: 1;
+}
+
+/*tape that moves.*/
+.tape {
+  display: flex;
+  position: relative;
+  height: 40px;
+  left: 46.1%;
+  transition: transform 0.2s ease-out;
+}
+
+.cell {
+  width: 40px;
+  height: 40px;
+  border: 1px solid black;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 18px;
+  background-color: white;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.cell.active {
+  background-color: #d7e9ff;
+  border: 2px solid #1a73e8;
+  color: black;
+}
+
+.tape-button:hover {
+  background-color: #e0e0e0;
+}
+
+/* FIX: Changed to lowercase 'p' to match 
+  your React component's className="playback-controls"
+*/
+.playback-controls {
+  position: absolute;
+  bottom: -20px;
+  
+}

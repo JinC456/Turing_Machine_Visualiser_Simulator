@@ -1,10 +1,36 @@
-import React from 'react';
+/* Updated TapeDisplay.js */
+import React from "react";
+import "../Visualiser.css";
 
 export default function TapeDisplay({ tape, head }) {
-  return (
-    <div className="tape-display">
-      <p>Tape display will go here</p>
+  const cellWidth = 40;
 
-    </div>
+  return (
+    <> {/* Use a Fragment to return multiple elements */}
+      <div className="tape-header">
+        <div className="tape-pointer">
+          <div className="tape-start-label">START</div>
+          <div className="tape-arrow">▼</div>
+        </div>
+      </div>
+
+      {/* The wrapper now only contains the tape */}
+      <div className="tape-wrapper">
+        <div
+          className="tape"
+          style={{ transform: `translateX(${-head * cellWidth}px)` }}
+        >
+          {tape.map((symbol, index) => (
+            <div
+              key={index}
+              className={`cell ${index === head ? "active" : ""}`}
+              style={{ width: `${cellWidth}px` }}
+            >
+              {symbol || ""}
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
   );
 }

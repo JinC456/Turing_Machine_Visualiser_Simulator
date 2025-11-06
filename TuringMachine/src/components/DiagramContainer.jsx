@@ -16,12 +16,14 @@ import NormalNode from "./NormalNode";
 import AcceptNode from "./AcceptNode";
 import DraggableEdge from "./DraggableEdge";
 
+//custom nodes
 const nodeTypes = {
   start: StartNode,
   normal: NormalNode,
   accept: AcceptNode,
 };
 
+//custome edges
 const edgeTypes = {
   draggable: DraggableEdge,
 };
@@ -29,7 +31,7 @@ const edgeTypes = {
 export default function DiagramContainer() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const { project } = useReactFlow();
+  const { project } = useReactFlow(); // converts screen co-ords to canvas co-ords
 
   // Handle new edges
   const onConnect = useCallback(
@@ -38,23 +40,20 @@ export default function DiagramContainer() {
       const isSelfLoop = params.source === params.target;
       let px, py, sourceX, sourceY, targetX, targetY;
 
+      //shifts position if it is a self loop
       if (isSelfLoop) {
         const node = nodes.find((n) => n.id === params.source);
         const nodeWidth = node.width || 40;
         const nodeHeight = node.height || 40; 
         const loopOffset = 30; 
 
- 
-
-   
         sourceX = node.position.x + nodeWidth * 0.25;
         sourceY = node.position.y;
-
 
         targetX = node.position.x + nodeWidth * 0.75;
         targetY = node.position.y;
 
-
+        //curve control point
         px = node.position.x + nodeWidth / 2;
         py = node.position.y - loopOffset;
 
@@ -65,7 +64,7 @@ export default function DiagramContainer() {
         ...eds,
         {
           ...params,
-          id: `edge-${Date.now()}`,
+          id: `edge-${Date.now()}`, //edge ID
           type: "draggable", 
           markerEnd: { type: MarkerType.ArrowClosed, color: "#333" },
           data: isSelfLoop
@@ -78,16 +77,17 @@ export default function DiagramContainer() {
   [nodes, setEdges]
 );
 
-  // Drag & drop for nodes
+  // Drag for nodes from menu
   const onDragOver = useCallback((event) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
   }, []);
 
+  //Drops new node onto canvas
   const onDrop = useCallback(
     (event) => {
       event.preventDefault();
-      const type = event.dataTransfer.getData("node-type");
+      const type = event.dataTransfer.getData("node-type"); //gets node type
       if (!type) return;
 
       const bounds = event.currentTarget.getBoundingClientRect();
@@ -98,11 +98,12 @@ export default function DiagramContainer() {
 
       const nodeWidth = 40;
       const nodeHeight = 40;
+      //centres node on drop
       position.x -= nodeWidth / 2;
       position.y -= nodeHeight / 2;
 
       const newNode = {
-        id: `${Date.now()}`,
+        id: `${Date.now()}`, //Node ID
         type,
         position,
         data: {},
@@ -113,16 +114,17 @@ export default function DiagramContainer() {
     [project, setNodes]
   );
 
+  //clears all nodes and edges
   const handleClearAll = () => {
     setNodes([]);
     setEdges([]);
   };
 
   return (
-    <div className="diagram-container flex" style={{ display: "flex", gap: "10px" }}>
-      <NodeMenu />
+    <div className="diagram-container flex" >
+      <NodeMenu /> {/* menu to add nodes */}
 
-      <div style={{ width: "800px", height: "500px", border: "1px solid black" }}>
+      <div className="reactflow-wrapper">
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -135,8 +137,8 @@ export default function DiagramContainer() {
           onDragOver={onDragOver}
           fitView
         >
-          <Background />
-          <Controls />
+          <Background /> {/* canvas background */}
+          <Controls /> {/* background controls */}
         </ReactFlow>
       </div>
 
