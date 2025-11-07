@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import ReactFlow, {
   useNodesState,
   useEdgesState,
@@ -15,6 +15,7 @@ import StartNode from "./StartNode";
 import NormalNode from "./NormalNode";
 import AcceptNode from "./AcceptNode";
 import DraggableEdge from "./DraggableEdge";
+import NodeEditMenu from "./NodeEditMenu";
 
 //custom nodes
 const nodeTypes = {
@@ -28,10 +29,12 @@ const edgeTypes = {
   draggable: DraggableEdge,
 };
 
+
 export default function DiagramContainer() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const { project } = useReactFlow(); // converts screen co-ords to canvas co-ords
+  const [selectedNode, setSelectedNode] = useState(null);
 
   // Handle new edges
   const onConnect = useCallback(
@@ -106,13 +109,29 @@ export default function DiagramContainer() {
         id: `${Date.now()}`, //Node ID
         type,
         position,
-        data: {},
+        data: { label: "" },
       };
 
       setNodes((nds) => [...nds, newNode]);
+      setSelectedNode(newNode);
+      
     },
     [project, setNodes]
   );
+
+  const onNodeDoubleClick = (event, node) => {
+    setSelectedNode(node);
+  };
+
+  const handleSaveNodeEdit = (id, newLabel, newType) => {
+    setNodes((nds) =>
+      nds.map((n) =>
+        n.id === id ? { ...n, type: newType, data: { ...n.data, label: newLabel } } : n
+      )
+    );
+  };
+
+
 
   //clears all nodes and edges
   const handleClearAll = () => {
@@ -132,6 +151,7 @@ export default function DiagramContainer() {
           edgeTypes={edgeTypes}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
+          onNodeDoubleClick={onNodeDoubleClick}
           onConnect={onConnect}
           onDrop={onDrop}
           onDragOver={onDragOver}
@@ -143,6 +163,15 @@ export default function DiagramContainer() {
       </div>
 
       <DiagramControls handleClearAll={handleClearAll} />
+      
+      {selectedNode && (
+        <NodeEditMenu
+          node={selectedNode}
+          onClose={() => setSelectedNode(null)}
+          onSave={handleSaveNodeEdit}
+        />
+      )}
+    
     </div>
   );
 }

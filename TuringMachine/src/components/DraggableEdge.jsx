@@ -82,7 +82,7 @@ export default function DraggableEdge({
       {/* hit box for mouse interactions */}
       <path d={path} className="edge-hitbox" />
 
-      {/*control for selected edge*/}
+      {/*control the selected edge*/}
       {selected && (
         <Draggable
           position={{ x: px, y: py }}
