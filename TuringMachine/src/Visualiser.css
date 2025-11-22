@@ -1,4 +1,6 @@
-
+/* ===========================
+   GENERAL
+   =========================== */
 .visualiser {
   display: flex;
   flex-direction: column;
@@ -6,18 +8,21 @@
   font-family: sans-serif;
 }
 
-
-
-
-
-
 .diagram-container-wrapper {
   display: flex;
   align-items: flex-start;
   gap: 20px;
 }
 
+.diagram-container {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
 
+/* ===========================
+   NODE
+   =========================== */
 .node-menu {
   display: flex;
   flex-direction: column;
@@ -36,20 +41,6 @@
   transform: scale(1.05);
 }
 
-
-.arrow {
-  position: absolute;
-  left: -20px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 20px;
-  color: black;
-  user-select: none;
-  pointer-events: none;
-}
-
-
-
 .node {
   width: 50px;
   height: 50px;
@@ -59,9 +50,7 @@
   justify-content: center;
   align-items: center;
   padding: 2px;
-  
 }
-
 
 .inner-circle {
   width: 34px;
@@ -86,7 +75,20 @@
   background-color: white;
 }
 
+.arrow {
+  position: absolute;
+  left: -20px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 20px;
+  color: black;
+  user-select: none;
+  pointer-events: none;
+}
 
+/* ===========================
+  HANDLE
+   =========================== */
 .react-flow__handle {
   opacity: 0;
   transition: opacity 0.2s;
@@ -98,28 +100,9 @@
   opacity: 1;
 }
 
-.diagram-controls {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  max-height: 300px;
-  overflow: auto;
-}
-
-.reactflow-wrapper {
-  width: 800px;
-  height: 500px;
-  border: 1px solid #aaa;
-  background-color: #f9f9f9;
-}
-
-.diagram-container {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-}
-
+/* ===========================
+   EDGE
+   =========================== */
 .edge-path {
   stroke: #333;
   stroke-width: 2;
@@ -148,7 +131,28 @@
   pointer-events: all;
 }
 
-/*holds the buttons + the tape UI. */
+/* ===========================
+   DIAGRAM CONTROLS
+   =========================== */
+.diagram-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-height: 300px;
+  overflow: auto;
+}
+
+.reactflow-wrapper {
+  width: 800px;
+  height: 500px;
+  border: 1px solid #aaa;
+  background-color: #f9f9f9;
+}
+
+/* ===========================
+   TAPE
+   =========================== */
 .tape-container {
   display: flex;
   align-items: center;
@@ -157,29 +161,28 @@
   gap: 10px;
   position: relative;
   padding: 20px;
-  padding-top: 30px; 
-  padding-bottom: 40px; 
+  padding-top: 30px;
+  padding-bottom: 40px;
   min-width: 700px;
 }
 
 .tape-wrapper {
   display: flex;
   align-items: center;
-  /* position: relative;  <-- REMOVE THIS. It's not needed anymore. */
   width: 520px;
   height: 50px;
   border: 2px solid black;
   padding-bottom: 5px;
   padding-top: 5px;
-  overflow: hidden; /* This is crucial for the tape viewport */
+  overflow: hidden;
   background-color: #f8f8f8;
 }
 
 .tape-header {
   position: absolute;
-  top: -10px; /* Positions it nicely inside the container's 70px top padding */
+  top: -10px;
   left: 50%;
-  transform: translateX(-50%); /* This combo is for perfect centering */
+  transform: translateX(-50%);
   z-index: 10;
   color: black;
   font-family: sans-serif;
@@ -202,7 +205,6 @@
   line-height: 1;
 }
 
-/*tape that moves.*/
 .tape {
   display: flex;
   position: relative;
@@ -235,13 +237,14 @@
   background-color: #e0e0e0;
 }
 
-
 .playback-controls {
   position: absolute;
   bottom: -20px;
-  
 }
 
+/* ===========================
+   POPUP
+   =========================== */
 .popup-overlay {
   position: fixed;
   top: 0;
@@ -260,7 +263,6 @@
   background: white;
   padding: 24px;
   border-radius: 12px;
-
   width: 100%;
   max-width: 320px;
   font-family: sans-serif;
@@ -314,10 +316,77 @@
   font-weight: 500;
   cursor: pointer;
   transition: opacity 0.2s;
-
 }
 
+/* ===========================
+   LABEL/INPUT
+   =========================== */
+.label-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid #ddd;
+}
 
+.label-row label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+}
 
+.label-row input[type="text"] {
+  padding: 6px 8px;
+  font-size: 0.85rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
 
+.direction-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+}
 
+.direction-buttons button {
+  padding: 4px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #eee;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.direction-buttons button.selected {
+  background-color: #007BFF;
+  color: white;
+}
+
+.add-label-button {
+  margin-top: 8px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background-color: #f2f2f2;
+  cursor: pointer;
+}
+
+.add-label-button:hover {
+  background-color: #e0e0e0;
+}
+
+.remove-button {
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background-color: #f8d7da;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.remove-button:hover {
+  background-color: #f5c2c7;
+}

@@ -2,7 +2,7 @@ import React from 'react';
 import { useReactFlow, useStoreApi } from 'reactflow';
 import Draggable from 'react-draggable';
 
-// calculates C-point based off start/end node and position of point on edge
+// calculates C-point for quadratic Bezier based on start/end nodes and a point on the curve
 function findControlPoint(sourceX, sourceY, targetX, targetY, px, py, t) {
   const cx =
     (px - (1 - t) ** 2 * sourceX - t ** 2 * targetX) / (2 * t * (1 - t));
@@ -22,38 +22,40 @@ export default function DraggableEdge({
   data,
   selected,
 }) {
-  const { setEdges } = useReactFlow(); //updates edges
+  const { setEdges } = useReactFlow();
   const store = useStoreApi();
 
   const edges = store.getState().edges;
   const edge = edges.find((e) => e.id === id);
 
-  //t = position of control point relative to start and end
-  const t = edge?.data?.t ?? 0.5; //if there is no t default to middle
+  const t = edge?.data?.t ?? 0.5;
 
-  //co-ords for draggable handle, default to middle
-  const px =
-    sourceX + (edge?.data?.pxOffset ?? (edge?.data?.px ? edge.data.px - sourceX : (targetX - sourceX) / 2));
-  const py =
-    sourceY + (edge?.data?.pyOffset ?? (edge?.data?.py ? edge.data.py - sourceY : (targetY - sourceY) / 2));
+  // Offsets relative to the linear interpolation between source and target
+  const dxOffset = edge?.data?.dxOffset ?? 0;
+  const dyOffset = edge?.data?.dyOffset ?? 0;
 
-  //calculates bezier curve control point
+  // Linear interpolation along the edge
+  const baseX = sourceX * (1 - t) + targetX * t;
+  const baseY = sourceY * (1 - t) + targetY * t;
+
+  // Apply offsets to get draggable handle position
+  const px = baseX + dxOffset;
+  const py = baseY + dyOffset;
+
+  // Compute quadratic control point
   const { cx, cy } = findControlPoint(sourceX, sourceY, targetX, targetY, px, py, t);
 
-  //build path for bezier curve using control point calculated
   const path = `M${sourceX},${sourceY} Q${cx},${cy} ${targetX},${targetY}`;
 
-  //handles dragging for point
   const onDrag = (e, dragData) => {
     const { transform } = store.getState();
     const zoom = transform[2];
     const deltaX = dragData.deltaX / zoom;
     const deltaY = dragData.deltaY / zoom;
 
-    const newPxOffset = (px - sourceX) + deltaX;
-    const newPyOffset = (py - sourceY) + deltaY;
+    const newDxOffset = dxOffset + deltaX;
+    const newDyOffset = dyOffset + deltaY;
 
-    //updates edges with new offsets
     setEdges((eds) =>
       eds.map((edge) =>
         edge.id === id
@@ -61,8 +63,8 @@ export default function DraggableEdge({
               ...edge,
               data: {
                 ...edge.data,
-                pxOffset: newPxOffset,
-                pyOffset: newPyOffset,
+                dxOffset: newDxOffset,
+                dyOffset: newDyOffset,
                 t,
               },
             }
@@ -71,23 +73,42 @@ export default function DraggableEdge({
     );
   };
 
+  const labels = edge?.data?.labels ?? [];
+  const labelOffsetY = -15;
+  const labelSpacing = 14;
+
   return (
     <>
+      {/* The actual curve */}
       <path
         d={path}
-        className={`edge-path ${selected ? "selected" : ""}`}
+        className={`edge-path ${selected ? 'selected' : ''}`}
         markerStart={markerStart}
         markerEnd={markerEnd}
       />
-      {/* hit box for mouse interactions */}
+      {/* Hitbox for easier dragging / selection */}
       <path d={path} className="edge-hitbox" />
 
-      {/*control the selected edge*/}
+      {/* Labels follow draggable handle */}
+      {labels.map((label, index) => (
+        <text
+          key={index}
+          x={px}
+          y={py + labelOffsetY - index * labelSpacing}
+          textAnchor="middle"
+          fontSize={12}
+          fill="#000"
+        >
+          {`${label.read}, ${label.write}, ${label.direction}`}
+        </text>
+      ))}
+
+      {/* Draggable handle */}
       {selected && (
         <Draggable
           position={{ x: px, y: py }}
           onDrag={onDrag}
-          onStart={(e) => e.stopPropagation()} //stops interaction with background canvas
+          onStart={(e) => e.stopPropagation()}
           onStop={(e) => e.stopPropagation()}
         >
           <circle className="edge-handle" />

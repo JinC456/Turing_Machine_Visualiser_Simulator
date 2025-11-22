@@ -13,7 +13,6 @@ export default function NodeEditMenu({ node, onClose, onSave }) {
     <div className="popup-overlay">
       <div className="popup-menu">
         <h3>Edit Node</h3>
-
         <label>Name: </label>
         <input
           type="text"
