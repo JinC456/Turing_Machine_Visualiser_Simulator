@@ -103,6 +103,11 @@
 /* ===========================
    EDGE
    =========================== */
+
+.react-flow__edges {
+  z-index: 10 !important;
+}  
+   
 .edge-path {
   stroke: #333;
   stroke-width: 2;
@@ -287,6 +292,8 @@
   font-weight: 600;
   color: gray;
   margin-bottom: 8px;
+  text-align: left;
+  width: 100%;
 }
 
 .form-group input[type="text"] {
@@ -295,10 +302,12 @@
   border-radius: 6px;
   font-size: 1rem;
   transition: border-color 0.2s;
+  width: 90%;       
+  margin: 0 auto;
 }
 
 .form-group input[type="text"]:focus {
-  border-color: #007BFF;
+  border-color: #1170d6;
 }
 
 .popup-actions {
@@ -318,51 +327,52 @@
   transition: opacity 0.2s;
 }
 
-/* ===========================
-   LABEL/INPUT
-   =========================== */
 .label-row {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 8px 0;
+  gap: 10px;
+  padding: 8px 4px;
   border-bottom: 1px solid #ddd;
 }
 
 .label-row label {
-  display: flex;
   flex-direction: row;
   align-items: center;
   gap: 6px;
   font-size: 0.9rem;
 }
 
+
 .label-row input[type="text"] {
   padding: 6px 8px;
   font-size: 0.85rem;
   border: 1px solid #ccc;
   border-radius: 4px;
+  width:81%;
 }
 
 .direction-buttons {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   font-size: 0.9rem;
+  width: 100%;
 }
 
 .direction-buttons button {
-  padding: 4px 10px;
+  padding: 6px 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
+  width:100%;
   background-color: #eee;
   cursor: pointer;
   transition: background-color 0.2s, color 0.2s;
 }
 
 .direction-buttons button.selected {
-  background-color: #007BFF;
-  color: white;
+  background-color: #84afdd;
+  color: rgb(0, 0, 0);
 }
 
 .add-label-button {
@@ -385,8 +395,11 @@
   background-color: #f8d7da;
   cursor: pointer;
   font-size: 0.85rem;
+  margin: 4px;
 }
 
 .remove-button:hover {
   background-color: #f5c2c7;
 }
+
+

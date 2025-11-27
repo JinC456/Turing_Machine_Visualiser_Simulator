@@ -1,8 +1,8 @@
-import React from 'react';
-import { useReactFlow, useStoreApi } from 'reactflow';
-import Draggable from 'react-draggable';
+import React, { useContext, createContext, useCallback } from 'react';
+import { useReactFlow } from 'reactflow';
 
-// calculates C-point for quadratic Bezier based on start/end nodes and a point on the curve
+export const HistoryContext = createContext(null);
+
 function findControlPoint(sourceX, sourceY, targetX, targetY, px, py, t) {
   const cx =
     (px - (1 - t) ** 2 * sourceX - t ** 2 * targetX) / (2 * t * (1 - t));
@@ -22,56 +22,71 @@ export default function DraggableEdge({
   data,
   selected,
 }) {
-  const { setEdges } = useReactFlow();
-  const store = useStoreApi();
+  const { setEdges, getZoom, getEdge } = useReactFlow();
+  const pushToHistory = useContext(HistoryContext);
 
-  const edges = store.getState().edges;
-  const edge = edges.find((e) => e.id === id);
+  const edge = getEdge(id);
 
   const t = edge?.data?.t ?? 0.5;
-
-  // Offsets relative to the linear interpolation between source and target
   const dxOffset = edge?.data?.dxOffset ?? 0;
   const dyOffset = edge?.data?.dyOffset ?? 0;
 
-  // Linear interpolation along the edge
   const baseX = sourceX * (1 - t) + targetX * t;
   const baseY = sourceY * (1 - t) + targetY * t;
 
-  // Apply offsets to get draggable handle position
   const px = baseX + dxOffset;
   const py = baseY + dyOffset;
 
-  // Compute quadratic control point
   const { cx, cy } = findControlPoint(sourceX, sourceY, targetX, targetY, px, py, t);
 
   const path = `M${sourceX},${sourceY} Q${cx},${cy} ${targetX},${targetY}`;
 
-  const onDrag = (e, dragData) => {
-    const { transform } = store.getState();
-    const zoom = transform[2];
-    const deltaX = dragData.deltaX / zoom;
-    const deltaY = dragData.deltaY / zoom;
+  
+  const onPointerDown = useCallback((event) => {
+    event.stopPropagation();
+    
+    const target = event.target;
+    target.setPointerCapture(event.pointerId);
 
-    const newDxOffset = dxOffset + deltaX;
-    const newDyOffset = dyOffset + deltaY;
+    const zoom = getZoom();
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const initialDx = dxOffset;
+    const initialDy = dyOffset;
 
-    setEdges((eds) =>
-      eds.map((edge) =>
-        edge.id === id
-          ? {
-              ...edge,
-              data: {
-                ...edge.data,
-                dxOffset: newDxOffset,
-                dyOffset: newDyOffset,
-                t,
-              },
-            }
-          : edge
-      )
-    );
-  };
+    if (pushToHistory) {
+        pushToHistory();
+    }
+
+    const onPointerMove = (moveEvent) => {
+        const deltaX = (moveEvent.clientX - startX) / zoom;
+        const deltaY = (moveEvent.clientY - startY) / zoom;
+
+        setEdges((eds) =>
+            eds.map((e) => {
+                if (e.id !== id) return e;
+                return {
+                    ...e,
+                    data: {
+                        ...e.data,
+                        dxOffset: initialDx + deltaX,
+                        dyOffset: initialDy + deltaY,
+                        t,
+                    },
+                };
+            })
+        );
+    };
+
+    const onPointerUp = (upEvent) => {
+        target.releasePointerCapture(upEvent.pointerId);
+        target.removeEventListener('pointermove', onPointerMove);
+        target.removeEventListener('pointerup', onPointerUp);
+    };
+
+    target.addEventListener('pointermove', onPointerMove);
+    target.addEventListener('pointerup', onPointerUp);
+  }, [id, dxOffset, dyOffset, setEdges, getZoom, pushToHistory, t]);
 
   const labels = edge?.data?.labels ?? [];
   const labelOffsetY = -15;
@@ -79,17 +94,15 @@ export default function DraggableEdge({
 
   return (
     <>
-      {/* The actual curve */}
       <path
         d={path}
         className={`edge-path ${selected ? 'selected' : ''}`}
         markerStart={markerStart}
         markerEnd={markerEnd}
       />
-      {/* Hitbox for easier dragging / selection */}
+      
       <path d={path} className="edge-hitbox" />
 
-      {/* Labels follow draggable handle */}
       {labels.map((label, index) => (
         <text
           key={index}
@@ -103,16 +116,13 @@ export default function DraggableEdge({
         </text>
       ))}
 
-      {/* Draggable handle */}
       {selected && (
-        <Draggable
-          position={{ x: px, y: py }}
-          onDrag={onDrag}
-          onStart={(e) => e.stopPropagation()}
-          onStop={(e) => e.stopPropagation()}
-        >
-          <circle className="edge-handle" />
-        </Draggable>
+        <circle 
+            className="edge-handle"
+            cx={px}
+            cy={py}
+            onPointerDown={onPointerDown}
+        />
       )}
     </>
   );

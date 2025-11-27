@@ -1,6 +1,7 @@
 import React, { useRef, useLayoutEffect } from "react";
 import { Handle, Position } from "reactflow";
 import "../Visualiser.css";
+import Handles from "./Handles";
 
 export default function StartNode({ data = {} }) {
   const labelRef = useRef(null);
@@ -34,14 +35,7 @@ export default function StartNode({ data = {} }) {
         </div>
       )}
 
-      <Handle type="target" position={Position.Right} id="R" style={{ right: 0.5 }} />
-      <Handle type="source" position={Position.Right} id="R" style={{ right: 0.5 }} />
-      
-      <Handle type="target" position={Position.Top} id="T" style={{ top: 0.5 }} />
-      <Handle type="source" position={Position.Top} id="T" style={{ top: 0.5 }} />
-      
-      <Handle type="target" position={Position.Bottom} id="B" style={{ bottom: 0.5 }} />
-      <Handle type="source" position={Position.Bottom} id="B" style={{ bottom: 0.5 }} />
+      <Handles/>
 
     </div>
   );

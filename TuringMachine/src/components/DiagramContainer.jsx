@@ -14,7 +14,8 @@ import DiagramControls from "./DiagramControls";
 import StartNode from "./StartNode";
 import NormalNode from "./NormalNode";
 import AcceptNode from "./AcceptNode";
-import DraggableEdge from "./DraggableEdge";
+// 1. Import HistoryContext from DraggableEdge
+import DraggableEdge, { HistoryContext } from "./DraggableEdge";
 import NodeEditMenu from "./NodeEditMenu";
 import EdgeMenu from "./EdgeMenu";
 
@@ -33,56 +34,109 @@ const edgeTypes = {
 export default function DiagramContainer() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const { project } = useReactFlow(); // converts screen co-ords to canvas co-ords
+  const { project } = useReactFlow();
   const [selectedNode, setSelectedNode] = useState(null);
   const [selectedEdge, setSelectedEdge] = useState(null);
 
-  // Handle new edges
-  const onConnect = useCallback(
-    (params) => {
-      setEdges((eds) => {
-        const isSelfLoop = params.source === params.target;
-        let px, py, sourceX, sourceY, targetX, targetY;
+  // History stacks
+  const [history, setHistory] = useState([]);
+  const [future, setFuture] = useState([]);
 
-        if (isSelfLoop) {
-          const node = nodes.find((n) => n.id === params.source);
-          const nodeWidth = node.width || 40;
-          const loopOffset = 30;
+  const pushToHistory = useCallback(() => {
+    const clonedNodes = nodes.map((n) => ({ ...n, data: { ...n.data } }));
+    const clonedEdges = edges.map((e) => ({
+      ...e,
+      data: {
+        ...e.data,
+        labels: [...(e.data.labels || [])],
+      },
+    }));
 
-          sourceX = node.position.x + nodeWidth * 0.25;
-          sourceY = node.position.y;
-          targetX = node.position.x + nodeWidth * 0.75;
-          targetY = node.position.y;
+    setHistory((h) => {
+      const newHistory = [...h, { nodes: clonedNodes, edges: clonedEdges }];
+      // Keep only the last 10
+      return newHistory.slice(-10);
+    });
+    setFuture([]); // clear redo stack
+  }, [nodes, edges]);
 
-          // Curve control point
-          px = node.position.x + nodeWidth / 2;
-          py = node.position.y - loopOffset;
-        }
 
-        return [
-          ...eds,
-          {
-            ...params,
-            id: `edge-${Date.now()}`,
-            type: "draggable",
-            markerEnd: { type: MarkerType.ArrowClosed, color: "#333" },
-            data: isSelfLoop
-              ? { px, py, t: 0.5, sourceX, sourceY, targetX, targetY, labels: [] }
-              : { px: undefined, py: undefined, t: 0.5, labels: [] },
-          },
-        ];
-      });
+  const updateNodes = useCallback(
+    (updater) => {
+      pushToHistory();
+      setNodes(updater);
     },
-    [nodes, setEdges]
+    [pushToHistory, setNodes]
   );
 
-  // Drag for nodes from menu
+  const updateEdges = useCallback(
+    (updater) => {
+      pushToHistory();
+      setEdges(updater);
+    },
+    [pushToHistory, setEdges]
+  );
+
+  const handleUndo = () => {
+    if (history.length === 0) return;
+    const previous = history[history.length - 1];
+    setHistory((h) => h.slice(0, h.length - 1));
+    setFuture((f) => [...f, { nodes, edges }]);
+    setNodes(previous.nodes);
+    setEdges(previous.edges);
+  };
+
+  const handleRedo = () => {
+    if (future.length === 0) return;
+    const next = future[future.length - 1];
+    setFuture((f) => f.slice(0, f.length - 1));
+    setHistory((h) => [...h, { nodes, edges }]);
+    setNodes(next.nodes);
+    setEdges(next.edges);
+  };
+
+  const onConnect = useCallback(
+    (params) => {
+      pushToHistory(); 
+
+      const isSelfLoop = params.source === params.target;
+      let px, py, sourceX, sourceY, targetX, targetY;
+
+      if (isSelfLoop) {
+        const node = nodes.find((n) => n.id === params.source);
+        const nodeWidth = node.width || 40;
+        const loopOffset = 30;
+
+        sourceX = node.position.x + nodeWidth * 0.25;
+        sourceY = node.position.y;
+        targetX = node.position.x + nodeWidth * 0.75;
+        targetY = node.position.y;
+
+        px = node.position.x + nodeWidth / 2;
+        py = node.position.y - loopOffset;
+      }
+
+      const newEdge = {
+        ...params,
+        id: `edge-${Date.now()}`,
+        type: "draggable",
+        markerEnd: { type: MarkerType.ArrowClosed, color: "#333" },
+        data: isSelfLoop
+          ? { px, py, t: 0.5, sourceX, sourceY, targetX, targetY, labels: [] }
+          : { px: undefined, py: undefined, t: 0.5, labels: [] },
+      };
+
+      setEdges((eds) => [...eds, newEdge]);
+      setSelectedEdge(newEdge); 
+    },
+    [nodes, pushToHistory, setEdges]
+  );
+
   const onDragOver = useCallback((event) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
   }, []);
 
-  // Drops new node onto canvas
   const onDrop = useCallback(
     (event) => {
       event.preventDefault();
@@ -107,28 +161,31 @@ export default function DiagramContainer() {
         data: { label: "" },
       };
 
+      pushToHistory();
       setNodes((nds) => [...nds, newNode]);
       setSelectedNode(newNode);
     },
-    [project, setNodes]
+    [project, pushToHistory, setNodes]
   );
 
   const onNodeDoubleClick = (event, node) => {
     event.preventDefault();
-    console.log(" DOUBLE CLICK DETECTED! Node ID:", node.id);
     setSelectedNode(node);
     setSelectedEdge(null);
   };
 
   const onEdgeDoubleClick = (event, edge) => {
     event.preventDefault();
-    console.log(" DOUBLE CLICK DETECTED! Edge ID:", edge.id);
     setSelectedEdge(edge);
     setSelectedNode(null);
   };
 
-  // Save node edits
   const handleSaveNodeEdit = (id, newLabel, newType) => {
+
+    const node = nodes.find((n) => n.id === id);
+    if (node && node.data.label && node.data.label.trim() !== "") {
+      pushToHistory();
+    }
     setNodes((nds) =>
       nds.map((n) =>
         n.id === id
@@ -139,8 +196,13 @@ export default function DiagramContainer() {
     setSelectedNode(null);
   };
 
-  // Save edge edits (multiple labels as tuples)
   const handleSaveEdgeEdit = (id, newLabels) => {
+    const edge = edges.find((e) => e.id === id);
+
+    if (edge && edge.data.labels && edge.data.labels.length > 0) {
+      pushToHistory();
+    }
+
     setEdges((eds) =>
       eds.map((e) =>
         e.id === id ? { ...e, data: { ...e.data, labels: newLabels } } : e
@@ -148,54 +210,62 @@ export default function DiagramContainer() {
     );
     setSelectedEdge(null);
   };
+  
 
-  // Clear all nodes and edges
   const handleClearAll = () => {
+    pushToHistory();
     setNodes([]);
     setEdges([]);
   };
 
   return (
-    <div className="diagram-container flex">
-      <NodeMenu />
+    /* 2. Wrap everything in Provider */
+    <HistoryContext.Provider value={pushToHistory}>
+      <div className="diagram-container flex">
+        <NodeMenu />
 
-      <div className="reactflow-wrapper">
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          nodeTypes={nodeTypes}
-          edgeTypes={edgeTypes}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onNodeDoubleClick={onNodeDoubleClick}
-          onEdgeDoubleClick={onEdgeDoubleClick}
-          onConnect={onConnect}
-          onDrop={onDrop}
-          onDragOver={onDragOver}
-          fitView
-        >
-          <Background />
-          <Controls />
-        </ReactFlow>
+        <div className="reactflow-wrapper">
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onNodeDoubleClick={onNodeDoubleClick}
+            onEdgeDoubleClick={onEdgeDoubleClick}
+            onConnect={onConnect}
+            onDrop={onDrop}
+            onDragOver={onDragOver}
+            fitView
+          >
+            <Background />
+            <Controls />
+          </ReactFlow>
+        </div>
+
+        <DiagramControls
+          handleClearAll={handleClearAll}
+          Undo={handleUndo}
+          Redo={handleRedo}
+        />
+
+        {selectedNode && (
+          <NodeEditMenu
+            node={selectedNode}
+            onClose={() => setSelectedNode(null)}
+            onSave={handleSaveNodeEdit}
+          />
+        )}
+
+        {selectedEdge && (
+          <EdgeMenu
+            edge={selectedEdge}
+            onClose={() => setSelectedEdge(null)}
+            onSave={handleSaveEdgeEdit}
+          />
+        )}
       </div>
-
-      <DiagramControls handleClearAll={handleClearAll} />
-
-      {selectedNode && (
-        <NodeEditMenu
-          node={selectedNode}
-          onClose={() => setSelectedNode(null)}
-          onSave={handleSaveNodeEdit}
-        />
-      )}
-
-      {selectedEdge && (
-        <EdgeMenu
-          edge={selectedEdge}
-          onClose={() => setSelectedEdge(null)}
-          onSave={handleSaveEdgeEdit}
-        />
-      )}
-    </div>
+    </HistoryContext.Provider>
   );
 }

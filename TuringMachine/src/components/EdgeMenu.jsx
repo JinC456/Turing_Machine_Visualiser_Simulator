@@ -2,24 +2,35 @@ import React, { useState } from "react";
 import "../Visualiser.css";
 
 export default function EdgeMenu({ edge, onClose, onSave }) {
-  const [labels, setLabels] = useState(edge?.data?.labels || []);
+  const [labels, setLabels] = useState(() => {
+    const existing = edge?.data?.labels || [];
+    return existing.length > 0 ? existing : [{ read: "", write: "", direction: "" }];
+  });
 
-  // update a label at index
   const updateLabel = (index, key, value) => {
     setLabels((prev) =>
       prev.map((lbl, i) => (i === index ? { ...lbl, [key]: value } : lbl))
     );
   };
 
-  // add a new empty label
   const addLabel = () =>
     setLabels((prev) => [...prev, { read: "", write: "", direction: "" }]);
 
-  // remove a label
-  const removeLabel = (index) =>
+  const removeLabel = (index) => {
+    if (labels.length === 1) return;
     setLabels((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // A valid rule has all three fields filled
+  const hasValidRule = labels.some(
+    (lbl) =>
+      lbl.read.trim() !== "" &&
+      lbl.write.trim() !== "" &&
+      lbl.direction.trim() !== ""
+  );
 
   const handleSave = () => {
+    if (!hasValidRule) return;
     onSave(edge.id, labels);
     onClose();
   };
@@ -65,19 +76,33 @@ export default function EdgeMenu({ edge, onClose, onSave }) {
               </button>
             </div>
 
-            <button className="remove-button" onClick={() => removeLabel(index)}>
+            <button
+              className="remove-button"
+              onClick={() => removeLabel(index)}
+              disabled={labels.length === 1}
+            >
               Remove
             </button>
           </div>
         ))}
 
         <button className="add-label-button" onClick={addLabel}>
-          Add Label
+          Add Another rule
         </button>
 
+        {!hasValidRule && (
+          <p className="warning-text">
+            You must fill in at least one rule to continue.
+          </p>
+        )}
+
         <div className="popup-actions">
-          <button onClick={handleSave}>Save</button>
-          <button onClick={onClose}>Cancel</button>
+          <button onClick={handleSave} disabled={!hasValidRule}>
+            Save
+          </button>
+          <button onClick={onClose} disabled={!hasValidRule}>
+            Cancel
+          </button>
         </div>
       </div>
     </div>
