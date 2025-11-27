@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import "../Visualiser.css";
 
-export default function EdgeMenu({ edge, onClose, onSave }) {
-  const [labels, setLabels] = useState(() => {
-    const existing = edge?.data?.labels || [];
-    return existing.length > 0 ? existing : [{ read: "", write: "", direction: "" }];
-  });
+export default function EdgeMenu({ edge, onClose, onSave, onDelete }) {
+  const savedLabels = edge?.data?.labels || [];
+  const [labels, setLabels] = useState(
+    savedLabels.length > 0 ? savedLabels : [{ read: "", write: "", direction: "" }]
+  );
 
   const updateLabel = (index, key, value) => {
     setLabels((prev) =>
@@ -21,7 +21,6 @@ export default function EdgeMenu({ edge, onClose, onSave }) {
     setLabels((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // A valid rule has all three fields filled
   const hasValidRule = labels.some(
     (lbl) =>
       lbl.read.trim() !== "" &&
@@ -32,6 +31,19 @@ export default function EdgeMenu({ edge, onClose, onSave }) {
   const handleSave = () => {
     if (!hasValidRule) return;
     onSave(edge.id, labels);
+    onClose();
+  };
+
+  const handleCancel = () => {
+    if (!savedLabels || savedLabels.length === 0 || !savedLabels.some(
+      lbl => lbl.read && lbl.write && lbl.direction
+    )) {
+      // No valid saved rules will delete edge
+      onDelete(edge.id); 
+    } else {
+      // Revert to saved labels
+      setLabels(savedLabels);
+    }
     onClose();
   };
 
@@ -100,7 +112,7 @@ export default function EdgeMenu({ edge, onClose, onSave }) {
           <button onClick={handleSave} disabled={!hasValidRule}>
             Save
           </button>
-          <button onClick={onClose} disabled={!hasValidRule}>
+          <button onClick={handleCancel}>
             Cancel
           </button>
         </div>

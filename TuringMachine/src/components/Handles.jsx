@@ -1,11 +1,11 @@
 import React from "react";
 import { Handle, Position } from "reactflow";
 
-export default function Handles() {
+export default function Handles({ showLeft }) {
   return (
     <>
-      <Handle type="target" position={Position.Left} id="L" style={{ left: '4%', top: '50%', transform: 'translate(-50%, -50%)' }} />
-      <Handle type="source" position={Position.Left} id="L" style={{ left: '4%', top: '50%', transform: 'translate(-50%, -50%)' }} />
+      {showLeft && <Handle type="target" position={Position.Left} id="L" style={{ left: '4%', top: '50%', transform: 'translate(-50%, -50%)' }} /> }
+      {showLeft && <Handle type="source" position={Position.Left} id="L" style={{ left: '4%', top: '50%', transform: 'translate(-50%, -50%)' }} />}
 
       <Handle type="target" position={Position.Right} id="R" style={{ left: '96%', top: '50%', transform: 'translate(-50%, -50%)' }} />
       <Handle type="source" position={Position.Right} id="R" style={{ left: '96%', top: '50%', transform: 'translate(-50%, -50%)' }} />

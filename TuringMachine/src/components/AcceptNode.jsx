@@ -1,5 +1,4 @@
 import React, { useRef, useLayoutEffect } from "react";
-import { Handle, Position } from "reactflow";
 import "../Visualiser.css";
 import Handles from "./Handles";
 
@@ -34,7 +33,7 @@ export default function AcceptNode({ data = {} }) {
           </div>
         )}
       </div>
-      <Handles />
+      <Handles showLeft={true}/>
       </div>
   );
 }

@@ -210,6 +210,12 @@ export default function DiagramContainer() {
     );
     setSelectedEdge(null);
   };
+
+  const handleDeleteEdge = (id) => {
+    setEdges((eds) => eds.filter((e) => e.id !== id));
+    setSelectedEdge(null);
+  };
+
   
 
   const handleClearAll = () => {
@@ -263,6 +269,7 @@ export default function DiagramContainer() {
             edge={selectedEdge}
             onClose={() => setSelectedEdge(null)}
             onSave={handleSaveEdgeEdit}
+            onDelete={handleDeleteEdge}
           />
         )}
       </div>
