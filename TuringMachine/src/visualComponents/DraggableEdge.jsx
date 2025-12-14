@@ -34,8 +34,8 @@ export default function DraggableEdge({
   const baseX = sourceX * (1 - t) + targetX * t;
   const baseY = sourceY * (1 - t) + targetY * t;
 
-  const px = baseX + dxOffset;
-  const py = baseY + dyOffset;
+  const px = edge?.data?.px !== undefined ? edge.data.px + dxOffset : sourceX * (1 - t) + targetX * t + dxOffset;
+  const py = edge?.data?.py !== undefined ? edge.data.py + dyOffset : sourceY * (1 - t) + targetY * t + dyOffset;
 
   const { cx, cy } = findControlPoint(sourceX, sourceY, targetX, targetY, px, py, t);
 

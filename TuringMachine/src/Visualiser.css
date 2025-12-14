@@ -148,6 +148,11 @@
   max-height: 300px;
   overflow: auto;
 }
+.history-controls {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+}
 
 .reactflow-wrapper {
   width: 800px;
@@ -245,8 +250,23 @@
 
 .playback-controls {
   position: absolute;
-  bottom: -20px;
+  bottom: 5px;
 }
+
+.tape-input {
+  width: 300px;
+  padding: 8px 12px;
+  font-size: 1rem;
+  border: 2px solid #333;
+  border-radius: 6px;
+  outline: none;
+  text-align: center;
+}
+
+.tape-input:focus {
+  border-color: #1a73e8;
+}
+
 
 /* ===========================
    POPUP

@@ -6,7 +6,7 @@ export default function TapeDisplay({ tape, head }) {
   const cellWidth = 40;
 
   return (
-    <> {/* Use a Fragment to return multiple elements */}
+    <> 
       <div className="tape-header">
         <div className="tape-pointer">
           <div className="tape-start-label">START</div>
@@ -14,7 +14,6 @@ export default function TapeDisplay({ tape, head }) {
         </div>
       </div>
 
-      {/* The wrapper now only contains the tape */}
       <div className="tape-wrapper">
         <div
           className="tape"

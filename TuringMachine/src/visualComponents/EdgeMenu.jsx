@@ -99,7 +99,7 @@ export default function EdgeMenu({ edge, onClose, onSave, onDelete }) {
         ))}
 
         <button className="add-label-button" onClick={addLabel}>
-          Add Another rule
+          Add new rule
         </button>
 
         {!hasValidRule && (
