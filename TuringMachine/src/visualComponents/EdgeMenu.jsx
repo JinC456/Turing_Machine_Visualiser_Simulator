@@ -51,6 +51,7 @@ export default function EdgeMenu({ edge, onClose, onSave, onDelete }) {
     <div className="popup-overlay">
       <div className="popup-menu">
         <h3>Edit Edge</h3>
+          <h4>Use * to indicate blank</h4>
 
         {labels.map((label, index) => (
           <div key={index} className="label-row">

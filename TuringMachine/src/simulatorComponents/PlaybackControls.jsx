@@ -6,19 +6,24 @@ export default function PlaybackControls({
   onStart,
   onStop,
   onReset,
-  isRunning
+  isRunning,
+  isFinished, // New prop to lock controls
+  canUndo
 }) {
   return (
     <div className="playback-controls">
-      <button onClick={onStepBack} disabled={isRunning}>
+      {/* Disable Step Back if running OR finished */}
+      <button onClick={onStepBack} disabled={isRunning || isFinished || !canUndo}>
         ◀
       </button>
 
-      <button onClick={onStepForward} disabled={isRunning}>
+      {/* Disable Step Forward if running OR finished */}
+      <button onClick={onStepForward} disabled={isRunning || isFinished}>
         ▶
       </button>
 
-      <button onClick={onStart} disabled={isRunning}>
+      {/* Disable Start if running OR finished */}
+      <button onClick={onStart} disabled={isRunning || isFinished}>
         Start
       </button>
 

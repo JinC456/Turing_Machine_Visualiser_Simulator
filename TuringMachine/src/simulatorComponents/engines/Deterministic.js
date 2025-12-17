@@ -10,13 +10,16 @@ export function getNodeLabel(node) {
   return node?.data?.label || node?.id || "";
 }
 
-
 export function findTransition(currentNodeId, readSymbol, edges) {
   const outgoing = edges.filter(e => e.source === currentNodeId);
 
   for (const edge of outgoing) {
     const labels = edge.data?.labels || [];
-    const rule = labels.find(l => l.read === readSymbol);
+    
+    // Match if exact match OR if rule is '*' and tape is empty
+    const rule = labels.find(l => 
+      l.read === readSymbol || (l.read === '*' && readSymbol === "")
+    );
 
     if (rule) {
       return {
@@ -33,21 +36,10 @@ export function isHalt(transition) {
   return transition === null;
 }
 
-
-export function stepTM({
-  currentNodeId,
-  tape,
-  head,
-  nodes,
-  edges
-}) {
+export function stepTM({ currentNodeId, tape, head, nodes, edges }) {
   const read = tape[head] || "";
 
-  const transition = findTransition(
-    currentNodeId,
-    read,
-    edges
-  );
+  const transition = findTransition(currentNodeId, read, edges);
 
   if (isHalt(transition)) {
     return {
