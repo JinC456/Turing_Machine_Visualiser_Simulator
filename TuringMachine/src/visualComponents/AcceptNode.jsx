@@ -24,8 +24,8 @@ export default function AcceptNode({ data = {} }) {
   }, [data.label]);
   
   return (
-    // creates handle for edge to connect to and shift toward middle of node
-    <div className="node accept">
+    // Add conditional "active" class here
+    <div className={`node accept ${data.isActive ? 'active' : ''}`}>
       <div className="inner-circle">
         {data?.label && (
           <div ref={labelRef} className="node-label">
@@ -37,3 +37,4 @@ export default function AcceptNode({ data = {} }) {
       </div>
   );
 }
+

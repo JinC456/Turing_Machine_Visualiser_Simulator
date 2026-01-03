@@ -53,6 +53,13 @@
   padding: 2px;
 }
 
+.node.active {
+  border: 3px solid #cde81a; /* bright yellow-green */
+  box-shadow: 0 0 15px rgba(205, 232, 26, 0.8);
+  transform: scale(1.1);
+  transition: all 0.2s ease;
+}
+
 .inner-circle {
   width: 34px;
   height: 34px;
@@ -119,6 +126,18 @@
 .edge-path.selected {
   stroke: black;
   stroke-width: 3;
+}
+
+.edge-path.active {
+  stroke: #cde81a; /* same as node highlight */
+  stroke-width: 4;
+  filter: drop-shadow(0 0 8px rgba(205, 232, 26, 0.6));
+  transition: stroke 0.2s ease, stroke-width 0.2s ease, filter 0.2s ease;
+}
+
+.edge-path.active ~ marker {
+  fill: #cde81a;
+  stroke: #cde81a;
 }
 
 .edge-hitbox {

@@ -24,8 +24,8 @@ export default function NormalNode({ data = {} }) {
   }, [data.label]);
   
   return (
-    // creates handle for edge to connect to and shift toward middle of node
-    <div className="node normal">
+    // Add conditional "active" class here
+    <div className={`node normal ${data.isActive ? 'active' : ''}`}>
       {data?.label && (
         <div ref={labelRef} className="node-label">
           {data.label}

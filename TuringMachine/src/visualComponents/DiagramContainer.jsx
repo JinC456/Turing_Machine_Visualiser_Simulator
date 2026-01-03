@@ -4,7 +4,6 @@ import ReactFlow, {
   Background,
   Controls,
   useReactFlow,
-  // Note: We removed useNodesState/useEdgesState imports because they are managed in the parent now
 } from "reactflow";
 import "reactflow/dist/style.css";
 
@@ -17,36 +16,36 @@ import DraggableEdge, { HistoryContext } from "./DraggableEdge";
 import NodeEditMenu from "./NodeEditMenu";
 import EdgeMenu from "./EdgeMenu";
 
-// Custom nodes
 const nodeTypes = {
   start: StartNode,
   normal: NormalNode,
   accept: AcceptNode,
 };
 
-// Custom edges
 const edgeTypes = {
   draggable: DraggableEdge,
 };
 
-// 1. ACCEPT PROPS from the parent (Visualiser.jsx)
 export default function DiagramContainer({
   nodes,
   edges,
   onNodesChange,
   onEdgesChange,
   setNodes,
-  setEdges
+  setEdges,
+  activeNodeId,
+  activeEdgeId,
+  currentSymbol,
 }) {
   const { project } = useReactFlow();
+
   const [selectedNode, setSelectedNode] = useState(null);
   const [selectedEdge, setSelectedEdge] = useState(null);
 
-  // History stacks
   const [history, setHistory] = useState([]);
   const [future, setFuture] = useState([]);
 
-  // --- HISTORY LOGIC ---
+  // --- HISTORY ---
   const pushToHistory = useCallback(() => {
     const clonedNodes = nodes.map((n) => ({ ...n, data: { ...n.data } }));
     const clonedEdges = edges.map((e) => ({
@@ -57,17 +56,16 @@ export default function DiagramContainer({
       },
     }));
 
-    setHistory((h) => {
-      const newHistory = [...h, { nodes: clonedNodes, edges: clonedEdges }];
-      return newHistory.slice(-10);
-    });
-    setFuture([]); // clear redo stack
-  }, [nodes, edges]); // Dependencies are now the props
+    setHistory((h) =>
+      [...h, { nodes: clonedNodes, edges: clonedEdges }].slice(-10)
+    );
+    setFuture([]);
+  }, [nodes, edges]);
 
   const handleUndo = () => {
     if (history.length === 0) return;
     const previous = history[history.length - 1];
-    setHistory((h) => h.slice(0, h.length - 1));
+    setHistory((h) => h.slice(0, -1));
     setFuture((f) => [...f, { nodes, edges }]);
     setNodes(previous.nodes);
     setEdges(previous.edges);
@@ -76,13 +74,13 @@ export default function DiagramContainer({
   const handleRedo = () => {
     if (future.length === 0) return;
     const next = future[future.length - 1];
-    setFuture((f) => f.slice(0, f.length - 1));
+    setFuture((f) => f.slice(0, -1));
     setHistory((h) => [...h, { nodes, edges }]);
     setNodes(next.nodes);
     setEdges(next.edges);
   };
 
-  // --- CONNECT LOGIC ---
+  // --- CONNECT ---
   const onConnect = useCallback(
     (params) => {
       pushToHistory();
@@ -92,16 +90,16 @@ export default function DiagramContainer({
 
       if (isSelfLoop) {
         const node = nodes.find((n) => n.id === params.source);
-        if (!node) return; // Safety check
+        if (!node) return;
+
         const nodeWidth = node.width || 40;
-        
         sourceX = node.position.x + nodeWidth * 0.15;
         sourceY = node.position.y;
         targetX = node.position.x + nodeWidth * 0.85;
         targetY = node.position.y;
-        const loopOffset = nodeWidth * 0.6;
+
         px = node.position.x + nodeWidth / 2;
-        py = node.position.y - loopOffset;
+        py = node.position.y - nodeWidth * 0.6;
       }
 
       const newEdge = {
@@ -120,7 +118,7 @@ export default function DiagramContainer({
     [nodes, pushToHistory, setEdges]
   );
 
-  // --- DRAG & DROP LOGIC ---
+  // --- DRAG & DROP ---
   const onDragOver = useCallback((event) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
@@ -138,14 +136,12 @@ export default function DiagramContainer({
         y: event.clientY - bounds.top,
       });
 
-      const nodeWidth = 40;
-      const nodeHeight = 40;
-      position.x -= nodeWidth / 2;
-      position.y -= nodeHeight / 2;
+      position.x -= 20;
+      position.y -= 20;
 
       const newNode = {
         id: `${Date.now()}`,
-        type, // This ensures type is 'start', 'normal', etc.
+        type,
         position,
         data: { label: `S${nodes.length}` },
       };
@@ -156,8 +152,25 @@ export default function DiagramContainer({
     [project, pushToHistory, setNodes, nodes.length]
   );
 
-  // --- INTERACTION LOGIC ---
+  // --- NODE INTERACTIONS ---
+
   const onNodeDoubleClick = (event, node) => {
+    event.preventDefault();
+
+    if (node.type !== "normal" && node.type !== "accept") return;
+
+    pushToHistory();
+
+    setNodes((nds) =>
+      nds.map((n) =>
+        n.id === node.id
+          ? { ...n, type: n.type === "normal" ? "accept" : "normal" }
+          : n
+      )
+    );
+  };
+
+  const onNodeContextMenu = (event, node) => {
     event.preventDefault();
     setSelectedNode(node);
     setSelectedEdge(null);
@@ -169,11 +182,9 @@ export default function DiagramContainer({
     setSelectedNode(null);
   };
 
+  // --- SAVE / DELETE ---
   const handleSaveNodeEdit = (id, newLabel, newType) => {
-    const node = nodes.find((n) => n.id === id);
-    if (node && node.data.label && node.data.label.trim() !== "") {
-      pushToHistory();
-    }
+    pushToHistory();
     setNodes((nds) =>
       nds.map((n) =>
         n.id === id
@@ -185,10 +196,7 @@ export default function DiagramContainer({
   };
 
   const handleSaveEdgeEdit = (id, newLabels) => {
-    const edge = edges.find((e) => e.id === id);
-    if (edge && edge.data.labels && edge.data.labels.length > 0) {
-      pushToHistory();
-    }
+    pushToHistory();
     setEdges((eds) =>
       eds.map((e) =>
         e.id === id ? { ...e, data: { ...e.data, labels: newLabels } } : e
@@ -198,6 +206,7 @@ export default function DiagramContainer({
   };
 
   const handleDeleteEdge = (id) => {
+    pushToHistory();
     setEdges((eds) => eds.filter((e) => e.id !== id));
     setSelectedEdge(null);
   };
@@ -208,6 +217,32 @@ export default function DiagramContainer({
     setEdges([]);
   };
 
+
+  const decoratedNodes = nodes.map((node) => ({
+    ...node,
+    data: {
+      ...node.data,
+      isActive: node.id === activeNodeId,
+    },
+  }));
+
+  const decoratedEdges = edges.map((edge) => {
+    const isActive = edge.id === activeEdgeId;
+    return {
+      ...edge,
+      markerEnd: 
+      {
+        ...edge.markerEnd,
+        color: isActive ? "#c7b52a" : "#333", 
+      },
+      data: {
+        ...edge.data,
+        isActive: isActive,
+        activeSymbol: isActive ? currentSymbol : null, // Add this
+      },
+    };
+  });
+
   return (
     <HistoryContext.Provider value={pushToHistory}>
       <div className="diagram-container flex">
@@ -215,13 +250,14 @@ export default function DiagramContainer({
 
         <div className="reactflow-wrapper">
           <ReactFlow
-            nodes={nodes}
-            edges={edges}
+            nodes={decoratedNodes}
+            edges={decoratedEdges}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onNodeDoubleClick={onNodeDoubleClick}
+            onNodeContextMenu={onNodeContextMenu}
             onEdgeDoubleClick={onEdgeDoubleClick}
             onConnect={onConnect}
             onDrop={onDrop}

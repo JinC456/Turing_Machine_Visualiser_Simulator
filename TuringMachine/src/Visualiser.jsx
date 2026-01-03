@@ -13,6 +13,8 @@ export default function Visualiser() {
 
   // 2. The "Active State" (Which node is currently active?)
   const [activeNodeId, setActiveNodeId] = useState(null);
+  const [activeEdgeId, setActiveEdgeId] = useState(null);
+  const [currentSymbol, setCurrentSymbol] = useState("");
 
   return (
     <ReactFlowProvider>
@@ -25,6 +27,8 @@ export default function Visualiser() {
             edges={edges}
             activeNodeId={activeNodeId}
             setActiveNodeId={setActiveNodeId}
+            setActiveEdgeId={setActiveEdgeId}
+            setCurrentSymbol={setCurrentSymbol}
           />
         </div>
 
@@ -38,6 +42,8 @@ export default function Visualiser() {
             setNodes={setNodes}
             setEdges={setEdges}
             activeNodeId={activeNodeId}
+            activeEdgeId={activeEdgeId}
+            currentSymbol={currentSymbol}
           />
         </div>
 

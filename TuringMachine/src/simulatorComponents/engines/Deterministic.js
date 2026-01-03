@@ -10,19 +10,22 @@ export function getNodeLabel(node) {
   return node?.data?.label || node?.id || "";
 }
 
+/**
+ * Finds the transition (edge + rule) for the current state and read symbol
+ */
 export function findTransition(currentNodeId, readSymbol, edges) {
   const outgoing = edges.filter(e => e.source === currentNodeId);
 
   for (const edge of outgoing) {
     const labels = edge.data?.labels || [];
-    
-    // Match if exact match OR if rule is '*' and tape is empty
-    const rule = labels.find(l => 
+
+    const rule = labels.find(l =>
       l.read === readSymbol || (l.read === '*' && readSymbol === "")
     );
 
     if (rule) {
       return {
+        edgeId: edge.id,     // 🔴 identify the edge
         toNodeId: edge.target,
         rule
       };
@@ -50,16 +53,21 @@ export function stepTM({ currentNodeId, tape, head, nodes, edges }) {
     };
   }
 
-  const { toNodeId, rule } = transition;
+  const { toNodeId, rule, edgeId } = transition;
   const nextNode = nodes.find(n => n.id === toNodeId);
 
   return {
     halted: false,
+
     read,
     write: rule.write,
     direction: rule.direction,
+
     fromNodeId: currentNodeId,
     toNodeId,
+
+    edgeId,                 // 🔴 expose active transition
+
     isAccept: isAcceptNode(nextNode),
     rule
   };

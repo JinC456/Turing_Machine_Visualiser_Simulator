@@ -3,23 +3,24 @@ import PlaybackControls from "./PlaybackControls";
 import TapeDisplay from "./TapeDisplay";
 import { useTuringMachine } from "./TuringMachineLogic"; 
 
-export default function TapeContainer({ nodes, edges, activeNodeId, setActiveNodeId }) {
+export default function TapeContainer({ nodes, edges, activeNodeId, setActiveNodeId, setActiveEdgeId, setCurrentSymbol }) {
   const tm = useTuringMachine(13);
 
-  // Sync active node up to parent
   useEffect(() => {
     setActiveNodeId(tm.activeNodeId);
-  }, [tm.activeNodeId, setActiveNodeId]);
-
+    setActiveEdgeId(tm.activeEdgeId); 
+    setCurrentSymbol(tm.tape[tm.head] || "");
+  }, [tm.activeNodeId, tm.activeEdgeId, tm.tape, tm.head, setActiveNodeId, setActiveEdgeId, setCurrentSymbol]);
+  
+  
   const [isRunning, setIsRunning] = useState(false);
   const [inputValue, setInputValue] = useState("");
 
-  // Determine if the machine is in a finished state (Accept or Error)
+
   const isFinished = !!(tm.error || tm.success);
 
-  // Initialize Tape from Input
   useEffect(() => {
-    if (isRunning || isFinished) return; // Don't update tape if running or finished
+    if (isRunning || isFinished) return; 
     
     const newTape = Array(13).fill(""); 
     const chars = inputValue.split("");
@@ -27,7 +28,6 @@ export default function TapeContainer({ nodes, edges, activeNodeId, setActiveNod
     
     chars.forEach((char, i) => { 
       if (startPos + i < 13) {
-        // Interpret * as empty string
         newTape[startPos + i] = char === "*" ? "" : char; 
       }
     });
@@ -36,12 +36,11 @@ export default function TapeContainer({ nodes, edges, activeNodeId, setActiveNod
     tm.setHead(startPos);
   }, [inputValue, isRunning, isFinished]); 
 
-  // Run Loop
   useEffect(() => {
     let interval;
     if (isRunning) {
       if (isFinished) {
-        setIsRunning(false); // Stop the loop if finished
+        setIsRunning(false); 
       } else {
         interval = setInterval(() => tm.stepForward(nodes, edges), 500);
       }
@@ -61,7 +60,7 @@ export default function TapeContainer({ nodes, edges, activeNodeId, setActiveNod
         type="text"
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
-        disabled={isRunning || isFinished} // Lock input when finished
+        disabled={isRunning || isFinished}
         placeholder="Input string... (use * for blank)"
       />
 
@@ -69,18 +68,15 @@ export default function TapeContainer({ nodes, edges, activeNodeId, setActiveNod
         onStepForward={() => tm.stepForward(nodes, edges)}
         onStepBack={tm.stepBack} 
         onStart={() => {
-            // Only start if not currently finished. 
-            // The user must press Reset to clear the finished state.
             if (!isFinished) setIsRunning(true);
         }}
         onStop={() => setIsRunning(false)}
         onReset={() => { 
             setIsRunning(false); 
             tm.reset(); 
-            // We do NOT clear inputValue here so the user can rerun the same input easily
         }}
         isRunning={isRunning}
-        isFinished={isFinished} // Pass down to lock buttons
+        isFinished={isFinished} 
         canUndo={tm.canUndo} 
       />
     </div>

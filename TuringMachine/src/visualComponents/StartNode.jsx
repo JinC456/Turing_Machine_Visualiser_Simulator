@@ -24,8 +24,8 @@ export default function StartNode({ data = {} }) {
   }, [data.label]);
   
   return (
-    // creates handle for edge to connect to and shift toward middle of node
-    <div className="node start">
+    // Add conditional "active" class here
+    <div className={`node start ${data.isActive ? 'active' : ''}`}>
       <span className="arrow">→</span>
 
       {data?.label && (
@@ -35,7 +35,7 @@ export default function StartNode({ data = {} }) {
       )}
 
       <Handles showLeft={false} />
-
     </div>
   );
 }
+
