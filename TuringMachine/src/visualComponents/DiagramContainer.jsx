@@ -93,14 +93,22 @@ export default function DiagramContainer({
         if (!node) return;
 
         const nodeWidth = node.width || 40;
-        sourceX = node.position.x + nodeWidth * 0.15;
-        sourceY = node.position.y;
-        targetX = node.position.x + nodeWidth * 0.85;
-        targetY = node.position.y;
+        const nodeHeight = node.height || 40;
 
-        px = node.position.x + nodeWidth / 2;
-        py = node.position.y - nodeWidth * 0.6;
+        // Source and target slightly offset horizontally
+        sourceX = node.position.x + nodeWidth * 0.25;
+        targetX = node.position.x + nodeWidth * 0.75;
+
+        // Vertically align with node center
+        sourceY = node.position.y + nodeHeight / 2;
+        targetY = node.position.y + nodeHeight / 2;
+
+        // Place handle above node, distance proportional to node size
+        const loopHeight = nodeHeight * 1.5; // makes it scale with node
+        py = node.position.y - loopHeight; // handle peak above node
+        px = node.position.x + nodeWidth / 2; // horizontally centered
       }
+
 
       const newEdge = {
         ...params,

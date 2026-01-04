@@ -3,21 +3,34 @@ import { useReactFlow } from 'reactflow';
 
 export const HistoryContext = createContext(null);
 
+// Helper to decide direction based on the handle ID
+function getLoopDirection(handleId) {
+  if (!handleId) return 'top';
+  if (handleId.includes('B')) return 'bottom';
+  if (handleId.includes('T')) return 'top';
+  if (handleId.includes('L')) return 'left';
+  if (handleId.includes('R')) return 'right';
+  return 'top';
+}
+
 function findControlPoint(sourceX, sourceY, targetX, targetY, px, py, t) {
-  const cx =
-    (px - (1 - t) ** 2 * sourceX - t ** 2 * targetX) / (2 * t * (1 - t));
-  const cy =
-    (py - (1 - t) ** 2 * sourceY - t ** 2 * targetY) / (2 * t * (1 - t));
+  if (sourceX === targetX && sourceY === targetY) {
+    return { cx: px, cy: py };
+  }
+  const cx = (px - (1 - t) ** 2 * sourceX - t ** 2 * targetX) / (2 * t * (1 - t));
+  const cy = (py - (1 - t) ** 2 * sourceY - t ** 2 * targetY) / (2 * t * (1 - t));
   return { cx, cy };
 }
 
 export default function DraggableEdge({
   id,
+  source,
+  target,
   sourceX,
   sourceY,
   targetX,
   targetY,
-  markerStart,
+  sourceHandleId,
   markerEnd,
   data,
   selected,
@@ -26,23 +39,72 @@ export default function DraggableEdge({
   const pushToHistory = useContext(HistoryContext);
 
   const edge = getEdge(id);
+  const isSelfLoop = source === target;
+  const dir = isSelfLoop ? getLoopDirection(sourceHandleId) : 'top';
 
   const t = edge?.data?.t ?? 0.5;
   const dxOffset = edge?.data?.dxOffset ?? 0;
   const dyOffset = edge?.data?.dyOffset ?? 0;
 
-  const px = edge?.data?.px !== undefined ? edge.data.px + dxOffset : sourceX * (1 - t) + targetX * t + dxOffset;
-  const py = edge?.data?.py !== undefined ? edge.data.py + dyOffset : sourceY * (1 - t) + targetY * t + dyOffset;
+  let px, py;
+  let path;
 
-  const { cx, cy } = findControlPoint(sourceX, sourceY, targetX, targetY, px, py, t);
+  if (isSelfLoop) {
+    const loopDist = 60; 
+    let baseX = sourceX;
+    let baseY = sourceY;
 
-  const path = `M${sourceX},${sourceY} Q${cx},${cy} ${targetX},${targetY}`;
+    // 1. Position Handle based on Direction
+    if (dir === 'top')    baseY -= loopDist;
+    if (dir === 'bottom') baseY += loopDist;
+    if (dir === 'left')   baseX -= loopDist;
+    if (dir === 'right')  baseX += loopDist;
+
+    px = baseX + dxOffset;
+    py = baseY + dyOffset;
+
+    const P0 = { x: sourceX, y: sourceY };
+    const P3 = { x: targetX, y: targetY };
+    const H = { x: px, y: py };
+
+    const spread = 45; 
+    let C1 = { x: H.x, y: H.y };
+
+    // 2. Determine Orientation to prevent twisting
+    // If the connection is reversed (e.g. Right handle to Left handle), we flip the spread direction.
+    const isReversedX = P0.x > P3.x; 
+    const isReversedY = P0.y > P3.y;
+
+    if (dir === 'top' || dir === 'bottom') {
+      // For vertical loops, spread C1 horizontally towards P0
+      if (isReversedX) C1.x += spread; // P0 is Right -> spread Right
+      else C1.x -= spread;             // P0 is Left -> spread Left (Default)
+    } else {
+      // For horizontal loops, spread C1 vertically towards P0
+      if (isReversedY) C1.y += spread; // P0 is Bottom -> spread Down
+      else C1.y -= spread;             // P0 is Top -> spread Up (Default)
+    }
+
+    // "Method 2" formula to force curve through H
+    const C2 = {
+      x: (H.x - 0.125 * P0.x - 0.375 * C1.x - 0.125 * P3.x) / 0.375,
+      y: (H.y - 0.125 * P0.y - 0.375 * C1.y - 0.125 * P3.y) / 0.375,
+    };
+
+    path = `M${P0.x},${P0.y} C${C1.x},${C1.y} ${C2.x},${C2.y} ${P3.x},${P3.y}`;
+  } else {
+    // Standard Quadratic for normal edges
+    px = edge?.data?.px !== undefined ? edge.data.px + dxOffset : sourceX * (1 - t) + targetX * t + dxOffset;
+    py = edge?.data?.py !== undefined ? edge.data.py + dyOffset : sourceY * (1 - t) + targetY * t + dyOffset;
+
+    const { cx, cy } = findControlPoint(sourceX, sourceY, targetX, targetY, px, py, t);
+    path = `M${sourceX},${sourceY} Q${cx},${cy} ${targetX},${targetY}`;
+  }
 
   const onPointerDown = useCallback((event) => {
     event.stopPropagation();
-    
-    const target = event.target;
-    target.setPointerCapture(event.pointerId);
+    const targetEl = event.target;
+    targetEl.setPointerCapture(event.pointerId);
 
     const zoom = getZoom();
     const startX = event.clientX;
@@ -50,42 +112,38 @@ export default function DraggableEdge({
     const initialDx = dxOffset;
     const initialDy = dyOffset;
 
-    if (pushToHistory) {
-        pushToHistory();
-    }
+    if (pushToHistory) pushToHistory();
 
     const onPointerMove = (moveEvent) => {
-        const deltaX = (moveEvent.clientX - startX) / zoom;
-        const deltaY = (moveEvent.clientY - startY) / zoom;
+      const deltaX = (moveEvent.clientX - startX) / zoom;
+      const deltaY = (moveEvent.clientY - startY) / zoom;
 
-        setEdges((eds) =>
-            eds.map((e) => {
-                if (e.id !== id) return e;
-                return {
-                    ...e,
-                    data: {
-                        ...e.data,
-                        dxOffset: initialDx + deltaX,
-                        dyOffset: initialDy + deltaY,
-                        t,
-                    },
-                };
-            })
-        );
+      setEdges((eds) =>
+        eds.map((e) => {
+          if (e.id !== id) return e;
+          return {
+            ...e,
+            data: {
+              ...e.data,
+              dxOffset: initialDx + deltaX,
+              dyOffset: initialDy + deltaY,
+            },
+          };
+        })
+      );
     };
 
     const onPointerUp = (upEvent) => {
-        target.releasePointerCapture(upEvent.pointerId);
-        target.removeEventListener('pointermove', onPointerMove);
-        target.removeEventListener('pointerup', onPointerUp);
+      targetEl.releasePointerCapture(upEvent.pointerId);
+      targetEl.removeEventListener('pointermove', onPointerMove);
+      targetEl.removeEventListener('pointerup', onPointerUp);
     };
 
-    target.addEventListener('pointermove', onPointerMove);
-    target.addEventListener('pointerup', onPointerUp);
-  }, [id, dxOffset, dyOffset, setEdges, getZoom, pushToHistory, t]);
+    targetEl.addEventListener('pointermove', onPointerMove);
+    targetEl.addEventListener('pointerup', onPointerUp);
+  }, [id, dxOffset, dyOffset, setEdges, getZoom, pushToHistory]);
 
   const labels = edge?.data?.labels ?? [];
-  const labelOffsetY = -15;
   const labelSpacing = 14;
 
   return (
@@ -93,41 +151,75 @@ export default function DraggableEdge({
       <path
         d={path}
         className={`edge-path ${selected ? 'selected' : ''} ${data?.isActive ? 'active' : ''}`}
-        markerStart={markerStart}
         markerEnd={markerEnd}
       />
-      
       <path d={path} className="edge-hitbox" />
-
+      
       {labels.map((label, index) => {
-        // Define the logic to check if this specific rule is the one being used
         const isRuleActive = data?.isActive && (
           label.read === data.activeSymbol || 
           (label.read === '*' && data.activeSymbol === "")
         );
 
+        // 3. Dynamic Label Positioning based on direction
+        let lx = px;
+        let ly = py;
+        
+        const totalHeight = labels.length * labelSpacing;
+        const centeredY = py - (totalHeight / 2) + (index * labelSpacing) + (labelSpacing / 2);
+
+        if (dir === 'top') {
+           ly = py - 15 - (index * labelSpacing); 
+        } else if (dir === 'bottom') {
+           ly = py + 25 + (index * labelSpacing);
+        } else if (dir === 'left') {
+           lx = px - 35; 
+           ly = centeredY;
+        } else if (dir === 'right') {
+           lx = px + 35; 
+           ly = centeredY;
+        } else {
+           ly = py - 15 - (index * labelSpacing);
+        }
+
         return (
-          <text
-            key={index}
-            x={px}
-            y={py + labelOffsetY - index * labelSpacing}
-            textAnchor="middle"
-            fill={isRuleActive ? "#cde81a" : "#000"} // Highlight color matching your CSS
-            fontWeight={isRuleActive ? "bold" : "normal"}
-            fontSize={isRuleActive ? 14 : 12}
-            style={{ transition: "all 0.2s ease", pointerEvents: "none", userSelect: "none" }}
-          >
-            {`${label.read}, ${label.write}, ${label.direction}`}
-          </text>
+          <g key={index} style={{ pointerEvents: "none", userSelect: "none" }}>
+            {/* Outline for readability */}
+            <text
+              x={lx}
+              y={ly}
+              textAnchor="middle"
+              stroke="white"
+              strokeWidth="3"
+              fontSize={isRuleActive ? 14 : 12}
+              fontWeight={isRuleActive ? "bold" : "normal"}
+              style={{ transition: "all 0.2s ease" }}
+            >
+              {`${label.read}, ${label.write}, ${label.direction}`}
+            </text>
+            
+            <text
+              x={lx}
+              y={ly}
+              textAnchor="middle"
+              fill={isRuleActive ? "#cde81a" : "#000"}
+              fontSize={isRuleActive ? 14 : 12}
+              fontWeight={isRuleActive ? "bold" : "normal"}
+              style={{ transition: "all 0.2s ease" }}
+            >
+              {`${label.read}, ${label.write}, ${label.direction}`}
+            </text>
+          </g>
         );
       })}
 
       {selected && (
         <circle 
-            className="edge-handle"
-            cx={px}
-            cy={py}
-            onPointerDown={onPointerDown}
+          className="edge-handle" 
+          cx={px} 
+          cy={py} 
+          onPointerDown={onPointerDown} 
+          r={5}
         />
       )}
     </>
