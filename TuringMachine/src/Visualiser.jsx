@@ -1,26 +1,23 @@
 import React, { useState } from 'react';
 import { ReactFlowProvider, useNodesState, useEdgesState } from 'reactflow';
 
-// Update these imports to match your new folder structure
 import TapeContainer from './simulatorComponents/TapeContainer';
 import DiagramContainer from './visualComponents/DiagramContainer';
 import './Visualiser.css';
 
 export default function Visualiser() {
-  // 1. The "Program" (Nodes & Edges) lives here
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
-  // 2. The "Active State" (Which node is currently active?)
   const [activeNodeId, setActiveNodeId] = useState(null);
   const [activeEdgeId, setActiveEdgeId] = useState(null);
   const [currentSymbol, setCurrentSymbol] = useState("");
+  const [stepCount, setStepCount] = useState(0);
 
   return (
     <ReactFlowProvider>
       <div className="visualiser">
         
-        {/* The Simulator: Needs to know the Rules (edges) and Current State (activeNodeId) */}
         <div className="tape-container-wrapper">
           <TapeContainer 
             nodes={nodes}
@@ -29,10 +26,10 @@ export default function Visualiser() {
             setActiveNodeId={setActiveNodeId}
             setActiveEdgeId={setActiveEdgeId}
             setCurrentSymbol={setCurrentSymbol}
+            setStepCount={setStepCount} 
           />
         </div>
 
-        {/* The Editor: Needs to be able to change the Rules */}
         <div className="diagram-container-wrapper">
           <DiagramContainer 
             nodes={nodes} 
@@ -44,6 +41,7 @@ export default function Visualiser() {
             activeNodeId={activeNodeId}
             activeEdgeId={activeEdgeId}
             currentSymbol={currentSymbol}
+            stepCount={stepCount} 
           />
         </div>
 

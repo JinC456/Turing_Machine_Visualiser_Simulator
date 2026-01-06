@@ -36,6 +36,7 @@ export default function DiagramContainer({
   activeNodeId,
   activeEdgeId,
   currentSymbol,
+  stepCount
 }) {
   const { project } = useReactFlow();
 
@@ -95,20 +96,16 @@ export default function DiagramContainer({
         const nodeWidth = node.width || 40;
         const nodeHeight = node.height || 40;
 
-        // Source and target slightly offset horizontally
         sourceX = node.position.x + nodeWidth * 0.25;
         targetX = node.position.x + nodeWidth * 0.75;
 
-        // Vertically align with node center
         sourceY = node.position.y + nodeHeight / 2;
         targetY = node.position.y + nodeHeight / 2;
 
-        // Place handle above node, distance proportional to node size
-        const loopHeight = nodeHeight * 1.5; // makes it scale with node
-        py = node.position.y - loopHeight; // handle peak above node
-        px = node.position.x + nodeWidth / 2; // horizontally centered
+        const loopHeight = nodeHeight * 1.5;
+        py = node.position.y - loopHeight;
+        px = node.position.x + nodeWidth / 2;
       }
-
 
       const newEdge = {
         ...params,
@@ -164,9 +161,7 @@ export default function DiagramContainer({
 
   const onNodeDoubleClick = (event, node) => {
     event.preventDefault();
-
     if (node.type !== "normal" && node.type !== "accept") return;
-
     pushToHistory();
 
     setNodes((nds) =>
@@ -225,7 +220,6 @@ export default function DiagramContainer({
     setEdges([]);
   };
 
-
   const decoratedNodes = nodes.map((node) => ({
     ...node,
     data: {
@@ -246,7 +240,9 @@ export default function DiagramContainer({
       data: {
         ...edge.data,
         isActive: isActive,
-        activeSymbol: isActive ? currentSymbol : null, // Add this
+        activeSymbol: isActive ? currentSymbol : null,
+        // Pass stepCount only if active to trigger re-render
+        stepCount: isActive ? stepCount : null 
       },
     };
   });

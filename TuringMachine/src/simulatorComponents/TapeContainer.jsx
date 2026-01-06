@@ -1,89 +1,140 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import PlaybackControls from "./PlaybackControls";
 import TapeDisplay from "./TapeDisplay";
-import { useTuringMachine } from "./TuringMachineLogic"; 
+import { useTuringMachine } from "./TuringMachineLogic";
 
-export default function TapeContainer({ nodes, edges, activeNodeId, setActiveNodeId, setActiveEdgeId, setCurrentSymbol }) {
+export default function TapeContainer({
+  nodes,
+  edges,
+  activeNodeId,
+  setActiveNodeId,
+  setActiveEdgeId,
+  setCurrentSymbol,
+  setStepCount
+}) {
   const tm = useTuringMachine(13);
 
-  useEffect(() => {
-    setActiveNodeId(tm.activeNodeId);
-    setActiveEdgeId(tm.activeEdgeId); 
-    setCurrentSymbol(tm.tape[tm.head] || "");
-  }, [tm.activeNodeId, tm.activeEdgeId, tm.tape, tm.head, setActiveNodeId, setActiveEdgeId, setCurrentSymbol]);
-  
-  
   const [isRunning, setIsRunning] = useState(false);
   const [inputValue, setInputValue] = useState("");
 
-
   const isFinished = !!(tm.error || tm.success);
 
+  /* ---------- sync active node / symbol / step count ---------- */
   useEffect(() => {
-    if (isRunning || isFinished) return; 
+    setActiveNodeId(tm.activeNodeId);
+    setActiveEdgeId(tm.activeEdgeId);
     
-    // Default size for visual balance, but can grow
+    // Use lastRead (the symbol that caused the transition) 
+    setCurrentSymbol(tm.lastRead !== null ? tm.lastRead : "");
+    
+    // Sync step count to trigger animations
+    setStepCount(tm.stepCount);
+  }, [
+    tm.activeNodeId,
+    tm.activeEdgeId,
+    tm.lastRead,
+    tm.stepCount,
+    setActiveNodeId,
+    setActiveEdgeId,
+    setCurrentSymbol,
+    setStepCount
+  ]);
+
+  /* ---------- initialize tape (ONLY on reset) ---------- */
+  const initializeTape = useCallback(() => {
+    if (tm.canUndo) return; 
+
     const defaultSize = 13;
     const startPos = Math.floor(defaultSize / 2);
-    
     const chars = inputValue.split("");
 
-    // Calculate the size needed to hold the input
-    // If input + startPos exceeds default 13, grow the array
     const requiredSize = Math.max(defaultSize, startPos + chars.length);
-    
-    const newTape = Array(requiredSize).fill(""); 
-    
-    chars.forEach((char, i) => { 
-      newTape[startPos + i] = char === "*" ? "" : char; 
+    const newTape = Array(requiredSize).fill("");
+
+    chars.forEach((char, i) => {
+      newTape[startPos + i] = char === "*" ? "" : char;
     });
-    
+
     tm.setTape(newTape);
     tm.setHead(startPos);
-  }, [inputValue, isRunning, isFinished, tm]); 
+  }, [inputValue, tm]);
 
   useEffect(() => {
-    let interval;
-    if (isRunning) {
-      if (isFinished) {
-        setIsRunning(false); 
-      } else {
-        interval = setInterval(() => tm.stepForward(nodes, edges), 500);
-      }
+    if (!isRunning && !isFinished && !tm.canUndo) {
+        initializeTape();
     }
+  }, [inputValue, isRunning, isFinished, tm.canUndo, initializeTape]);
+
+  /* ---------- auto run ---------- */
+  useEffect(() => {
+    if (!isRunning) return;
+
+    const interval = setInterval(() => {
+      if (!tm.error && !tm.success) {
+        tm.stepForward(nodes, edges);
+      } else {
+        setIsRunning(false);
+      }
+    }, 500);
+
     return () => clearInterval(interval);
-  }, [isRunning, isFinished, tm.stepForward, nodes, edges]);
+  }, [isRunning, tm, nodes, edges]);
+
+  /* ---------- active label ---------- */
+  let activeLabel = ""; 
+  if (tm.activeNodeId) {
+    const node = nodes.find((n) => n.id === tm.activeNodeId);
+    activeLabel = node?.data?.label || ""; 
+  } else {
+    const startNode = nodes.find((n) => n.type === "start");
+    activeLabel = startNode?.data?.label || "START"; 
+  }
+
+  // --- NEW: Handle Clear ---
+  const handleClear = () => {
+    setIsRunning(false);
+    setInputValue(""); // Clear input text
+    tm.reset(); // Reset TM state
+    // The useEffect dependent on inputValue will automatically clear the tape
+  };
 
   return (
     <div className="tape-container">
       {tm.error && <div className="status-message error">Error: {tm.error}</div>}
       {tm.success && <div className="status-message success">Accepted!</div>}
-      
-      <TapeDisplay tape={tm.tape} head={tm.head} />
+
+      <TapeDisplay tape={tm.tape} head={tm.head} activeLabel={activeLabel} />
 
       <input
         className="tape-input"
         type="text"
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
-        disabled={isRunning || isFinished}
+        disabled={isRunning || isFinished || tm.canUndo}
         placeholder="Input string... (use * for blank)"
       />
 
       <PlaybackControls
-        onStepForward={() => tm.stepForward(nodes, edges)}
-        onStepBack={tm.stepBack} 
+        onStepForward={() => {
+          setIsRunning(false);
+          tm.stepForward(nodes, edges);
+        }}
+        onStepBack={() => {
+          setIsRunning(false);
+          tm.stepBack();
+        }}
         onStart={() => {
-            if (!isFinished) setIsRunning(true);
+          if (!isFinished) setIsRunning(true);
         }}
         onStop={() => setIsRunning(false)}
-        onReset={() => { 
-            setIsRunning(false); 
-            tm.reset(); 
+        onReset={() => {
+          setIsRunning(false);
+          tm.reset();
         }}
+        onClear={handleClear} // Pass the handler
         isRunning={isRunning}
-        isFinished={isFinished} 
-        canUndo={tm.canUndo} 
+        isFinished={isFinished}
+        canUndo={tm.canUndo}
       />
     </div>
   );

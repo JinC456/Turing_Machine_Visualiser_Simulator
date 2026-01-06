@@ -9,6 +9,10 @@ export const useTuringMachine = (initialCells = 13) => {
 
   const [activeNodeId, setActiveNodeId] = useState(null);
   const [activeEdgeId, setActiveEdgeId] = useState(null);
+  const [lastRead, setLastRead] = useState(null);
+  
+  // Track step count to force UI updates/animations
+  const [stepCount, setStepCount] = useState(0);
 
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -21,6 +25,8 @@ export const useTuringMachine = (initialCells = 13) => {
     setHead(initialHead);
     setActiveNodeId(null);
     setActiveEdgeId(null);
+    setLastRead(null);
+    setStepCount(0);
     setError(null);
     setSuccess(false);
     setHistory([]);
@@ -37,6 +43,8 @@ export const useTuringMachine = (initialCells = 13) => {
       setHead(previous.head);
       setActiveNodeId(previous.activeNodeId);
       setActiveEdgeId(previous.activeEdgeId);
+      setLastRead(previous.lastRead);
+      setStepCount(previous.stepCount);
       setError(null);
       setSuccess(false);
 
@@ -68,7 +76,9 @@ export const useTuringMachine = (initialCells = 13) => {
         tape: [...tape],
         head,
         activeNodeId: currentState,
-        activeEdgeId
+        activeEdgeId,
+        lastRead,
+        stepCount
       }
     ]);
 
@@ -80,26 +90,23 @@ export const useTuringMachine = (initialCells = 13) => {
       edges
     });
 
-    // Halted
     if (result.halted) {
       setActiveEdgeId(null);
       setError(result.reason);
       return;
     }
 
-    // --- WRITE ---
+    // --- WRITE & MOVE ---
     let newTape = [...tape];
     newTape[head] = result.write === '*' ? "" : result.write;
 
-    // --- MOVE HEAD ---
     let newHead = head;
     if (result.direction === "R") newHead++;
     if (result.direction === "L") newHead--;
 
-    // --- TAPE EXPANSION ---
+    // --- EXPANSION ---
     const edgeThreshold = 6;
     const expansionSize = 6;
-
     if (newHead < edgeThreshold) {
       const expansion = Array(expansionSize).fill("");
       newTape = [...expansion, ...newTape];
@@ -109,35 +116,33 @@ export const useTuringMachine = (initialCells = 13) => {
       newTape = [...newTape, ...expansion];
     }
 
-    // --- APPLY STATE ---
+    // --- UPDATE STATE ---
     setTape(newTape);
     setHead(newHead);
-
     setActiveNodeId(result.toNodeId);
     setActiveEdgeId(result.edgeId);
+    setLastRead(result.read);
+    setStepCount(c => c + 1);
 
     if (result.isAccept) {
       setSuccess(true);
     }
-  }, [activeNodeId, activeEdgeId, error, success, tape, head]);
+  }, [activeNodeId, activeEdgeId, error, success, tape, head, lastRead, stepCount]);
 
   return {
     tape,
     head,
-
     activeNodeId,
     activeEdgeId,
-
+    lastRead,
+    stepCount,
     error,
     success,
-
     setTape,
     setHead,
-
     stepForward,
     stepBack,
     reset,
-
     canUndo: history.length > 0
   };
 };

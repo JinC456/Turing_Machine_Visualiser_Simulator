@@ -3,7 +3,6 @@ import { useReactFlow } from 'reactflow';
 
 export const HistoryContext = createContext(null);
 
-// Helper to decide direction based on the handle ID
 function getLoopDirection(handleId) {
   if (!handleId) return 'top';
   if (handleId.includes('B')) return 'bottom';
@@ -46,6 +45,9 @@ export default function DraggableEdge({
   const dxOffset = edge?.data?.dxOffset ?? 0;
   const dyOffset = edge?.data?.dyOffset ?? 0;
 
+  // Extract stepCount from data
+  const stepCount = data?.stepCount;
+
   let px, py;
   let path;
 
@@ -54,7 +56,6 @@ export default function DraggableEdge({
     let baseX = sourceX;
     let baseY = sourceY;
 
-    // 1. Position Handle based on Direction
     if (dir === 'top')    baseY -= loopDist;
     if (dir === 'bottom') baseY += loopDist;
     if (dir === 'left')   baseX -= loopDist;
@@ -70,22 +71,17 @@ export default function DraggableEdge({
     const spread = 45; 
     let C1 = { x: H.x, y: H.y };
 
-    // 2. Determine Orientation to prevent twisting
-    // If the connection is reversed (e.g. Right handle to Left handle), we flip the spread direction.
     const isReversedX = P0.x > P3.x; 
     const isReversedY = P0.y > P3.y;
 
     if (dir === 'top' || dir === 'bottom') {
-      // For vertical loops, spread C1 horizontally towards P0
-      if (isReversedX) C1.x += spread; // P0 is Right -> spread Right
-      else C1.x -= spread;             // P0 is Left -> spread Left (Default)
+      if (isReversedX) C1.x += spread; 
+      else C1.x -= spread;             
     } else {
-      // For horizontal loops, spread C1 vertically towards P0
-      if (isReversedY) C1.y += spread; // P0 is Bottom -> spread Down
-      else C1.y -= spread;             // P0 is Top -> spread Up (Default)
+      if (isReversedY) C1.y += spread; 
+      else C1.y -= spread;             
     }
 
-    // "Method 2" formula to force curve through H
     const C2 = {
       x: (H.x - 0.125 * P0.x - 0.375 * C1.x - 0.125 * P3.x) / 0.375,
       y: (H.y - 0.125 * P0.y - 0.375 * C1.y - 0.125 * P3.y) / 0.375,
@@ -93,7 +89,6 @@ export default function DraggableEdge({
 
     path = `M${P0.x},${P0.y} C${C1.x},${C1.y} ${C2.x},${C2.y} ${P3.x},${P3.y}`;
   } else {
-    // Standard Quadratic for normal edges
     px = edge?.data?.px !== undefined ? edge.data.px + dxOffset : sourceX * (1 - t) + targetX * t + dxOffset;
     py = edge?.data?.py !== undefined ? edge.data.py + dyOffset : sourceY * (1 - t) + targetY * t + dyOffset;
 
@@ -149,10 +144,13 @@ export default function DraggableEdge({
   return (
     <>
       <path
+        // Forces re-mount when step changes -> triggers animation
+        key={`path-${id}-${stepCount}`} 
         d={path}
         className={`edge-path ${selected ? 'selected' : ''} ${data?.isActive ? 'active' : ''}`}
         markerEnd={markerEnd}
       />
+      
       <path d={path} className="edge-hitbox" />
       
       {labels.map((label, index) => {
@@ -161,7 +159,6 @@ export default function DraggableEdge({
           (label.read === '*' && data.activeSymbol === "")
         );
 
-        // 3. Dynamic Label Positioning based on direction
         let lx = px;
         let ly = py;
         
@@ -183,8 +180,8 @@ export default function DraggableEdge({
         }
 
         return (
-          <g key={index} style={{ pointerEvents: "none", userSelect: "none" }}>
-            {/* Outline for readability */}
+          // Forces re-mount for text animation
+          <g key={`${index}-${stepCount}`} style={{ pointerEvents: "none", userSelect: "none" }}>
             <text
               x={lx}
               y={ly}
