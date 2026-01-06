@@ -22,19 +22,25 @@ export default function TapeContainer({ nodes, edges, activeNodeId, setActiveNod
   useEffect(() => {
     if (isRunning || isFinished) return; 
     
-    const newTape = Array(13).fill(""); 
+    // Default size for visual balance, but can grow
+    const defaultSize = 13;
+    const startPos = Math.floor(defaultSize / 2);
+    
     const chars = inputValue.split("");
-    const startPos = Math.floor(13 / 2);
+
+    // Calculate the size needed to hold the input
+    // If input + startPos exceeds default 13, grow the array
+    const requiredSize = Math.max(defaultSize, startPos + chars.length);
+    
+    const newTape = Array(requiredSize).fill(""); 
     
     chars.forEach((char, i) => { 
-      if (startPos + i < 13) {
-        newTape[startPos + i] = char === "*" ? "" : char; 
-      }
+      newTape[startPos + i] = char === "*" ? "" : char; 
     });
     
     tm.setTape(newTape);
     tm.setHead(startPos);
-  }, [inputValue, isRunning, isFinished]); 
+  }, [inputValue, isRunning, isFinished, tm]); 
 
   useEffect(() => {
     let interval;
