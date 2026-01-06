@@ -25,13 +25,19 @@ export default function Visualiser({ selectedExample }) {
   const [currentSymbol, setCurrentSymbol] = useState("");
   const [stepCount, setStepCount] = useState(0);
 
+  // NEW: State to hold the input string associated with the example
+  const [loadedInput, setLoadedInput] = useState("");
+
   useEffect(() => {
     // 2. Load data when selectedExample changes
     if (selectedExample && exampleMap[selectedExample]) {
-      const { nodes: newNodes, edges: newEdges } = exampleMap[selectedExample];
+      const { nodes: newNodes, edges: newEdges, defaultInput } = exampleMap[selectedExample];
       setNodes(newNodes);
       setEdges(newEdges);
       
+      // Set the input for the TapeContainer
+      setLoadedInput(defaultInput || "");
+
       // Reset simulation state
       setActiveNodeId(null);
       setActiveEdgeId(null);
@@ -53,11 +59,12 @@ export default function Visualiser({ selectedExample }) {
             setActiveEdgeId={setActiveEdgeId}
             setCurrentSymbol={setCurrentSymbol}
             setStepCount={setStepCount} 
+            // Pass the loaded input to the tape container
+            loadedInput={loadedInput}
           />
         </div>
 
         <div className="diagram-container-wrapper">
-          {/* 3. ADDED KEY: This forces the diagram to re-mount and fitView when example changes */}
           <DiagramContainer 
             key={selectedExample} 
             nodes={nodes} 

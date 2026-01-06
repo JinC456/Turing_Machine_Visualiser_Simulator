@@ -10,7 +10,8 @@ export default function TapeContainer({
   setActiveNodeId,
   setActiveEdgeId,
   setCurrentSymbol,
-  setStepCount
+  setStepCount,
+  loadedInput // 1. Receive the loadedInput prop
 }) {
   const tm = useTuringMachine(13);
   
@@ -22,13 +23,21 @@ export default function TapeContainer({
   } = tm;
 
   const [isRunning, setIsRunning] = useState(false);
-  const [inputValue, setInputValue] = useState("");
+  // 2. Initialize state with loadedInput if available
+  const [inputValue, setInputValue] = useState(loadedInput || "");
   const [isTimeout, setIsTimeout] = useState(false);
   
   // Speed State: Steps per second
   const [speed, setSpeed] = useState(1); 
 
   const isFinished = !!(error || success || isTimeout);
+
+  // 3. Update inputValue when loadedInput changes (e.g. selecting a different example)
+  useEffect(() => {
+    if (loadedInput !== undefined) {
+      setInputValue(loadedInput);
+    }
+  }, [loadedInput]);
 
   /* ---------- sync active node / symbol / step count ---------- */
   useEffect(() => {
