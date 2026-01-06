@@ -13,17 +13,14 @@ export default function PlaybackControls({
 }) {
   return (
     <div className="playback-controls">
-      {/* UPDATE: Removed '|| isFinished' so you can step back after acceptance/error */}
       <button onClick={onStepBack} disabled={isRunning || !canUndo}>
         ◀
       </button>
 
-      {/* Disable Step Forward if running/finished */}
       <button onClick={onStepForward} disabled={isRunning || isFinished}>
         ▶
       </button>
 
-      {/* Disable Start if running/finished */}
       <button onClick={onStart} disabled={isRunning || isFinished}>
         Start
       </button>
@@ -33,7 +30,7 @@ export default function PlaybackControls({
       </button>
 
       <button onClick={onReset}>
-        Reset
+        Restart
       </button>
 
       <button onClick={onClear}>

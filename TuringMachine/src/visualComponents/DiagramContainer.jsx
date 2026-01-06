@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import ReactFlow, {
   MarkerType,
   Background,
@@ -38,7 +38,16 @@ export default function DiagramContainer({
   currentSymbol,
   stepCount
 }) {
-  const { project } = useReactFlow();
+  const { project, fitView } = useReactFlow();
+
+  // UPDATED: Increased padding to 0.4 to ensure curved edges/loops are visible
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fitView({ padding: 0.4, duration: 0 });
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, [fitView]);
 
   const [selectedNode, setSelectedNode] = useState(null);
   const [selectedEdge, setSelectedEdge] = useState(null);
@@ -220,6 +229,40 @@ export default function DiagramContainer({
     setEdges([]);
   };
 
+  // --- EXPORT JSON ---
+  const handleExport = () => {
+    let filename = window.prompt("Enter a filename for the export:", "turing_machine_diagram");
+    
+    if (filename === null) return;
+    
+    if (filename.trim() === "") {
+        filename = "turing_machine_diagram";
+    }
+
+    if (!filename.toLowerCase().endsWith(".json")) {
+        filename += ".json";
+    }
+
+    const exportData = {
+      nodes: nodes,
+      edges: edges,
+    };
+    
+    const jsonString = JSON.stringify(exportData, null, 2);
+    
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const href = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = href;
+    link.download = filename; 
+    document.body.appendChild(link);
+    link.click();
+    
+    document.body.removeChild(link);
+    URL.revokeObjectURL(href);
+  };
+
   const decoratedNodes = nodes.map((node) => ({
     ...node,
     data: {
@@ -241,7 +284,6 @@ export default function DiagramContainer({
         ...edge.data,
         isActive: isActive,
         activeSymbol: isActive ? currentSymbol : null,
-        // Pass stepCount only if active to trigger re-render
         stepCount: isActive ? stepCount : null 
       },
     };
@@ -266,7 +308,7 @@ export default function DiagramContainer({
             onConnect={onConnect}
             onDrop={onDrop}
             onDragOver={onDragOver}
-            fitView
+            fitView 
           >
             <Background />
             <Controls />
@@ -277,6 +319,7 @@ export default function DiagramContainer({
           handleClearAll={handleClearAll}
           Undo={handleUndo}
           Redo={handleRedo}
+          handleExport={handleExport}
         />
 
         {selectedNode && (
