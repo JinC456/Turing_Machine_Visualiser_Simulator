@@ -5,6 +5,8 @@ import "./App.css";
 function App() {
   const [engine, setEngine] = useState("Deterministic");
   const [example, setExample] = useState("");
+  // 1. Add state for the table visibility
+  const [showTable, setShowTable] = useState(false);
 
   return (
     <div className="app">
@@ -22,6 +24,7 @@ function App() {
               >
                 <option value="Deterministic">Deterministic</option>
                 <option value="NonDeterministic">Non-Deterministic</option>
+                <option value="MultiTape">Multi-Tape</option>
               </select>
             </div>
 
@@ -42,10 +45,23 @@ function App() {
         </div>
 
         <div className="header-right">
+          {/* 2. Wire up the button */}
+          <button 
+            className="header-button" 
+            onClick={() => setShowTable(true)}
+          >
+            Transition Table
+          </button>
         </div>
       </div>
 
-      <Visualiser engine={engine} selectedExample={example} />
+      {/* 3. Pass state to Visualiser */}
+      <Visualiser 
+        engine={engine} 
+        selectedExample={example} 
+        showTable={showTable} 
+        setShowTable={setShowTable} 
+      />
     </div>
   );
 }

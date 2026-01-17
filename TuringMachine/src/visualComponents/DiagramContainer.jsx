@@ -1,3 +1,4 @@
+/* src/visualComponents/DiagramContainer.jsx */
 import React, { useCallback, useState, useEffect } from "react";
 import ReactFlow, {
   MarkerType,
@@ -40,7 +41,6 @@ export default function DiagramContainer({
 }) {
   const { project, fitView } = useReactFlow();
 
-  // UPDATED: Increased padding to 0.4 to ensure curved edges/loops are visible
   useEffect(() => {
     const timer = setTimeout(() => {
       fitView({ padding: 0.4, duration: 0 });
@@ -67,7 +67,8 @@ export default function DiagramContainer({
     }));
 
     setHistory((h) =>
-      [...h, { nodes: clonedNodes, edges: clonedEdges }].slice(-10)
+      // CHANGED: Increased history limit from 10 to 50 to prevent missing steps
+      [...h, { nodes: clonedNodes, edges: clonedEdges }].slice(-50)
     );
     setFuture([]);
   }, [nodes, edges]);
@@ -308,6 +309,10 @@ export default function DiagramContainer({
             onConnect={onConnect}
             onDrop={onDrop}
             onDragOver={onDragOver}
+            /* CHANGED: Added handlers to capture history on Drag and Delete */
+            onNodeDragStart={pushToHistory}
+            onNodesDelete={pushToHistory}
+            onEdgesDelete={pushToHistory}
             fitView 
           >
             <Background />

@@ -11,11 +11,11 @@ export default function TapeContainer({
   setActiveEdgeId,
   setCurrentSymbol,
   setStepCount,
-  loadedInput // 1. Receive the loadedInput prop
+  loadedInput,
+  validAlphabet // 1. Receive the prop
 }) {
   const tm = useTuringMachine(13);
   
-  // Destructure tm to stabilize dependencies and prevent infinite re-renders
   const { 
     tape, head, activeNodeId: tmActiveNode, activeEdgeId: tmActiveEdge, 
     lastRead, stepCount: tmStepCount, error, success, 
@@ -23,21 +23,41 @@ export default function TapeContainer({
   } = tm;
 
   const [isRunning, setIsRunning] = useState(false);
-  // 2. Initialize state with loadedInput if available
   const [inputValue, setInputValue] = useState(loadedInput || "");
   const [isTimeout, setIsTimeout] = useState(false);
   
-  // Speed State: Steps per second
+  // 2. State for Input Validation Error
+  const [inputError, setInputError] = useState(null);
+
   const [speed, setSpeed] = useState(1); 
 
   const isFinished = !!(error || success || isTimeout);
 
-  // 3. Update inputValue when loadedInput changes (e.g. selecting a different example)
   useEffect(() => {
     if (loadedInput !== undefined) {
       setInputValue(loadedInput);
     }
   }, [loadedInput]);
+
+  // 3. Validation Logic
+  useEffect(() => {
+    if (!inputValue) {
+      setInputError(null);
+      return;
+    }
+
+    const chars = inputValue.split("");
+    // Find characters not in the validAlphabet set
+    const invalidChars = chars.filter(char => !validAlphabet.has(char));
+
+    if (invalidChars.length > 0) {
+      const uniqueInvalid = [...new Set(invalidChars)].join(", ");
+      setInputError(`Invalid symbol(s): ${uniqueInvalid}`);
+    } else {
+      setInputError(null);
+    }
+  }, [inputValue, validAlphabet]);
+
 
   /* ---------- sync active node / symbol / step count ---------- */
   useEffect(() => {
@@ -58,7 +78,7 @@ export default function TapeContainer({
 
   /* ---------- initialize tape (ONLY on reset) ---------- */
   const initializeTape = useCallback(() => {
-    if (canUndo) return; 
+    if (canUndo || inputError) return; // Prevent init if error exists
 
     const cellWidth = 40; 
     const containerWidth = window.innerWidth * 0.9; 
@@ -77,7 +97,7 @@ export default function TapeContainer({
 
     setTape(newTape);
     setHead(startPos);
-  }, [inputValue, canUndo, setTape, setHead]);
+  }, [inputValue, canUndo, setTape, setHead, inputError]);
 
   useEffect(() => {
     if (!isRunning && !isFinished && !canUndo) {
@@ -92,7 +112,6 @@ export default function TapeContainer({
     const intervalMs = 1000 / speed;
 
     const interval = setInterval(() => {
-      // Check for Timeout (e.g., 100 steps)
       if (tmStepCount >= 100) {
         setIsRunning(false);
         setIsTimeout(true);
@@ -119,7 +138,6 @@ export default function TapeContainer({
     activeLabel = startNode?.data?.label || "START"; 
   }
 
-  // --- Handle Clear ---
   const handleClear = () => {
     setIsRunning(false);
     setIsTimeout(false);
@@ -131,7 +149,11 @@ export default function TapeContainer({
   let statusMessage = null;
   let statusType = "";
 
-  if (success) {
+  // 4. Input Error takes precedence in display (before running)
+  if (inputError) {
+    statusType = "error";
+    statusMessage = inputError;
+  } else if (success) {
     statusType = "success";
     statusMessage = "Accepted";
   } else if (isTimeout) {
@@ -146,13 +168,16 @@ export default function TapeContainer({
     }
   }
 
+  // Helper to format alphabet for display
+  const alphabetString = validAlphabet.size > 0 
+    ? [...validAlphabet].sort().join(", ") 
+    : "∅";
+
   return (
     <div className="tape-container">
       
-      {/* 1. Tape Display (Top) */}
       <TapeDisplay tape={tape} head={head} activeLabel={activeLabel} />
 
-      {/* 2. Status Area (Absolute Positioned Overlay) */}
       <div className="status-area">
         {statusMessage && (
           <div className={`status-message ${statusType}`}>
@@ -164,17 +189,23 @@ export default function TapeContainer({
         )}
       </div>
 
-      {/* 3. Controls (Bottom) */}
       <div className="controls-row">
         
-        <input
-          className="tape-input"
-          type="text"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          disabled={isRunning || isFinished || canUndo}
-          placeholder="Input string..."
-        />
+        {/* UPDATED: Alphabet Label is now BELOW the input */}
+        <div className="input-wrapper">
+          <input
+            className="tape-input"
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            disabled={isRunning || isFinished || canUndo}
+            placeholder="Input string..."
+            style={inputError ? { borderColor: '#d9534f', backgroundColor: '#fdf7f7' } : {}}
+          />
+          <div className="alphabet-label">
+            Alphabet: <span>{`{ ${alphabetString} }`}</span>
+          </div>
+        </div>
 
         <PlaybackControls
           onStepForward={() => {
@@ -187,7 +218,7 @@ export default function TapeContainer({
             stepBack();
           }}
           onStart={() => {
-            if (!isFinished) setIsRunning(true);
+            if (!isFinished && !inputError) setIsRunning(true);
           }}
           onStop={() => setIsRunning(false)}
           onReset={() => {
@@ -197,7 +228,8 @@ export default function TapeContainer({
           }}
           onClear={handleClear} 
           isRunning={isRunning}
-          isFinished={isFinished}
+          // 5. Disable running if input is invalid
+          isFinished={isFinished || !!inputError} 
           canUndo={canUndo}
         />
 
@@ -206,8 +238,8 @@ export default function TapeContainer({
           <input 
             id="speed-slider"
             type="range" 
-            min="1" 
-            max="3" 
+            min="0.25" 
+            max="2" 
             step="0.25"
             value={speed}
             onChange={(e) => setSpeed(Number(e.target.value))}

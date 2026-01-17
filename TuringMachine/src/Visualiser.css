@@ -1,3 +1,5 @@
+/* src/Visualiser.css */
+
 /* ===========================
    ANIMATIONS
    =========================== */
@@ -19,7 +21,7 @@
 @keyframes slideDown {
   from {
     opacity: 0;
-    transform: translateY(-5px); /* Reduced slide distance for subtler effect */
+    transform: translateY(-5px);
   }
   to {
     opacity: 1;
@@ -223,18 +225,17 @@
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  /* CHANGED: Reduced gap to bring tape and controls closer */
   gap: 40px; 
   position: relative;
-  padding: 20px 0; 
+  /* Increased padding bottom to accommodate the hanging alphabet label */
+  padding: 20px 0 40px 0; 
   width: 100%; 
 }
 
-/* CHANGED: Absolute positioning adjustments for smaller gap */
 .status-area {
   position: absolute;
-  /* Positioned to float exactly between tape and controls in the 40px gap */
-  bottom: 68px; 
+  /* Adjusted position back down since label is now below input */
+  bottom: 80px; 
   left: 50%;
   transform: translateX(-50%);
   z-index: 100;
@@ -247,14 +248,13 @@
   width: auto;
 }
 
-/* CHANGED: Smaller, more compact message styling */
 .status-message {
   display: flex;
   align-items: center;
-  gap: 8px; /* Reduced gap */
-  padding: 4px 12px; /* Smaller padding */
+  gap: 8px; 
+  padding: 4px 12px; 
   border-radius: 6px;
-  font-size: 0.85rem; /* Smaller font */
+  font-size: 0.85rem; 
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   animation: slideDown 0.3s ease-out;
   pointer-events: auto; 
@@ -273,7 +273,6 @@
   border: 1px solid #c3e6cb;
 }
 
-/* CHANGED: Smaller icon */
 .status-icon {
   font-size: 1.1rem;
 }
@@ -362,7 +361,7 @@
    =========================== */
 .controls-row {
   display: flex;
-  align-items: center;
+  align-items: center; /* This ensures all children are vertically centered */
   justify-content: center;
   gap: 20px;
   width: 80vw;
@@ -417,9 +416,8 @@
   cursor: pointer;
 }
 
-
 /* ===========================
-   POPUP
+   POPUP (GENERIC)
    =========================== */
 .popup-overlay {
   position: fixed;
@@ -513,7 +511,6 @@
   font-size: 0.9rem;
 }
 
-
 .label-row input[type="text"] {
   padding: 6px 8px;
   font-size: 0.85rem;
@@ -571,4 +568,257 @@
 
 .remove-button:hover {
   background-color: #f5c2c7;
+}
+
+/* ===========================
+   TRANSITION TABLE POPUP
+   =========================== */
+.table-popup {
+  min-width: 400px;
+  width: auto;
+  max-width: 90vw;
+  padding: 25px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.popup-header h3 {
+  margin: 0;
+  font-family: "Times New Roman", serif;
+  font-style: italic;
+  font-size: 1.5rem;
+}
+
+/* Actions in Header (Window Toggle, Close) */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.window-toggle-btn {
+  background-color: #f1f1f1;
+  border: 1px solid #ccc;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.window-toggle-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+  padding: 0 5px;
+}
+
+.close-btn:hover {
+  color: #000;
+}
+
+.table-wrapper {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 15px; /* Space for scrollbar */
+}
+
+/* --- Modeless Window State --- */
+.modeless-window {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 2000;
+  margin: 0;
+  
+  max-width: 50vw;
+  max-height: 50vh;
+  min-width: 320px;
+  
+  box-shadow: 0 5px 25px rgba(0,0,0,0.25);
+  border: 1px solid #ddd;
+}
+
+.modeless-window .table-wrapper {
+  max-height: 35vh;
+}
+
+/* --- Academic Table Style --- */
+.transition-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: "Times New Roman", Times, serif;
+  font-size: 1.3rem;
+  color: #000;
+  margin: 0 auto;
+}
+
+/* 1. Header Row */
+.transition-table thead tr {
+  border-bottom: 2px solid black;
+}
+
+/* 2. First Column */
+.transition-table th:first-child,
+.transition-table td:first-child {
+  border-right: 2px solid black;
+  text-align: right;
+  padding-right: 20px;
+  font-weight: bold;
+  font-style: italic;
+  width: 1%;
+  white-space: nowrap;
+}
+
+.transition-table th, 
+.transition-table td {
+  padding: 12px 25px;
+  text-align: center;
+}
+
+.transition-table td, 
+.transition-table th:not(:first-child) {
+  border-left: none;
+  border-top: none;
+}
+
+.diagonal-header {
+  font-weight: normal;
+  font-size: 1rem;
+  color: #555;
+  vertical-align: bottom;
+  padding-bottom: 5px;
+}
+
+.transition-table thead th:not(:first-child) {
+  font-weight: bold;
+  font-size: 1.4rem;
+  vertical-align: bottom;
+}
+
+.rule-cell {
+  white-space: nowrap;
+}
+
+.empty-cell {
+  color: #ccc;
+  font-weight: normal;
+  font-style: italic;
+}
+
+.alphabet-controls {
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: #f9f9f9;
+  padding: 8px 12px;
+  border-radius: 6px;
+  width: fit-content;
+}
+
+.alphabet-controls label {
+  font-weight: bold;
+  color: #333;
+}
+
+.symbol-input {
+  width: 60px;
+  padding: 4px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.alphabet-controls button {
+  padding: 4px 10px;
+  cursor: pointer;
+  background-color: #e0e0e0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.alphabet-controls button:hover {
+  background-color: #d0d0d0;
+}
+
+.symbol-header {
+  position: relative; 
+  padding-right: 25px !important; 
+}
+
+.delete-symbol-btn {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: transparent;
+  border: none;
+  color: #d9534f;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  font-weight: bold;
+  opacity: 0.6;
+  padding: 2px 5px;
+}
+
+.delete-symbol-btn:hover {
+  opacity: 1;
+  background-color: rgba(217, 83, 79, 0.1);
+  border-radius: 50%;
+}
+
+/* ===========================
+   FIXES & ADDITIONS
+   =========================== */
+
+.floating-window {
+  position: fixed !important;
+  z-index: 2000 !important;
+  background: #fff;
+  border: 2px solid #333;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+
+.alphabet-label {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 5px;
+  
+  font-size: 0.85rem;
+  color: #555;
+  font-family: Consolas, Monaco, "Courier New", monospace;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.alphabet-label span {
+  color: #000;
+  background-color: #e8e8e8;
+  padding: 1px 6px;
+  border-radius: 4px;
 }

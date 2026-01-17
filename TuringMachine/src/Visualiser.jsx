@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+/* src/Visualiser.jsx */
+import React, { useState, useEffect, useMemo } from 'react';
 import { ReactFlowProvider, useNodesState, useEdgesState } from 'reactflow';
 
 import TapeContainer from './simulatorComponents/TapeContainer';
 import DiagramContainer from './visualComponents/DiagramContainer';
+import TransitionTable from './simulatorComponents/TransitionTable';
 import './Visualiser.css';
 
-// 1. FIXED IMPORT: Matches "Palindrome.json" exactly (Capital P)
 import palindromeData from './examples/Palindrome.json';
 import binaryIncrementData from './examples/binary_increment.json';
 import busyBeaverData from './examples/busy_beaver.json';
@@ -16,7 +17,7 @@ const exampleMap = {
   busy_beaver: busyBeaverData
 };
 
-export default function Visualiser({ selectedExample }) {
+export default function Visualiser({ selectedExample, showTable, setShowTable }) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
@@ -25,31 +26,51 @@ export default function Visualiser({ selectedExample }) {
   const [currentSymbol, setCurrentSymbol] = useState("");
   const [stepCount, setStepCount] = useState(0);
 
-  // NEW: State to hold the input string associated with the example
   const [loadedInput, setLoadedInput] = useState("");
+  const [manualSymbols, setManualSymbols] = useState([]);
 
   useEffect(() => {
-    // 2. Load data when selectedExample changes
     if (selectedExample && exampleMap[selectedExample]) {
       const { nodes: newNodes, edges: newEdges, defaultInput } = exampleMap[selectedExample];
       setNodes(newNodes);
       setEdges(newEdges);
-      
-      // Set the input for the TapeContainer
       setLoadedInput(defaultInput || "");
-
-      // Reset simulation state
       setActiveNodeId(null);
       setActiveEdgeId(null);
       setStepCount(0);
       setCurrentSymbol("");
+      setManualSymbols([]); 
     }
   }, [selectedExample, setNodes, setEdges]);
+
+  // 1. Calculate Valid Alphabet (Read AND Write symbols + Manual)
+  const validAlphabet = useMemo(() => {
+    const derived = new Set();
+    edges.forEach(edge => {
+        edge.data?.labels?.forEach(l => {
+            if (l.read !== undefined && l.read !== "") derived.add(l.read);
+            // FIX: Include written symbols in the alphabet
+            if (l.write !== undefined && l.write !== "") derived.add(l.write);
+        });
+    });
+    // Combine derived symbols with manually added symbols
+    return new Set([...derived, ...manualSymbols]);
+  }, [edges, manualSymbols]);
 
   return (
     <ReactFlowProvider>
       <div className="visualiser">
         
+        {showTable && (
+          <TransitionTable 
+            nodes={nodes} 
+            edges={edges} 
+            manualSymbols={manualSymbols}       
+            setManualSymbols={setManualSymbols}
+            onClose={() => setShowTable(false)} 
+          />
+        )}
+
         <div className="tape-container-wrapper">
           <TapeContainer 
             nodes={nodes}
@@ -59,8 +80,8 @@ export default function Visualiser({ selectedExample }) {
             setActiveEdgeId={setActiveEdgeId}
             setCurrentSymbol={setCurrentSymbol}
             setStepCount={setStepCount} 
-            // Pass the loaded input to the tape container
             loadedInput={loadedInput}
+            validAlphabet={validAlphabet} 
           />
         </div>
 
