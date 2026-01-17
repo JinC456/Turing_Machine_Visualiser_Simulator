@@ -2,6 +2,10 @@ import React, { useState, useEffect, useCallback } from "react";
 import PlaybackControls from "./PlaybackControls";
 import TapeDisplay from "./TapeDisplay";
 import { useTuringMachine } from "./TuringMachineLogic";
+import { getNodeLabel } from "./engines/Deterministic";
+
+// Define constant here to avoid magic numbers
+const CELL_SIZE = 40;
 
 export default function TapeContainer({
   nodes,
@@ -12,7 +16,7 @@ export default function TapeContainer({
   setCurrentSymbol,
   setStepCount,
   loadedInput,
-  validAlphabet // 1. Receive the prop
+  validAlphabet
 }) {
   const tm = useTuringMachine(13);
   
@@ -26,7 +30,6 @@ export default function TapeContainer({
   const [inputValue, setInputValue] = useState(loadedInput || "");
   const [isTimeout, setIsTimeout] = useState(false);
   
-  // 2. State for Input Validation Error
   const [inputError, setInputError] = useState(null);
 
   const [speed, setSpeed] = useState(1); 
@@ -39,7 +42,6 @@ export default function TapeContainer({
     }
   }, [loadedInput]);
 
-  // 3. Validation Logic
   useEffect(() => {
     if (!inputValue) {
       setInputError(null);
@@ -47,7 +49,6 @@ export default function TapeContainer({
     }
 
     const chars = inputValue.split("");
-    // Find characters not in the validAlphabet set
     const invalidChars = chars.filter(char => !validAlphabet.has(char));
 
     if (invalidChars.length > 0) {
@@ -58,8 +59,6 @@ export default function TapeContainer({
     }
   }, [inputValue, validAlphabet]);
 
-
-  /* ---------- sync active node / symbol / step count ---------- */
   useEffect(() => {
     setActiveNodeId(tmActiveNode);
     setActiveEdgeId(tmActiveEdge);
@@ -76,13 +75,12 @@ export default function TapeContainer({
     setStepCount
   ]);
 
-  /* ---------- initialize tape (ONLY on reset) ---------- */
   const initializeTape = useCallback(() => {
-    if (canUndo || inputError) return; // Prevent init if error exists
+    if (canUndo || inputError) return; 
 
-    const cellWidth = 40; 
     const containerWidth = window.innerWidth * 0.9; 
-    let dynamicCount = Math.ceil(containerWidth / cellWidth) + 200;
+    // Use CELL_SIZE constant
+    let dynamicCount = Math.ceil(containerWidth / CELL_SIZE) + 200;
     if (dynamicCount % 2 === 0) dynamicCount++;
     const defaultSize = Math.max(13, dynamicCount);
     
@@ -105,7 +103,6 @@ export default function TapeContainer({
     }
   }, [inputValue, isRunning, isFinished, canUndo, initializeTape]);
 
-  /* ---------- auto run ---------- */
   useEffect(() => {
     if (!isRunning) return;
 
@@ -128,14 +125,14 @@ export default function TapeContainer({
     return () => clearInterval(interval);
   }, [isRunning, error, success, tmStepCount, stepForward, nodes, edges, speed]);
 
-  /* ---------- active label ---------- */
+  /* ---------- active label using shared utility ---------- */
   let activeLabel = ""; 
   if (tmActiveNode) {
     const node = nodes.find((n) => n.id === tmActiveNode);
-    activeLabel = node?.data?.label || ""; 
+    activeLabel = getNodeLabel(node); 
   } else {
     const startNode = nodes.find((n) => n.type === "start");
-    activeLabel = startNode?.data?.label || "START"; 
+    activeLabel = getNodeLabel(startNode) || "START"; 
   }
 
   const handleClear = () => {
@@ -145,11 +142,9 @@ export default function TapeContainer({
     reset(); 
   };
 
-  // --- Determine Status Message ---
   let statusMessage = null;
   let statusType = "";
 
-  // 4. Input Error takes precedence in display (before running)
   if (inputError) {
     statusType = "error";
     statusMessage = inputError;
@@ -168,7 +163,6 @@ export default function TapeContainer({
     }
   }
 
-  // Helper to format alphabet for display
   const alphabetString = validAlphabet.size > 0 
     ? [...validAlphabet].sort().join(", ") 
     : "∅";
@@ -176,7 +170,13 @@ export default function TapeContainer({
   return (
     <div className="tape-container">
       
-      <TapeDisplay tape={tape} head={head} activeLabel={activeLabel} />
+      {/* Pass CELL_SIZE as prop */}
+      <TapeDisplay 
+        tape={tape} 
+        head={head} 
+        activeLabel={activeLabel} 
+        cellSize={CELL_SIZE} 
+      />
 
       <div className="status-area">
         {statusMessage && (
@@ -191,7 +191,6 @@ export default function TapeContainer({
 
       <div className="controls-row">
         
-        {/* UPDATED: Alphabet Label is now BELOW the input */}
         <div className="input-wrapper">
           <input
             className="tape-input"
@@ -228,7 +227,6 @@ export default function TapeContainer({
           }}
           onClear={handleClear} 
           isRunning={isRunning}
-          // 5. Disable running if input is invalid
           isFinished={isFinished || !!inputError} 
           canUndo={canUndo}
         />

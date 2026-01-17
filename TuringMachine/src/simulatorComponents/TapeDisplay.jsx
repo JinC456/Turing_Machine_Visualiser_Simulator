@@ -1,8 +1,7 @@
 import React, { useRef, useEffect } from "react";
 import "../Visualiser.css";
 
-export default function TapeDisplay({ tape, head, activeLabel }) {
-  const cellWidth = 40;
+export default function TapeDisplay({ tape, head, activeLabel, cellSize = 40 }) {
   const prevHead = useRef(head);
   const isJump = Math.abs(head - prevHead.current) > 1;
 
@@ -23,7 +22,8 @@ export default function TapeDisplay({ tape, head, activeLabel }) {
         <div
           className="tape"
           style={{ 
-            transform: `translateX(${-head * cellWidth}px)`,
+            // Use props for dynamic sizing
+            transform: `translateX(${-head * cellSize}px)`,
             transition: isJump ? "none" : "transform 0.3s ease-in-out"
           }}
         >
@@ -31,7 +31,7 @@ export default function TapeDisplay({ tape, head, activeLabel }) {
             <div
               key={index}
               className={`cell ${index === head ? "active" : ""}`}
-              style={{ width: `${cellWidth}px` }}
+              style={{ width: `${cellSize}px` }}
             >
               {symbol || ""}
             </div>

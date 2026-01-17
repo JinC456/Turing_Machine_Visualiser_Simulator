@@ -1,23 +1,23 @@
 /* src/simulatorComponents/TransitionTable.jsx */
 import React, { useMemo, useState } from "react";
 import "../Visualiser.css";
+import { getNodeLabel } from "./engines/Deterministic";
 
 export default function TransitionTable({ nodes, edges, manualSymbols, setManualSymbols, onClose }) {
   
   const [newSymbol, setNewSymbol] = useState("");
-  // 1. New State for View Mode
   const [isWindowMode, setIsWindowMode] = useState(false);
 
   const { symbols, matrix, sortedNodes, derivedSymbols } = useMemo(() => {
     const derivedSet = new Set();
     const nodeMap = {}; 
 
-    // Sort nodes
+    // Sort nodes using shared helper
     const sortedNodes = [...nodes].sort((a, b) => {
       if (a.type === 'start') return -1;
       if (b.type === 'start') return 1;
-      const labelA = a.data?.label || "";
-      const labelB = b.data?.label || "";
+      const labelA = getNodeLabel(a);
+      const labelB = getNodeLabel(b);
       return labelA.localeCompare(labelB, undefined, { numeric: true });
     });
 
@@ -29,7 +29,8 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
     edges.forEach((edge) => {
       const sourceId = edge.source;
       const targetId = edge.target;
-      const targetLabel = nodeMap[targetId]?.data?.label || "?";
+      // Use shared helper
+      const targetLabel = nodeMap[targetId] ? getNodeLabel(nodeMap[targetId]) : "?";
       const rules = edge.data?.labels || [];
 
       rules.forEach((rule) => {
@@ -73,7 +74,6 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
     }
   };
 
-  // 2. Prepare the Content
   const containerClass = isWindowMode 
     ? "popup-menu table-popup modeless-window" 
     : "popup-menu table-popup";
@@ -83,7 +83,6 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
       <div className="popup-header">
           <h3>Transition Table</h3>
           
-          {/* Header Actions: Toggle & Close */}
           <div className="header-actions">
             <button 
               className="window-toggle-btn" 
@@ -134,7 +133,8 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
           <tbody>
             {sortedNodes.map((node) => (
               <tr key={node.id}>
-                <td className="row-header">{node.data?.label || "S?"}</td>
+                {/* Use shared helper */}
+                <td className="row-header">{getNodeLabel(node)}</td>
                 {symbols.map((symbol) => {
                   const content = matrix[node.id]?.[symbol];
                   return (

@@ -1,5 +1,26 @@
-import React from "react";
+import React, { useLayoutEffect } from "react";
 import { Handle, Position } from "reactflow";
+
+// --- Shared Hook for Node Font Sizing ---
+export function useAutoFontSize(labelRef, label) {
+  useLayoutEffect(() => {
+    const element = labelRef.current;
+    const parent = element?.parentElement;
+
+    if (!element || !parent) return;
+
+    let currentFontSize = 16;
+    element.style.fontSize = `${currentFontSize}px`;
+
+    while (
+      (element.scrollWidth > parent.clientWidth || element.scrollHeight > parent.clientHeight) &&
+      currentFontSize > 8
+    ) {
+      currentFontSize -= 0.5;
+      element.style.fontSize = `${currentFontSize}px`;
+    }
+  }, [label]);
+}
 
 export default function Handles({ showLeft }) {
   return (
