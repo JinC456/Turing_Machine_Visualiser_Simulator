@@ -1,12 +1,38 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Visualiser from "./Visualiser";
 import "./App.css";
+
+const EXAMPLES = {
+  Deterministic: [
+    { value: "palindrome", label: "Palindrome Detector" },
+    { value: "binary_increment", label: "Binary Increment" },
+    { value: "busy_beaver", label: "Busy Beaver (3-state)" },
+  ],
+  MultiTape: [
+    { value: "palindromeMulti", label: "Palindrome (2-Tape)" },
+    { value: "isequal", label: "Is Equal" },
+    { value: "binary_addition", label: "Binary Addition" },
+  ],
+  NonDeterministic: [
+    // Placeholder for future expansion
+  ],
+};
 
 function App() {
   const [engine, setEngine] = useState("Deterministic");
   const [example, setExample] = useState("");
-  // 1. Add state for the table visibility
   const [showTable, setShowTable] = useState(false);
+
+  // Reset example when engine changes to avoid invalid states
+  useEffect(() => {
+    setExample("");
+  }, [engine]);
+
+  const handleEngineChange = (e) => {
+    setEngine(e.target.value);
+  };
+
+  const currentExamples = EXAMPLES[engine] || [];
 
   return (
     <div className="app">
@@ -20,7 +46,7 @@ function App() {
               <select
                 id="engine-select"
                 value={engine}
-                onChange={(e) => setEngine(e.target.value)}
+                onChange={handleEngineChange}
               >
                 <option value="Deterministic">Deterministic</option>
                 <option value="NonDeterministic">Non-Deterministic</option>
@@ -34,18 +60,20 @@ function App() {
                 id="example-select"
                 value={example}
                 onChange={(e) => setExample(e.target.value)}
+                disabled={currentExamples.length === 0}
               >
                 <option value="">-- Select an Example --</option>
-                <option value="palindrome">Palindrome Detector</option>
-                <option value="binary_increment">Binary Increment</option>
-                <option value="busy_beaver">Busy Beaver (3-state)</option>
+                {currentExamples.map((ex) => (
+                  <option key={ex.value} value={ex.value}>
+                    {ex.label}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
         </div>
 
         <div className="header-right">
-          {/* 2. Wire up the button */}
           <button 
             className="header-button" 
             onClick={() => setShowTable(true)}
@@ -55,7 +83,6 @@ function App() {
         </div>
       </div>
 
-      {/* 3. Pass state to Visualiser */}
       <Visualiser 
         engine={engine} 
         selectedExample={example} 

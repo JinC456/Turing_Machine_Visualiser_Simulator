@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import PlaybackControls from "./PlaybackControls";
 import TapeDisplay from "./TapeDisplay";
 import { useTuringMachine, useMultiTapeTuringMachine } from "./TuringMachineLogic";
@@ -21,8 +21,25 @@ export default function TapeContainer({
 }) {
   const isMultiTape = engine === "MultiTape";
 
+  // Calculate required tapes from edges
+  const numTapes = useMemo(() => {
+    if (!isMultiTape) return 1;
+    let max = 2; // Default to 2
+    edges.forEach(edge => {
+        edge.data?.labels?.forEach(label => {
+            Object.keys(label).forEach(key => {
+                if (key.startsWith('tape')) {
+                    const n = parseInt(key.replace('tape', ''), 10);
+                    if (!isNaN(n)) max = Math.max(max, n);
+                }
+            });
+        });
+    });
+    return max;
+  }, [edges, isMultiTape]);
+
   const singleTM = useTuringMachine(13);
-  const multiTM = useMultiTapeTuringMachine(13, 2);
+  const multiTM = useMultiTapeTuringMachine(13, numTapes);
 
   const tm = isMultiTape ? multiTM : singleTM;
   
@@ -42,11 +59,13 @@ export default function TapeContainer({
 
   const isFinished = !!(error || success || isTimeout);
 
+  // --- UPDATED EFFECT: Reset logic when input loads ---
   useEffect(() => {
     if (loadedInput !== undefined) {
       setInputValue(loadedInput);
+      reset(); // <--- Forces simulator to reset state (clear success/error)
     }
-  }, [loadedInput]);
+  }, [loadedInput, reset]);
 
   useEffect(() => {
     if (!inputValue) {
@@ -92,7 +111,6 @@ export default function TapeContainer({
     if (canUndo || inputError) return; 
 
     const containerWidth = window.innerWidth * 0.9; 
-    // Use CELL_SIZE constant
     let dynamicCount = Math.ceil(containerWidth / CELL_SIZE) + 200;
     if (dynamicCount % 2 === 0) dynamicCount++;
     const defaultSize = Math.max(13, dynamicCount);
@@ -108,16 +126,22 @@ export default function TapeContainer({
     });
 
     if (isMultiTape) {
-        // Tape 2 is empty initially
-        const tape2 = Array(requiredSize).fill("");
-        tm.setTapes([tape1, tape2]);
-        tm.setHeads([startPos, startPos]);
+        // Initialize N tapes
+        // First tape has input, others empty
+        const newTapes = [];
+        newTapes.push(tape1);
+        for(let i=1; i<numTapes; i++) {
+            newTapes.push(Array(requiredSize).fill(""));
+        }
+        
+        tm.setTapes(newTapes);
+        tm.setHeads(Array(numTapes).fill(startPos));
     } else {
         tm.setTape(tape1);
         tm.setHead(startPos);
     }
 
-  }, [inputValue, canUndo, tm, inputError, isMultiTape]);
+  }, [inputValue, canUndo, tm, inputError, isMultiTape, numTapes]);
 
   useEffect(() => {
     if (!isRunning && !isFinished && !canUndo) {
@@ -147,7 +171,6 @@ export default function TapeContainer({
     return () => clearInterval(interval);
   }, [isRunning, error, success, tmStepCount, stepForward, nodes, edges, speed]);
 
-  /* ---------- active label using shared utility ---------- */
   let activeLabel = ""; 
   if (tmActiveNode) {
     const node = nodes.find((n) => n.id === tmActiveNode);
@@ -194,59 +217,32 @@ export default function TapeContainer({
       
       {isMultiTape ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '40px', width: '100%', alignItems: 'center' }}>
-            
-            {/* Tape 1 */}
-            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '90%' }}>
-                <div style={{ 
-                    fontWeight: 'bold', 
-                    fontSize: '1.1rem', 
-                    minWidth: '80px', 
-                    textAlign: 'right', 
-                    marginRight: '15px',
-                    whiteSpace: 'nowrap',
-                    flexShrink: 0
-                }}>
-                    Tape 1
+            {tm.tapes.map((tape, index) => (
+                <div key={index} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '90%' }}>
+                    <div style={{ 
+                        fontWeight: 'bold', 
+                        fontSize: '1.1rem', 
+                        minWidth: '80px', 
+                        textAlign: 'right', 
+                        marginRight: '15px',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0
+                    }}>
+                        Tape {index + 1}
+                    </div>
+                    <div style={{ position: 'relative', flexGrow: 1 }}>
+                        <TapeDisplay 
+                            tape={tape} 
+                            head={tm.heads[index]} 
+                            activeLabel={activeLabel} 
+                            cellSize={CELL_SIZE} 
+                            width="70vw"
+                        />
+                    </div>
                 </div>
-                {/* Wrap in relative div so pointer (absolute) anchors here */}
-                <div style={{ position: 'relative', flexGrow: 1 }}>
-                    <TapeDisplay 
-                        tape={tm.tapes[0]} 
-                        head={tm.heads[0]} 
-                        activeLabel={activeLabel} 
-                        cellSize={CELL_SIZE} 
-                        width="70vw"
-                    />
-                </div>
-            </div>
-
-            {/* Tape 2 */}
-            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '90%' }}>
-                <div style={{ 
-                    fontWeight: 'bold', 
-                    fontSize: '1.1rem', 
-                    minWidth: '80px', 
-                    textAlign: 'right', 
-                    marginRight: '15px',
-                    whiteSpace: 'nowrap',
-                    flexShrink: 0
-                }}>
-                    Tape 2
-                </div>
-                {/* Wrap in relative div so pointer (absolute) anchors here */}
-                <div style={{ position: 'relative', flexGrow: 1 }}>
-                    <TapeDisplay 
-                        tape={tm.tapes[1]} 
-                        head={tm.heads[1]} 
-                        activeLabel={activeLabel} 
-                        cellSize={CELL_SIZE} 
-                        width="70vw"
-                    />
-                </div>
-            </div>
+            ))}
         </div>
       ) : (
-        /* Single Tape - Wrap in relative to ensure pointer context is consistent */
         <div style={{ position: 'relative' }}>
             <TapeDisplay 
                 tape={tm.tape} 

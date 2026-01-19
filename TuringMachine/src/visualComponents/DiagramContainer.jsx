@@ -1,5 +1,5 @@
 /* src/visualComponents/DiagramContainer.jsx */
-import React, { useCallback, useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect, useMemo } from "react";
 import ReactFlow, {
   MarkerType,
   Background,
@@ -41,6 +41,25 @@ export default function DiagramContainer({
   engine
 }) {
   const { project, fitView } = useReactFlow();
+
+  // Helper: Calculate Global Max Tape Count
+  const globalTapeCount = useMemo(() => {
+    if (engine !== "MultiTape") return 1;
+    let max = 2; // Minimum 2 for MultiTape
+    edges.forEach(e => {
+      if (e.data?.labels) {
+        e.data.labels.forEach(l => {
+          Object.keys(l).forEach(k => {
+            if (k.startsWith("tape")) {
+              const num = parseInt(k.replace("tape", ""), 10);
+              if (!isNaN(num)) max = Math.max(max, num);
+            }
+          });
+        });
+      }
+    });
+    return max;
+  }, [edges, engine]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -207,13 +226,89 @@ export default function DiagramContainer({
     setSelectedNode(null);
   };
 
-  const handleSaveEdgeEdit = (id, newLabels) => {
+  // -----------------------------------------------------
+  // UPDATED SAVE HANDLER: Global Sync of Adds/Deletes
+  // -----------------------------------------------------
+  const handleSaveEdgeEdit = (id, newLabels, pendingOps = []) => {
     pushToHistory();
-    setEdges((eds) =>
-      eds.map((e) =>
-        e.id === id ? { ...e, data: { ...e.data, labels: newLabels } } : e
-      )
-    );
+
+    setEdges((eds) => {
+      return eds.map((e) => {
+        // --- TARGET EDGE ---
+        // It gets the new labels directly (Local UI already reflects Ops)
+        if (e.id === id) {
+          return { ...e, data: { ...e.data, labels: newLabels } };
+        }
+
+        // --- OTHER EDGES ---
+        // Replay pending operations to ensure global consistency
+        if (engine === "MultiTape" && pendingOps.length > 0) {
+            
+            let updatedLabels = (e.data.labels || []).map(label => {
+                let currentLabel = { ...label };
+                
+                // Replay ops in order
+                pendingOps.forEach(op => {
+                    if (op.type === 'ADD') {
+                        // Find current max tape for this edge
+                        let max = 0;
+                        Object.keys(currentLabel).forEach(k => {
+                            if (k.startsWith('tape')) {
+                                const n = parseInt(k.replace('tape',''),10);
+                                if (!isNaN(n)) max = Math.max(max, n);
+                            }
+                        });
+                        // Add default at max + 1
+                        currentLabel[`tape${max+1}`] = { read: '*', write: '*', direction: 'N' };
+                        
+                    } else if (op.type === 'DELETE') {
+                        const idx = op.index;
+                        
+                        // Shift logic:
+                        // 1. Delete target
+                        // 2. Move higher indices down
+                        const newLabelObj = {};
+                        
+                        // Copy non-tape properties
+                        Object.keys(currentLabel).forEach(k => {
+                            if (!k.startsWith('tape')) newLabelObj[k] = currentLabel[k];
+                        });
+                        
+                        // Find max to iterate
+                        let max = 0;
+                        Object.keys(currentLabel).forEach(k => {
+                            if (k.startsWith('tape')) {
+                                const n = parseInt(k.replace('tape',''),10);
+                                if (!isNaN(n)) max = Math.max(max, n);
+                            }
+                        });
+
+                        let newIndex = 1;
+                        for (let i=1; i<=max; i++) {
+                            if (i === idx) continue; // Skip deleted
+                            
+                            const oldKey = `tape${i}`;
+                            const newKey = `tape${newIndex}`;
+                            
+                            if (currentLabel[oldKey]) {
+                                newLabelObj[newKey] = currentLabel[oldKey];
+                            }
+                            newIndex++;
+                        }
+                        currentLabel = newLabelObj;
+                    }
+                });
+                
+                return currentLabel;
+            });
+            
+            return { ...e, data: { ...e.data, labels: updatedLabels } };
+        }
+        
+        return e;
+      });
+    });
+
     setSelectedEdge(null);
   };
 
@@ -326,6 +421,7 @@ export default function DiagramContainer({
             onSave={handleSaveEdgeEdit}
             onDelete={handleDeleteEdge}
             engine={engine}
+            globalTapeCount={globalTapeCount} 
           />
         )}
       </div>

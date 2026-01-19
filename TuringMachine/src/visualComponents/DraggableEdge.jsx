@@ -1,3 +1,4 @@
+// ... (Imports and helper functions remain the same)
 import React, { useContext, createContext, useCallback } from 'react';
 import { useReactFlow } from 'reactflow';
 
@@ -44,13 +45,13 @@ export default function DraggableEdge({
   const t = edge?.data?.t ?? 0.5;
   const dxOffset = edge?.data?.dxOffset ?? 0;
   const dyOffset = edge?.data?.dyOffset ?? 0;
-
-  // Extract stepCount from data
+  
   const stepCount = data?.stepCount;
 
   let px, py;
   let path;
 
+  // ... (Path calculation logic for SelfLoop and Normal edges remains same) ...
   if (isSelfLoop) {
     const loopDist = 60; 
     let baseX = sourceX;
@@ -153,28 +154,37 @@ export default function DraggableEdge({
       <path d={path} className="edge-hitbox" />
       
       {labels.map((label, index) => {
-        
-        // --- Determine Display Text & Active Status ---
         let labelText = "";
         let isRuleActive = false;
 
-        if (label.tape1 && label.tape2) {
-            // Multi-Tape Format: (1,0,L : 1,1,R)
-            const t1 = `${label.tape1.read},${label.tape1.write},${label.tape1.direction}`;
-            const t2 = `${label.tape2.read},${label.tape2.write},${label.tape2.direction}`;
-            labelText = `(${t1} : ${t2})`;
+        // Check if label has any tape keys
+        const tapeKeys = Object.keys(label).filter(k => k.startsWith('tape')).sort();
+        
+        if (tapeKeys.length > 0) {
+            // Multi-Tape Format: (1,0,L : 1,1,R : ...)
+            const parts = tapeKeys.map(k => {
+                const t = label[k];
+                return `${t.read},${t.write},${t.direction}`;
+            });
+            labelText = `(${parts.join(' : ')})`;
 
-            // Active Check: activeSymbol is "a,b" string
             if (data?.isActive && data?.activeSymbol) {
-                const [r1, r2] = data.activeSymbol.split(",");
-                const match1 = label.tape1.read === r1 || (label.tape1.read === '*' && (!r1 || r1 === ''));
-                const match2 = label.tape2.read === r2 || (label.tape2.read === '*' && (!r2 || r2 === ''));
-                isRuleActive = match1 && match2;
+                // activeSymbol is comma joined string of reads: "a,b,c"
+                const currentReads = data.activeSymbol.split(",");
+                // Check if all parts match
+                let allMatch = true;
+                tapeKeys.forEach((k, i) => {
+                    const t = label[k];
+                    const r = currentReads[i] || ""; // might be undefined if sim has more tapes than rule?
+                    if (t.read !== r && !(t.read === '*' && r === '')) {
+                        allMatch = false;
+                    }
+                });
+                isRuleActive = allMatch;
             }
         } else {
-            // Standard Format: a, b, R
+            // Standard Format
             labelText = `${label.read}, ${label.write}, ${label.direction}`;
-            
             isRuleActive = data?.isActive && (
                 label.read === data.activeSymbol || 
                 (label.read === '*' && data.activeSymbol === "")
@@ -184,7 +194,6 @@ export default function DraggableEdge({
         // --- Positioning Logic ---
         let lx = px;
         let ly = py;
-        
         const totalHeight = labels.length * labelSpacing;
         const centeredY = py - (totalHeight / 2) + (index * labelSpacing) + (labelSpacing / 2);
 
@@ -193,10 +202,10 @@ export default function DraggableEdge({
         } else if (dir === 'bottom') {
            ly = py + 25 + (index * labelSpacing);
         } else if (dir === 'left') {
-           lx = px - 55; // increased offset for longer multi-tape labels
+           lx = px - 55; 
            ly = centeredY;
         } else if (dir === 'right') {
-           lx = px + 55; // increased offset
+           lx = px + 55; 
            ly = centeredY;
         } else {
            ly = py - 15 - (index * labelSpacing);

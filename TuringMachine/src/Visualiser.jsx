@@ -7,14 +7,26 @@ import DiagramContainer from './visualComponents/DiagramContainer';
 import TransitionTable from './simulatorComponents/TransitionTable';
 import './Visualiser.css';
 
-import palindromeData from './examples/Palindrome.json';
+// Original Examples
+import palindromeData from './examples/palindrome.json'; // Fixed capitalization
 import binaryIncrementData from './examples/binary_increment.json';
 import busyBeaverData from './examples/busy_beaver.json';
 
+// New Multi-Tape Examples
+import palindromeMultiData from './examples/palindrome_multi.json';
+import isEqualData from './examples/is_equal.json';
+import binaryAdditionData from './examples/binary_addition.json';
+
 const exampleMap = {
+  // Deterministic
   palindrome: palindromeData,
   binary_increment: binaryIncrementData,
-  busy_beaver: busyBeaverData
+  busy_beaver: busyBeaverData,
+  
+  // Multi-Tape
+  palindromeMulti: palindromeMultiData,
+  isequal: isEqualData, // Fixed key to match App.jsx value "isequal"
+  binary_addition: binaryAdditionData
 };
 
 export default function Visualiser({ engine, selectedExample, showTable, setShowTable }) {
@@ -52,15 +64,14 @@ export default function Visualiser({ engine, selectedExample, showTable, setShow
             if (l.read !== undefined && l.read !== "") derived.add(l.read);
             if (l.write !== undefined && l.write !== "") derived.add(l.write);
             
-            // Handle Multi Tape (tape1, tape2 keys)
-            if (l.tape1) {
-               if (l.tape1.read) derived.add(l.tape1.read);
-               if (l.tape1.write) derived.add(l.tape1.write);
-            }
-            if (l.tape2) {
-               if (l.tape2.read) derived.add(l.tape2.read);
-               if (l.tape2.write) derived.add(l.tape2.write);
-            }
+            // Handle Multi Tape (dynamic keys)
+            Object.keys(l).forEach(key => {
+                if (key.startsWith('tape')) {
+                    const t = l[key];
+                    if (t.read) derived.add(t.read);
+                    if (t.write) derived.add(t.write);
+                }
+            });
         });
     });
     return new Set([...derived, ...manualSymbols]);

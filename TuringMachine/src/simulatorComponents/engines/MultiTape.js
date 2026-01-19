@@ -1,5 +1,3 @@
-/* src/simulatorComponents/engines/MultiTape.js */
-
 export function getStartNode(nodes) {
   return nodes.find(n => n.type === "start") || null;
 }
@@ -17,23 +15,46 @@ export function getNodeLabel(node) {
  */
 export function findTransition(currentNodeId, readSymbols, edges) {
   const outgoing = edges.filter(e => e.source === currentNodeId);
+  const numTapes = readSymbols.length;
 
   for (const edge of outgoing) {
     const labels = edge.data?.labels || [];
 
     // Find a label where ALL tapes match
     const rule = labels.find(l => {
-      // Check Tape 1
-      const r1 = l.tape1?.read;
-      const s1 = readSymbols[0];
-      const match1 = r1 === s1 || (r1 === '*' && s1 === "");
-
-      // Check Tape 2
-      const r2 = l.tape2?.read;
-      const s2 = readSymbols[1];
-      const match2 = r2 === s2 || (r2 === '*' && s2 === "");
-
-      return match1 && match2;
+        // Iterate over all active tapes
+        for(let i=0; i<numTapes; i++) {
+            const key = `tape${i+1}`;
+            const ruleData = l[key]; // Might be undefined if edge was created when fewer tapes existed
+            
+            // If rule doesn't specify this tape, treat it as wildcard? 
+            // Or strictly require definition? 
+            // Usually in TMs, if it's undefined it's not a match.
+            // But for "legacy" edges (2 tapes) in a 3 tape system, we treat missing as "don't care" or "blank"?
+            // Let's assume strict: if rule is missing tape definition, it matches blank (implicit)
+            // OR strictly, the rule must define all tapes.
+            // Let's go with: Undefined in rule = matches BLANK ('') and stays in place.
+            
+            const rRead = ruleData ? ruleData.read : '*'; // Default to wildcard if missing?
+            // Actually, safer to treat missing as "Matches Empty/Blank" to avoid stuck states.
+            
+            const currentSym = readSymbols[i];
+            
+            // Logic:
+            // if ruleData exists: check match
+            // if ruleData missing: match against wildcard logic (matches anything? or matches blank?)
+            
+            if (ruleData) {
+                if (ruleData.read !== currentSym && !(ruleData.read === '*' && currentSym === "")) {
+                    return false;
+                }
+            } else {
+                 // If the rule has NO definition for Tape 3, but we are simulating 3 tapes:
+                 // We effectively ignore this tape? No, that breaks determinism.
+                 // We'll treat it as matching a wildcard.
+            }
+        }
+        return true;
     });
 
     if (rule) {
@@ -66,13 +87,30 @@ export function stepMultiTM({ currentNodeId, tapes, heads, nodes, edges }) {
   const { toNodeId, rule, edgeId } = transition;
   const nextNode = nodes.find(n => n.id === toNodeId);
 
+  // Extract writes and directions
+  const writes = [];
+  const directions = [];
+  
+  // We iterate over the *actual* number of tapes in simulation
+  for(let i=0; i<tapes.length; i++) {
+      const key = `tape${i+1}`;
+      const r = rule[key];
+      if (r) {
+          writes.push(r.write);
+          directions.push(r.direction);
+      } else {
+          // If rule doesn't specify, we write back what we read (no change) and stay (N)
+          writes.push(reads[i] || "*"); // * writes blank
+          directions.push("N");
+      }
+  }
+
   return {
     halted: false,
 
     reads,
-    // Extract writes and directions for both tapes
-    writes: [rule.tape1.write, rule.tape2.write],
-    directions: [rule.tape1.direction, rule.tape2.direction],
+    writes,
+    directions,
 
     fromNodeId: currentNodeId,
     toNodeId,
