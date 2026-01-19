@@ -17,7 +17,7 @@ const exampleMap = {
   busy_beaver: busyBeaverData
 };
 
-export default function Visualiser({ selectedExample, showTable, setShowTable }) {
+export default function Visualiser({ engine, selectedExample, showTable, setShowTable }) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
@@ -48,12 +48,21 @@ export default function Visualiser({ selectedExample, showTable, setShowTable })
     const derived = new Set();
     edges.forEach(edge => {
         edge.data?.labels?.forEach(l => {
+            // Handle Single Tape
             if (l.read !== undefined && l.read !== "") derived.add(l.read);
-            // FIX: Include written symbols in the alphabet
             if (l.write !== undefined && l.write !== "") derived.add(l.write);
+            
+            // Handle Multi Tape (tape1, tape2 keys)
+            if (l.tape1) {
+               if (l.tape1.read) derived.add(l.tape1.read);
+               if (l.tape1.write) derived.add(l.tape1.write);
+            }
+            if (l.tape2) {
+               if (l.tape2.read) derived.add(l.tape2.read);
+               if (l.tape2.write) derived.add(l.tape2.write);
+            }
         });
     });
-    // Combine derived symbols with manually added symbols
     return new Set([...derived, ...manualSymbols]);
   }, [edges, manualSymbols]);
 
@@ -81,7 +90,8 @@ export default function Visualiser({ selectedExample, showTable, setShowTable })
             setCurrentSymbol={setCurrentSymbol}
             setStepCount={setStepCount} 
             loadedInput={loadedInput}
-            validAlphabet={validAlphabet} 
+            validAlphabet={validAlphabet}
+            engine={engine}
           />
         </div>
 
@@ -97,7 +107,8 @@ export default function Visualiser({ selectedExample, showTable, setShowTable })
             activeNodeId={activeNodeId}
             activeEdgeId={activeEdgeId}
             currentSymbol={currentSymbol}
-            stepCount={stepCount} 
+            stepCount={stepCount}
+            engine={engine} 
           />
         </div>
 

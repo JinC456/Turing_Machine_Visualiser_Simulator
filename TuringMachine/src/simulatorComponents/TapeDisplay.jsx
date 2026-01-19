@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from "react";
 import "../Visualiser.css";
 
-export default function TapeDisplay({ tape, head, activeLabel, cellSize = 40 }) {
+export default function TapeDisplay({ tape, head, activeLabel, cellSize = 40, width = "80vw" }) {
   const prevHead = useRef(head);
   const isJump = Math.abs(head - prevHead.current) > 1;
 
@@ -18,7 +18,7 @@ export default function TapeDisplay({ tape, head, activeLabel, cellSize = 40 }) 
         </div>
       </div>
 
-      <div className="tape-wrapper">
+      <div className="tape-wrapper" style={{ width: width }}>
         <div
           className="tape"
           style={{ 

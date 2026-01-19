@@ -1,6 +1,9 @@
+/* src/simulatorComponents/TuringMachineLogic.js */
 import { useState, useCallback } from 'react';
 import { stepTM, getStartNode } from './engines/Deterministic';
+import { stepMultiTM } from './engines/MultiTape';
 
+// --- Single Tape Hook (Existing) ---
 export const useTuringMachine = (initialCells = 13) => {
   const initialHead = Math.floor(initialCells / 2);
 
@@ -35,7 +38,6 @@ export const useTuringMachine = (initialCells = 13) => {
   const stepBack = useCallback(() => {
     setHistory(prev => {
       if (prev.length === 0) return prev;
-
       const previous = prev[prev.length - 1];
 
       setTape(previous.tape);
@@ -55,7 +57,6 @@ export const useTuringMachine = (initialCells = 13) => {
   const stepForward = useCallback((nodes, edges) => {
     if (error || success) return;
 
-    // --- Resolve current state synchronously ---
     let currentState = activeNodeId;
 
     if (!currentState) {
@@ -65,8 +66,6 @@ export const useTuringMachine = (initialCells = 13) => {
         return;
       }
       
-      // FIX: Push the "Pre-Start" (null) state to history.
-      // This ensures 'canUndo' becomes true immediately, preventing auto-reset logic.
       setHistory(prev => [
         ...prev,
         {
@@ -81,12 +80,9 @@ export const useTuringMachine = (initialCells = 13) => {
 
       currentState = startNode.id;
       setActiveNodeId(currentState);
-      
-      // Stop here to allow the UI to highlight the Start Node before moving
       return;
     }
 
-    // --- Run deterministic transition ---
     const result = stepTM({
       currentNodeId: currentState,
       tape,
@@ -101,7 +97,6 @@ export const useTuringMachine = (initialCells = 13) => {
       return;
     }
 
-    // --- Save history BEFORE applying changes ---
     setHistory(prev => [
       ...prev,
       {
@@ -114,16 +109,13 @@ export const useTuringMachine = (initialCells = 13) => {
       }
     ]);
 
-    // --- WRITE ---
     let newTape = [...tape];
     newTape[head] = result.write === '*' ? "" : result.write;
 
-    // --- MOVE ---
     let newHead = head;
     if (result.direction === "R") newHead++;
     if (result.direction === "L") newHead--;
 
-    // --- TAPE EXPANSION ---
     const edgeThreshold = 6;
     const expansionSize = 6;
 
@@ -136,7 +128,6 @@ export const useTuringMachine = (initialCells = 13) => {
       newTape = [...newTape, ...expansion];
     }
 
-    // --- APPLY STATE UPDATES (ORDER MATTERS) ---
     setTape(newTape);
     setHead(newHead);
     setActiveNodeId(result.toNodeId);
@@ -144,36 +135,175 @@ export const useTuringMachine = (initialCells = 13) => {
     setLastRead(result.read);
     setStepCount(c => c + 1);
 
-    // --- ACCEPT = HALT ---
+    if (result.isAccept) {
+      setSuccess(true);
+      return;
+    }
+  }, [activeNodeId, activeEdgeId, error, success, tape, head, lastRead, stepCount]);
+
+  return {
+    tape, head, activeNodeId, activeEdgeId, lastRead, stepCount, error, success,
+    setTape, setHead, stepForward, stepBack, reset, canUndo: history.length > 0
+  };
+};
+
+// --- Multi-Tape Hook ---
+export const useMultiTapeTuringMachine = (initialCells = 13, numTapes = 2) => {
+  const initialHead = Math.floor(initialCells / 2);
+
+  const [tapes, setTapes] = useState(
+    Array.from({ length: numTapes }, () => Array(initialCells).fill(""))
+  );
+  const [heads, setHeads] = useState(Array(numTapes).fill(initialHead));
+
+  const [activeNodeId, setActiveNodeId] = useState(null);
+  const [activeEdgeId, setActiveEdgeId] = useState(null);
+  
+  const [lastRead, setLastRead] = useState(Array(numTapes).fill(null));
+  
+  const [stepCount, setStepCount] = useState(0);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+  const [history, setHistory] = useState([]);
+
+  // --- RESET ---
+  const reset = useCallback(() => {
+    setTapes(Array.from({ length: numTapes }, () => Array(initialCells).fill("")));
+    setHeads(Array(numTapes).fill(initialHead));
+    setActiveNodeId(null);
+    setActiveEdgeId(null);
+    setLastRead(Array(numTapes).fill(null));
+    setStepCount(0);
+    setError(null);
+    setSuccess(false);
+    setHistory([]);
+  }, [initialCells, initialHead, numTapes]);
+
+  // --- STEP BACK ---
+  const stepBack = useCallback(() => {
+    setHistory(prev => {
+      if (prev.length === 0) return prev;
+      const previous = prev[prev.length - 1];
+
+      setTapes(previous.tapes);
+      setHeads(previous.heads);
+      setActiveNodeId(previous.activeNodeId);
+      setActiveEdgeId(previous.activeEdgeId);
+      setLastRead(previous.lastRead);
+      setStepCount(previous.stepCount);
+      setError(null);
+      setSuccess(false);
+
+      return prev.slice(0, -1);
+    });
+  }, []);
+
+  // --- STEP FORWARD ---
+  const stepForward = useCallback((nodes, edges) => {
+    if (error || success) return;
+
+    let currentState = activeNodeId;
+
+    if (!currentState) {
+      const startNode = getStartNode(nodes);
+      if (!startNode) {
+        setError("No Start Node");
+        return;
+      }
+      
+      // Init History
+      setHistory(prev => [
+        ...prev,
+        {
+          tapes: tapes.map(t => [...t]),
+          heads: [...heads],
+          activeNodeId: null, 
+          activeEdgeId: null,
+          lastRead: Array(numTapes).fill(null),
+          stepCount
+        }
+      ]);
+
+      currentState = startNode.id;
+      setActiveNodeId(currentState);
+      return;
+    }
+
+    // Call Multi-Tape Engine
+    const result = stepMultiTM({
+      currentNodeId: currentState,
+      tapes,
+      heads,
+      nodes,
+      edges
+    });
+
+    if (result.halted) {
+      setActiveEdgeId(null);
+      setError(result.reason);
+      return;
+    }
+
+    // Save History
+    setHistory(prev => [
+      ...prev,
+      {
+        tapes: tapes.map(t => [...t]),
+        heads: [...heads],
+        activeNodeId: currentState,
+        activeEdgeId,
+        lastRead,
+        stepCount
+      }
+    ]);
+
+    // Apply Logic for EACH tape
+    const newTapes = tapes.map(t => [...t]);
+    const newHeads = [...heads];
+    
+    // Iterate over tapes to apply Write, Move, and Expand
+    for(let i = 0; i < numTapes; i++) {
+        // 1. Write
+        const w = result.writes[i];
+        newTapes[i][newHeads[i]] = w === '*' ? "" : w;
+
+        // 2. Move
+        const dir = result.directions[i];
+        if (dir === "R") newHeads[i]++;
+        if (dir === "L") newHeads[i]--;
+
+        // 3. Expand
+        const edgeThreshold = 6;
+        const expansionSize = 6;
+        
+        if (newHeads[i] < edgeThreshold) {
+            const expansion = Array(expansionSize).fill("");
+            newTapes[i] = [...expansion, ...newTapes[i]];
+            newHeads[i] += expansionSize;
+        } else if (newHeads[i] >= newTapes[i].length - edgeThreshold) {
+            const expansion = Array(expansionSize).fill("");
+            newTapes[i] = [...newTapes[i], ...expansion];
+        }
+    }
+
+    setTapes(newTapes);
+    setHeads(newHeads);
+    setActiveNodeId(result.toNodeId);
+    setActiveEdgeId(result.edgeId);
+    setLastRead(result.reads);
+    setStepCount(c => c + 1);
+
     if (result.isAccept) {
       setSuccess(true);
       return;
     }
   }, [
-    activeNodeId,
-    activeEdgeId,
-    error,
-    success,
-    tape,
-    head,
-    lastRead,
-    stepCount
+    activeNodeId, activeEdgeId, error, success, 
+    tapes, heads, lastRead, stepCount, numTapes
   ]);
 
   return {
-    tape,
-    head,
-    activeNodeId,
-    activeEdgeId,
-    lastRead,
-    stepCount,
-    error,
-    success,
-    setTape,
-    setHead,
-    stepForward,
-    stepBack,
-    reset,
-    canUndo: history.length > 0
+    tapes, heads, activeNodeId, activeEdgeId, lastRead, stepCount, error, success,
+    setTapes, setHeads, stepForward, stepBack, reset, canUndo: history.length > 0
   };
 };

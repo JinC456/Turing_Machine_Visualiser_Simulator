@@ -37,7 +37,8 @@ export default function DiagramContainer({
   activeNodeId,
   activeEdgeId,
   currentSymbol,
-  stepCount
+  stepCount,
+  engine
 }) {
   const { project, fitView } = useReactFlow();
 
@@ -62,12 +63,11 @@ export default function DiagramContainer({
       ...e,
       data: {
         ...e.data,
-        labels: [...(e.data.labels || [])],
+        labels: JSON.parse(JSON.stringify(e.data.labels || [])),
       },
     }));
 
     setHistory((h) =>
-      // CHANGED: Increased history limit from 10 to 50 to prevent missing steps
       [...h, { nodes: clonedNodes, edges: clonedEdges }].slice(-50)
     );
     setFuture([]);
@@ -168,7 +168,6 @@ export default function DiagramContainer({
   );
 
   // --- NODE INTERACTIONS ---
-
   const onNodeDoubleClick = (event, node) => {
     event.preventDefault();
     if (node.type !== "normal" && node.type !== "accept") return;
@@ -230,27 +229,14 @@ export default function DiagramContainer({
     setEdges([]);
   };
 
-  // --- EXPORT JSON ---
   const handleExport = () => {
     let filename = window.prompt("Enter a filename for the export:", "turing_machine_diagram");
-    
     if (filename === null) return;
-    
-    if (filename.trim() === "") {
-        filename = "turing_machine_diagram";
-    }
+    if (filename.trim() === "") filename = "turing_machine_diagram";
+    if (!filename.toLowerCase().endsWith(".json")) filename += ".json";
 
-    if (!filename.toLowerCase().endsWith(".json")) {
-        filename += ".json";
-    }
-
-    const exportData = {
-      nodes: nodes,
-      edges: edges,
-    };
-    
+    const exportData = { nodes: nodes, edges: edges };
     const jsonString = JSON.stringify(exportData, null, 2);
-    
     const blob = new Blob([jsonString], { type: 'application/json' });
     const href = URL.createObjectURL(blob);
     
@@ -276,8 +262,7 @@ export default function DiagramContainer({
     const isActive = edge.id === activeEdgeId;
     return {
       ...edge,
-      markerEnd: 
-      {
+      markerEnd: {
         ...edge.markerEnd,
         color: isActive ? "#c7b52a" : "#333", 
       },
@@ -309,7 +294,6 @@ export default function DiagramContainer({
             onConnect={onConnect}
             onDrop={onDrop}
             onDragOver={onDragOver}
-            /* CHANGED: Added handlers to capture history on Drag and Delete */
             onNodeDragStart={pushToHistory}
             onNodesDelete={pushToHistory}
             onEdgesDelete={pushToHistory}
@@ -341,6 +325,7 @@ export default function DiagramContainer({
             onClose={() => setSelectedEdge(null)}
             onSave={handleSaveEdgeEdit}
             onDelete={handleDeleteEdge}
+            engine={engine}
           />
         )}
       </div>

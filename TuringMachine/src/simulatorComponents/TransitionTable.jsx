@@ -1,5 +1,4 @@
-/* src/simulatorComponents/TransitionTable.jsx */
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
 import "../Visualiser.css";
 import { getNodeLabel } from "./engines/Deterministic";
 
@@ -8,11 +7,78 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
   const [newSymbol, setNewSymbol] = useState("");
   const [isWindowMode, setIsWindowMode] = useState(false);
 
+  const [position, setPosition] = useState({ x: 50, y: 100 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragOffset = useRef({ x: 0, y: 0 });
+
+  const [size, setSize] = useState({ width: 500, height: 400 });
+  const [isResizing, setIsResizing] = useState(false);
+  const resizeStart = useRef({ x: 0, y: 0, width: 0, height: 0 });
+
+
+  const handleMouseDown = (e) => {
+    if (isWindowMode) {
+      setIsDragging(true);
+      dragOffset.current = {
+        x: e.clientX - position.x,
+        y: e.clientY - position.y
+      };
+    }
+  };
+
+  const handleResizeMouseDown = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setIsResizing(true);
+    resizeStart.current = {
+      x: e.clientX,
+      y: e.clientY,
+      width: size.width,
+      height: size.height
+    };
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (isDragging) {
+        setPosition({
+          x: e.clientX - dragOffset.current.x,
+          y: e.clientY - dragOffset.current.y
+        });
+      }
+
+      if (isResizing) {
+        const deltaX = e.clientX - resizeStart.current.x;
+        const deltaY = e.clientY - resizeStart.current.y;
+        
+        setSize({
+          width: Math.max(320, resizeStart.current.width + deltaX),
+          height: Math.max(200, resizeStart.current.height + deltaY)
+        });
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      setIsResizing(false);
+    };
+
+    if (isDragging || isResizing) {
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isDragging, isResizing]);
+
   const { symbols, matrix, sortedNodes, derivedSymbols } = useMemo(() => {
     const derivedSet = new Set();
     const nodeMap = {}; 
 
-    // Sort nodes using shared helper
+    // Sort nodes
     const sortedNodes = [...nodes].sort((a, b) => {
       if (a.type === 'start') return -1;
       if (b.type === 'start') return 1;
@@ -29,7 +95,6 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
     edges.forEach((edge) => {
       const sourceId = edge.source;
       const targetId = edge.target;
-      // Use shared helper
       const targetLabel = nodeMap[targetId] ? getNodeLabel(nodeMap[targetId]) : "?";
       const rules = edge.data?.labels || [];
 
@@ -78,19 +143,45 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
     ? "popup-menu table-popup modeless-window" 
     : "popup-menu table-popup";
 
+  const windowStyle = isWindowMode 
+    ? { 
+        left: `${position.x}px`, 
+        top: `${position.y}px`,
+        width: `${size.width}px`,
+        height: `${size.height}px`,
+        margin: 0,
+        position: 'fixed'
+      } 
+    : {};
+
   const tableContent = (
-    <div className={containerClass} onClick={(e) => e.stopPropagation()}>
-      <div className="popup-header">
+    <div 
+      className={containerClass} 
+      style={windowStyle}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div 
+        className="popup-header"
+        style={{ cursor: isWindowMode ? "grab" : "default" }}
+        onMouseDown={handleMouseDown}
+      >
           <h3>Transition Table</h3>
           
           <div className="header-actions">
             <button 
               className="window-toggle-btn" 
               onClick={() => setIsWindowMode(!isWindowMode)}
+              onMouseDown={(e) => e.stopPropagation()} 
             >
-              {isWindowMode ? "Modal View" : "In Window"}
+              {isWindowMode ? "Modal View" : "Float Window"}
             </button>
-            <button className="close-btn" onClick={onClose}>×</button>
+            <button 
+              className="close-btn" 
+              onClick={onClose}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              ×
+            </button>
           </div>
       </div>
 
@@ -133,7 +224,6 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
           <tbody>
             {sortedNodes.map((node) => (
               <tr key={node.id}>
-                {/* Use shared helper */}
                 <td className="row-header">{getNodeLabel(node)}</td>
                 {symbols.map((symbol) => {
                   const content = matrix[node.id]?.[symbol];
@@ -152,6 +242,13 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
           </tbody>
         </table>
       </div>
+
+      {isWindowMode && (
+        <div 
+          className="resize-handle"
+          onMouseDown={handleResizeMouseDown}
+        />
+      )}
     </div>
   );
 

@@ -139,12 +139,11 @@ export default function DraggableEdge({
   }, [id, dxOffset, dyOffset, setEdges, getZoom, pushToHistory]);
 
   const labels = edge?.data?.labels ?? [];
-  const labelSpacing = 14;
+  const labelSpacing = 16; 
 
   return (
     <>
       <path
-        // Forces re-mount when step changes -> triggers animation
         key={`path-${id}-${stepCount}`} 
         d={path}
         className={`edge-path ${selected ? 'selected' : ''} ${data?.isActive ? 'active' : ''}`}
@@ -154,11 +153,35 @@ export default function DraggableEdge({
       <path d={path} className="edge-hitbox" />
       
       {labels.map((label, index) => {
-        const isRuleActive = data?.isActive && (
-          label.read === data.activeSymbol || 
-          (label.read === '*' && data.activeSymbol === "")
-        );
+        
+        // --- Determine Display Text & Active Status ---
+        let labelText = "";
+        let isRuleActive = false;
 
+        if (label.tape1 && label.tape2) {
+            // Multi-Tape Format: (1,0,L : 1,1,R)
+            const t1 = `${label.tape1.read},${label.tape1.write},${label.tape1.direction}`;
+            const t2 = `${label.tape2.read},${label.tape2.write},${label.tape2.direction}`;
+            labelText = `(${t1} : ${t2})`;
+
+            // Active Check: activeSymbol is "a,b" string
+            if (data?.isActive && data?.activeSymbol) {
+                const [r1, r2] = data.activeSymbol.split(",");
+                const match1 = label.tape1.read === r1 || (label.tape1.read === '*' && (!r1 || r1 === ''));
+                const match2 = label.tape2.read === r2 || (label.tape2.read === '*' && (!r2 || r2 === ''));
+                isRuleActive = match1 && match2;
+            }
+        } else {
+            // Standard Format: a, b, R
+            labelText = `${label.read}, ${label.write}, ${label.direction}`;
+            
+            isRuleActive = data?.isActive && (
+                label.read === data.activeSymbol || 
+                (label.read === '*' && data.activeSymbol === "")
+            );
+        }
+
+        // --- Positioning Logic ---
         let lx = px;
         let ly = py;
         
@@ -170,29 +193,28 @@ export default function DraggableEdge({
         } else if (dir === 'bottom') {
            ly = py + 25 + (index * labelSpacing);
         } else if (dir === 'left') {
-           lx = px - 35; 
+           lx = px - 55; // increased offset for longer multi-tape labels
            ly = centeredY;
         } else if (dir === 'right') {
-           lx = px + 35; 
+           lx = px + 55; // increased offset
            ly = centeredY;
         } else {
            ly = py - 15 - (index * labelSpacing);
         }
 
         return (
-          // Forces re-mount for text animation
           <g key={`${index}-${stepCount}`} style={{ pointerEvents: "none", userSelect: "none" }}>
             <text
               x={lx}
               y={ly}
               textAnchor="middle"
               stroke="white"
-              strokeWidth="3"
+              strokeWidth="4" 
               fontSize={isRuleActive ? 14 : 12}
               fontWeight={isRuleActive ? "bold" : "normal"}
               style={{ transition: "all 0.2s ease" }}
             >
-              {`${label.read}, ${label.write}, ${label.direction}`}
+              {labelText}
             </text>
             
             <text
@@ -204,7 +226,7 @@ export default function DraggableEdge({
               fontWeight={isRuleActive ? "bold" : "normal"}
               style={{ transition: "all 0.2s ease" }}
             >
-              {`${label.read}, ${label.write}, ${label.direction}`}
+              {labelText}
             </text>
           </g>
         );

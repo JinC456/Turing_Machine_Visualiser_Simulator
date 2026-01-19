@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import PlaybackControls from "./PlaybackControls";
 import TapeDisplay from "./TapeDisplay";
-import { useTuringMachine } from "./TuringMachineLogic";
+import { useTuringMachine, useMultiTapeTuringMachine } from "./TuringMachineLogic";
 import { getNodeLabel } from "./engines/Deterministic";
 
 // Define constant here to avoid magic numbers
@@ -16,14 +16,20 @@ export default function TapeContainer({
   setCurrentSymbol,
   setStepCount,
   loadedInput,
-  validAlphabet
+  validAlphabet,
+  engine
 }) {
-  const tm = useTuringMachine(13);
+  const isMultiTape = engine === "MultiTape";
+
+  const singleTM = useTuringMachine(13);
+  const multiTM = useMultiTapeTuringMachine(13, 2);
+
+  const tm = isMultiTape ? multiTM : singleTM;
   
   const { 
-    tape, head, activeNodeId: tmActiveNode, activeEdgeId: tmActiveEdge, 
+    activeNodeId: tmActiveNode, activeEdgeId: tmActiveEdge, 
     lastRead, stepCount: tmStepCount, error, success, 
-    setTape, setHead, stepForward, stepBack, reset, canUndo 
+    stepForward, stepBack, reset, canUndo 
   } = tm;
 
   const [isRunning, setIsRunning] = useState(false);
@@ -62,7 +68,13 @@ export default function TapeContainer({
   useEffect(() => {
     setActiveNodeId(tmActiveNode);
     setActiveEdgeId(tmActiveEdge);
-    setCurrentSymbol(lastRead !== null ? lastRead : "");
+    
+    // For display in diagram container
+    const symbolToDisplay = isMultiTape && Array.isArray(lastRead) 
+        ? lastRead.join(",") 
+        : (lastRead !== null ? lastRead : "");
+
+    setCurrentSymbol(symbolToDisplay);
     setStepCount(tmStepCount);
   }, [
     tmActiveNode,
@@ -72,7 +84,8 @@ export default function TapeContainer({
     setActiveNodeId,
     setActiveEdgeId,
     setCurrentSymbol,
-    setStepCount
+    setStepCount,
+    isMultiTape
   ]);
 
   const initializeTape = useCallback(() => {
@@ -87,15 +100,24 @@ export default function TapeContainer({
     const startPos = Math.floor(defaultSize / 2);
     const chars = inputValue.split("");
     const requiredSize = Math.max(defaultSize, startPos + chars.length);
-    const newTape = Array(requiredSize).fill("");
-
+    
+    // Prepare tape 1 with input
+    const tape1 = Array(requiredSize).fill("");
     chars.forEach((char, i) => {
-      newTape[startPos + i] = char === "*" ? "" : char;
+      tape1[startPos + i] = char === "*" ? "" : char;
     });
 
-    setTape(newTape);
-    setHead(startPos);
-  }, [inputValue, canUndo, setTape, setHead, inputError]);
+    if (isMultiTape) {
+        // Tape 2 is empty initially
+        const tape2 = Array(requiredSize).fill("");
+        tm.setTapes([tape1, tape2]);
+        tm.setHeads([startPos, startPos]);
+    } else {
+        tm.setTape(tape1);
+        tm.setHead(startPos);
+    }
+
+  }, [inputValue, canUndo, tm, inputError, isMultiTape]);
 
   useEffect(() => {
     if (!isRunning && !isFinished && !canUndo) {
@@ -170,13 +192,71 @@ export default function TapeContainer({
   return (
     <div className="tape-container">
       
-      {/* Pass CELL_SIZE as prop */}
-      <TapeDisplay 
-        tape={tape} 
-        head={head} 
-        activeLabel={activeLabel} 
-        cellSize={CELL_SIZE} 
-      />
+      {isMultiTape ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '40px', width: '100%', alignItems: 'center' }}>
+            
+            {/* Tape 1 */}
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '90%' }}>
+                <div style={{ 
+                    fontWeight: 'bold', 
+                    fontSize: '1.1rem', 
+                    minWidth: '80px', 
+                    textAlign: 'right', 
+                    marginRight: '15px',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0
+                }}>
+                    Tape 1
+                </div>
+                {/* Wrap in relative div so pointer (absolute) anchors here */}
+                <div style={{ position: 'relative', flexGrow: 1 }}>
+                    <TapeDisplay 
+                        tape={tm.tapes[0]} 
+                        head={tm.heads[0]} 
+                        activeLabel={activeLabel} 
+                        cellSize={CELL_SIZE} 
+                        width="70vw"
+                    />
+                </div>
+            </div>
+
+            {/* Tape 2 */}
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '90%' }}>
+                <div style={{ 
+                    fontWeight: 'bold', 
+                    fontSize: '1.1rem', 
+                    minWidth: '80px', 
+                    textAlign: 'right', 
+                    marginRight: '15px',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0
+                }}>
+                    Tape 2
+                </div>
+                {/* Wrap in relative div so pointer (absolute) anchors here */}
+                <div style={{ position: 'relative', flexGrow: 1 }}>
+                    <TapeDisplay 
+                        tape={tm.tapes[1]} 
+                        head={tm.heads[1]} 
+                        activeLabel={activeLabel} 
+                        cellSize={CELL_SIZE} 
+                        width="70vw"
+                    />
+                </div>
+            </div>
+        </div>
+      ) : (
+        /* Single Tape - Wrap in relative to ensure pointer context is consistent */
+        <div style={{ position: 'relative' }}>
+            <TapeDisplay 
+                tape={tm.tape} 
+                head={tm.head} 
+                activeLabel={activeLabel} 
+                cellSize={CELL_SIZE} 
+                width="80vw"
+            />
+        </div>
+      )}
 
       <div className="status-area">
         {statusMessage && (
@@ -202,7 +282,7 @@ export default function TapeContainer({
             style={inputError ? { borderColor: '#d9534f', backgroundColor: '#fdf7f7' } : {}}
           />
           <div className="alphabet-label">
-            Alphabet: <span>{`{ ${alphabetString} }`}</span>
+            Σ: <span>{`{ ${alphabetString} }`}</span>
           </div>
         </div>
 
