@@ -38,14 +38,14 @@ export default function DiagramContainer({
   currentSymbol,
   stepCount,
   engine,
-  onClear
+  onClear,
+  isLocked
 }) {
   const { project, fitView } = useReactFlow();
 
-  // Helper: Calculate Global Max Tape Count
   const globalTapeCount = useMemo(() => {
     if (engine !== "MultiTape") return 1;
-    let max = 2; // Minimum 2 for MultiTape
+    let max = 2;
     edges.forEach(e => {
       if (e.data?.labels) {
         e.data.labels.forEach(l => {
@@ -82,7 +82,6 @@ export default function DiagramContainer({
     historyCounter.current += 1;
     const actionId = historyCounter.current;
     
-    // Use override if provided, otherwise use current state
     const sourceNodes = snapshotOverride ? snapshotOverride.nodes : nodes;
     const sourceEdges = snapshotOverride ? snapshotOverride.edges : edges;
 
@@ -120,10 +119,11 @@ export default function DiagramContainer({
   }, [pushToHistory]);
 
   const handleUndo = () => {
+    if (isLocked) return;
     if (history.length === 0) return;
+
     const previous = history[history.length - 1];
     
-    // Save CURRENT state to future before restoring old state
     const currentSnapshot = { 
         nodes: nodes.map(n => ({ ...n, data: { ...n.data } })), 
         edges: edges.map(e => ({ ...e, data: { ...e.data, labels: JSON.parse(JSON.stringify(e.data.labels || [])) } })) 
@@ -137,7 +137,9 @@ export default function DiagramContainer({
   };
 
   const handleRedo = () => {
+    if (isLocked) return;
     if (future.length === 0) return;
+
     const next = future[future.length - 1];
     
     const currentSnapshot = { 
@@ -158,12 +160,13 @@ export default function DiagramContainer({
 
   // 1. Single Node Drag
   const onNodeDragStart = useCallback((event, node) => {
+      if (isLocked) return;
       dragStartRef.current = { x: node.position.x, y: node.position.y };
-      // Capture full state BEFORE move
       dragStartSnapshotRef.current = { nodes, edges };
-  }, [nodes, edges]);
+  }, [nodes, edges, isLocked]);
 
   const onNodeDragStop = useCallback((event, node) => {
+      if (isLocked) return;
       const dx = node.position.x - dragStartRef.current.x;
       const dy = node.position.y - dragStartRef.current.y;
       const distance = Math.sqrt(dx*dx + dy*dy);
@@ -172,24 +175,27 @@ export default function DiagramContainer({
           pushToHistory("Node Moved", dragStartSnapshotRef.current);
       }
       dragStartSnapshotRef.current = null; 
-  }, [pushToHistory]);
+  }, [pushToHistory, isLocked]);
 
   // 2. Multi-Selection Drag
   const onSelectionDragStart = useCallback(() => {
+      if (isLocked) return;
       dragStartSnapshotRef.current = { nodes, edges };
-  }, [nodes, edges]);
+  }, [nodes, edges, isLocked]);
 
   const onSelectionDragStop = useCallback(() => {
+      if (isLocked) return;
       if (dragStartSnapshotRef.current) {
           pushToHistory("Group Moved", dragStartSnapshotRef.current);
           dragStartSnapshotRef.current = null;
       }
-  }, [pushToHistory]);
+  }, [pushToHistory, isLocked]);
 
 
   // --- CONNECT ---
   const onConnect = useCallback(
     (params) => {
+      if (isLocked) return;
       pushToHistory("Edge Created");
 
       const isSelfLoop = params.source === params.target;
@@ -226,7 +232,7 @@ export default function DiagramContainer({
       setEdges((eds) => [...eds, newEdge]);
       setSelectedEdge(newEdge);
     },
-    [nodes, pushToHistory, setEdges]
+    [nodes, pushToHistory, setEdges, isLocked]
   );
 
   // --- DRAG & DROP NEW NODES ---
@@ -238,6 +244,8 @@ export default function DiagramContainer({
   const onDrop = useCallback(
     (event) => {
       event.preventDefault();
+      if (isLocked) return;
+
       const type = event.dataTransfer.getData("node-type");
       if (!type) return;
 
@@ -260,12 +268,13 @@ export default function DiagramContainer({
       pushToHistory("Node Created");
       setNodes((nds) => [...nds, newNode]);
     },
-    [project, pushToHistory, setNodes, nodes.length]
+    [project, pushToHistory, setNodes, nodes.length, isLocked]
   );
 
   // --- NODE INTERACTIONS ---
   const onNodeDoubleClick = (event, node) => {
     event.preventDefault();
+    if (isLocked) return;
     if (node.type !== "normal" && node.type !== "accept") return;
     
     pushToHistory("Node Type Changed");
@@ -281,12 +290,14 @@ export default function DiagramContainer({
 
   const onNodeContextMenu = (event, node) => {
     event.preventDefault();
+    if (isLocked) return;
     setSelectedNode(node);
     setSelectedEdge(null);
   };
 
   const onEdgeDoubleClick = (event, edge) => {
     event.preventDefault();
+    if (isLocked) return;
     setSelectedEdge(edge);
     setSelectedNode(null);
   };
@@ -370,6 +381,7 @@ export default function DiagramContainer({
   };
 
   const handleClearAll = () => {
+    if (isLocked) return;
     pushToHistory("Cleared All");
     if (onClear) {
       onClear();
@@ -401,6 +413,7 @@ export default function DiagramContainer({
   };
 
   const handleImport = useCallback((importedData) => {
+    if (isLocked) return;
     if (!importedData || typeof importedData !== 'object') {
         alert("Invalid file format.");
         return;
@@ -415,7 +428,7 @@ export default function DiagramContainer({
     setEdges(importedData.edges);
     setSelectedNode(null);
     setSelectedEdge(null);
-  }, [pushToHistory, setNodes, setEdges]);
+  }, [pushToHistory, setNodes, setEdges, isLocked]);
 
   const decoratedNodes = nodes.map((node) => ({
     ...node,
@@ -447,7 +460,10 @@ export default function DiagramContainer({
       <div className="diagram-container flex">
         <NodeMenu />
 
-        <div className="reactflow-wrapper">
+        {/* --- MOVED BORDER STYLE HERE --- */}
+        <div 
+            className={`reactflow-wrapper ${isLocked ? "locked" : ""}`}
+        >
           <ReactFlow
             nodes={decoratedNodes}
             edges={decoratedEdges}
@@ -462,14 +478,19 @@ export default function DiagramContainer({
             onDrop={onDrop}
             onDragOver={onDragOver}
             
+            /* --- LOCK INTERACTIONS --- */
+            nodesDraggable={!isLocked}
+            nodesConnectable={!isLocked}
+            deleteKeyCode={isLocked ? null : ["Backspace", "Delete"]}
+
             /* --- DRAG HANDLERS --- */
             onNodeDragStart={onNodeDragStart} 
             onNodeDragStop={onNodeDragStop}   
             onSelectionDragStart={onSelectionDragStart}
             onSelectionDragStop={onSelectionDragStop}
 
-            onNodesDelete={() => pushToHistoryDebounced("Nodes Deleted")}
-            onEdgesDelete={() => pushToHistoryDebounced("Edges Deleted")}
+            onNodesDelete={() => !isLocked && pushToHistoryDebounced("Nodes Deleted")}
+            onEdgesDelete={() => !isLocked && pushToHistoryDebounced("Edges Deleted")}
             
             fitView 
           >
@@ -484,8 +505,9 @@ export default function DiagramContainer({
           Redo={handleRedo}
           handleExport={handleExport}
           handleImport={handleImport} 
-          canUndo={history.length > 0}
-          canRedo={future.length > 0}
+          canUndo={!isLocked && history.length > 0}
+          canRedo={!isLocked && future.length > 0}
+          isLocked={isLocked} 
         />
 
         {selectedNode && (

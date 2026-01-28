@@ -7,12 +7,15 @@ export default function DiagramControls({
   handleExport,
   handleImport,
   canUndo,
-  canRedo 
+  canRedo,
+  isLocked // NEW PROP
 }) {
   const fileInputRef = useRef(null);
 
   const onImportClick = () => {
-    fileInputRef.current?.click();
+    if (!isLocked) {
+        fileInputRef.current?.click();
+    }
   };
 
   const onFileChange = (e) => {
@@ -31,20 +34,32 @@ export default function DiagramControls({
     };
     reader.readAsText(file);
     
-    // Reset value so the same file can be selected again if needed
     e.target.value = "";
   };
 
   return (
     <div className="diagram-controls">
       <div className="history-controls">
-        <button onClick={Undo} disabled={!canUndo}>↶</button>
-        <button onClick={Redo} disabled={!canRedo}>↷</button>
+        <button onClick={Undo} disabled={!canUndo || isLocked}>↶</button>
+        <button onClick={Redo} disabled={!canRedo || isLocked}>↷</button>
       </div>
-      <button onClick={handleClearAll}>Clear All</button>
-      <button onClick={handleExport}>Export JSON</button>
       
-      <button onClick={onImportClick}>Import JSON</button>
+      <button 
+        onClick={handleClearAll} 
+        disabled={isLocked} // Grey out when locked
+        style={isLocked ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+      >
+        Clear All
+      </button>
+
+      <button onClick={handleExport} disabled={isLocked}>
+        Export JSON
+      </button>
+      
+      <button onClick={onImportClick} disabled={isLocked}>
+        Import JSON
+      </button>
+      
       <input 
         type="file" 
         accept=".json"

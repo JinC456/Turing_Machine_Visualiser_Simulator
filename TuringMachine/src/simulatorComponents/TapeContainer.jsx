@@ -4,7 +4,6 @@ import TapeDisplay from "./TapeDisplay";
 import { useTuringMachine, useMultiTapeTuringMachine } from "./TuringMachineLogic";
 import { getNodeLabel } from "./engines/Deterministic";
 
-// Define constant here to avoid magic numbers
 const CELL_SIZE = 40;
 
 export default function TapeContainer({
@@ -17,14 +16,15 @@ export default function TapeContainer({
   setStepCount,
   loadedInput,
   validAlphabet,
-  engine
+  engine,
+  isRunning,
+  setIsRunning
 }) {
   const isMultiTape = engine === "MultiTape";
 
-  // Calculate required tapes from edges
   const numTapes = useMemo(() => {
     if (!isMultiTape) return 1;
-    let max = 2; // Default to 2
+    let max = 2;
     edges.forEach(edge => {
         edge.data?.labels?.forEach(label => {
             Object.keys(label).forEach(key => {
@@ -49,17 +49,13 @@ export default function TapeContainer({
     stepForward, stepBack, reset, canUndo 
   } = tm;
 
-  const [isRunning, setIsRunning] = useState(false);
   const [inputValue, setInputValue] = useState(loadedInput || "");
   const [isTimeout, setIsTimeout] = useState(false);
-  
   const [inputError, setInputError] = useState(null);
-
   const [speed, setSpeed] = useState(1); 
 
   const isFinished = !!(error || success || isTimeout);
 
-  // --- FIX 1: Stable Reset Trigger ---
   useEffect(() => {
     if (loadedInput !== undefined) {
       setInputValue(loadedInput);
@@ -68,7 +64,6 @@ export default function TapeContainer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadedInput]); 
 
-  // Validation Logic
   useEffect(() => {
     if (!inputValue) {
       setInputError(null);
@@ -86,7 +81,6 @@ export default function TapeContainer({
     }
   }, [inputValue, validAlphabet]);
 
-  // --- FIX 2: Stable Symbol Calculation ---
   const symbolToDisplay = isMultiTape && Array.isArray(lastRead) 
       ? lastRead.join(",") 
       : (lastRead !== null ? lastRead : "");
@@ -121,14 +115,12 @@ export default function TapeContainer({
     const chars = inputValue.split("");
     const requiredSize = Math.max(defaultSize, startPos + chars.length);
     
-    // Prepare tape 1 with input
     const tape1 = Array(requiredSize).fill("");
     chars.forEach((char, i) => {
       tape1[startPos + i] = char === "*" ? "" : char;
     });
 
     if (isMultiTape) {
-        // Initialize N tapes
         const newTapes = [];
         newTapes.push(tape1);
         for(let i=1; i<numTapes; i++) {
@@ -144,9 +136,6 @@ export default function TapeContainer({
 
   }, [inputValue, canUndo, tm, inputError, isMultiTape, numTapes]);
 
-  // --- FIX 3: Safe Initialization Trigger ---
-  // Added inputError, isMultiTape, numTapes to dependencies
-  // Removed initializeTape (to avoid loop)
   useEffect(() => {
     if (!isRunning && !isFinished && !canUndo) {
         initializeTape();
@@ -221,21 +210,13 @@ export default function TapeContainer({
     <div className="tape-container">
       
       {isMultiTape ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '40px', width: '100%', alignItems: 'center' }}>
+        <div className="multitape-container">
             {tm.tapes.map((tape, index) => (
-                <div key={index} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '90%' }}>
-                    <div style={{ 
-                        fontWeight: 'bold', 
-                        fontSize: '1.1rem', 
-                        minWidth: '80px', 
-                        textAlign: 'right', 
-                        marginRight: '15px',
-                        whiteSpace: 'nowrap',
-                        flexShrink: 0
-                    }}>
+                <div key={index} className="multitape-row">
+                    <div className="multitape-label">
                         Tape {index + 1}
                     </div>
-                    <div style={{ position: 'relative', flexGrow: 1 }}>
+                    <div className="tape-display-wrapper">
                         <TapeDisplay 
                             tape={tape} 
                             head={tm.heads[index]} 
@@ -248,7 +229,7 @@ export default function TapeContainer({
             ))}
         </div>
       ) : (
-        <div style={{ position: 'relative' }}>
+        <div className="singletape-wrapper">
             <TapeDisplay 
                 tape={tm.tape} 
                 head={tm.head} 
@@ -274,13 +255,12 @@ export default function TapeContainer({
         
         <div className="input-wrapper">
           <input
-            className="tape-input"
+            className={`tape-input ${inputError ? "error" : ""}`}
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             disabled={isRunning || isFinished || canUndo}
             placeholder="Input string..."
-            style={inputError ? { borderColor: '#d9534f', backgroundColor: '#fdf7f7' } : {}}
           />
           <div className="alphabet-label">
             Σ: <span>{`{ ${alphabetString} }`}</span>

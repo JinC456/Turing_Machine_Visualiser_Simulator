@@ -8,7 +8,7 @@ import TransitionTable from './simulatorComponents/TransitionTable';
 import './Visualiser.css';
 
 // Original Examples
-import palindromeData from './examples/palindrome.json'; // Fixed capitalization
+import palindromeData from './examples/palindrome.json'; 
 import binaryIncrementData from './examples/binary_increment.json';
 import busyBeaverData from './examples/busy_beaver.json';
 
@@ -25,7 +25,7 @@ const exampleMap = {
   
   // Multi-Tape
   palindromeMulti: palindromeMultiData,
-  isequal: isEqualData, // Fixed key to match App.jsx value "isequal"
+  isequal: isEqualData, 
   binary_addition: binaryAdditionData
 };
 
@@ -41,16 +41,20 @@ export default function Visualiser({ engine, selectedExample, showTable, setShow
   const [loadedInput, setLoadedInput] = useState("");
   const [manualSymbols, setManualSymbols] = useState([]);
 
-  // NEW: Clear workspace/tape when engine changes
+  // --- LIFTED STATE: Simulation Running Status ---
+  const [isRunning, setIsRunning] = useState(false);
+
+  // Clear workspace/tape when engine changes
   useEffect(() => {
     setNodes([]);
     setEdges([]);
-    setLoadedInput(""); // This will trigger the TapeContainer to reset its internal state
+    setLoadedInput(""); 
     setManualSymbols([]);
     setStepCount(0);
     setCurrentSymbol("");
     setActiveNodeId(null);
     setActiveEdgeId(null);
+    setIsRunning(false); // Ensure simulation stops on engine switch
   }, [engine, setNodes, setEdges]);
 
   useEffect(() => {
@@ -64,10 +68,10 @@ export default function Visualiser({ engine, selectedExample, showTable, setShow
       setStepCount(0);
       setCurrentSymbol("");
       setManualSymbols([]); 
+      setIsRunning(false); // Ensure simulation stops on example load
     }
   }, [selectedExample, setNodes, setEdges]);
 
-  // NEW: Handle full clear (resets loadedInput to prevent ghost inputs)
   const handleClear = useCallback(() => {
     setNodes([]);
     setEdges([]);
@@ -77,18 +81,17 @@ export default function Visualiser({ engine, selectedExample, showTable, setShow
     setCurrentSymbol("");
     setActiveNodeId(null);
     setActiveEdgeId(null);
+    setIsRunning(false);
   }, [setNodes, setEdges]);
 
-  // 1. Calculate Valid Alphabet (Read AND Write symbols + Manual)
+  // Calculate Valid Alphabet
   const validAlphabet = useMemo(() => {
     const derived = new Set();
     edges.forEach(edge => {
         edge.data?.labels?.forEach(l => {
-            // Handle Single Tape
             if (l.read !== undefined && l.read !== "") derived.add(l.read);
             if (l.write !== undefined && l.write !== "") derived.add(l.write);
             
-            // Handle Multi Tape (dynamic keys)
             Object.keys(l).forEach(key => {
                 if (key.startsWith('tape')) {
                     const t = l[key];
@@ -127,6 +130,9 @@ export default function Visualiser({ engine, selectedExample, showTable, setShow
             loadedInput={loadedInput}
             validAlphabet={validAlphabet}
             engine={engine}
+            // Pass lifted state down
+            isRunning={isRunning}
+            setIsRunning={setIsRunning}
           />
         </div>
 
@@ -145,6 +151,8 @@ export default function Visualiser({ engine, selectedExample, showTable, setShow
             stepCount={stepCount}
             engine={engine} 
             onClear={handleClear}
+            // Pass lock status
+            isLocked={isRunning}
           />
         </div>
 

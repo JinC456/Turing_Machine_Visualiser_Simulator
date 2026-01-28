@@ -6,7 +6,7 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
   
   const [newSymbol, setNewSymbol] = useState("");
   const [isWindowMode, setIsWindowMode] = useState(false);
-  const [viewMode, setViewMode] = useState("list"); // "list" | "matrix"
+  const [viewMode, setViewMode] = useState("matrix"); 
 
   const [position, setPosition] = useState({ x: 50, y: 100 });
   const [isDragging, setIsDragging] = useState(false);
@@ -132,7 +132,6 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
             writes.push(tData.write);
             dirs.push(tData.direction);
 
-            // Collect Derived Symbols (excluding wildcards)
             if (tData.read && tData.read !== '*' && tData.read !== '') derivedSet.add(tData.read);
             if (tData.write && tData.write !== '*' && tData.write !== '') derivedSet.add(tData.write);
           }
@@ -160,17 +159,16 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
         mtMatrix[r.start][r.read] = r;
       });
 
-      // Calculate Alphabet for MultiTape
       const combinedSet = new Set([...derivedSet, ...manualSymbols]);
       const sortedSymbols = Array.from(combinedSet).sort();
 
       return { 
-        symbols: sortedSymbols, // Export symbols for list display
+        symbols: sortedSymbols, 
         matrix: {}, 
         sortedNodes, 
         derivedSymbols: derivedSet, 
         isMultiTape: true, 
-        multiTapeRules: rules,
+        multiTapeRules: rules, 
         multiTapeColumns: uniqueReadTuples,
         multiTapeMatrix: mtMatrix
       };
@@ -205,7 +203,7 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
         symbols: sortedSymbols, 
         matrix, 
         sortedNodes, 
-        derivedSymbols: derivedSet,
+        derivedSymbols: derivedSet, 
         isMultiTape: false,
         multiTapeRules: [],
         multiTapeColumns: [],
@@ -288,55 +286,58 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
             </div>
         </div>
 
-        {/* ALPHABET CONTROLS (Always Visible) */}
-        <form className="alphabet-controls" onSubmit={handleAddSymbol}>
-          <label>Alphabet (Σ): </label>
-          <input 
-            type="text" 
-            value={newSymbol}
-            onChange={(e) => setNewSymbol(e.target.value)}
-            placeholder="Add char..."
-            maxLength={1}
-            className="symbol-input"
-          />
-          <button type="submit" disabled={!newSymbol.trim()}>Add</button>
-        </form>
+        {/* ALPHABET CONTROLS (Only for Single Tape / Legacy) */}
+        {!isMultiTape && (
+          <form className="alphabet-controls" onSubmit={handleAddSymbol}>
+            <label>Alphabet (Σ): </label>
+            <input 
+              type="text" 
+              value={newSymbol}
+              onChange={(e) => setNewSymbol(e.target.value)}
+              placeholder="Add char..."
+              maxLength={1}
+              className="symbol-input"
+            />
+            <button type="submit" disabled={!newSymbol.trim()}>Add</button>
+          </form>
+        )}
 
-        {/* ALPHABET DISPLAY (Multi-Tape Specific) */}
+        {/* MULTI-TAPE ALPHABET DISPLAY + INLINE INPUT */}
         {isMultiTape && (
-            <div className="alphabet-display" style={{ marginBottom: '10px', display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                <span style={{ fontWeight: 'bold', marginRight: '5px' }}>Symbols:</span>
-                {symbols.map(s => (
-                    <span key={s} style={{ 
-                        padding: '2px 8px', 
-                        background: '#eee', 
-                        borderRadius: '12px', 
-                        display: 'inline-flex', 
-                        alignItems: 'center', 
-                        fontSize: '0.9rem',
-                        border: '1px solid #ccc'
-                    }}>
-                        {s}
-                        {!derivedSymbols.has(s) && (
-                            <button 
-                                onClick={() => handleDeleteSymbol(s)}
-                                style={{ 
-                                    marginLeft: '5px', 
-                                    border: 'none', 
-                                    background: 'none', 
-                                    cursor: 'pointer', 
-                                    color: '#d9534f', 
-                                    fontWeight: 'bold',
-                                    padding: '0',
-                                    lineHeight: '1'
-                                }}
-                            >
-                                ×
-                            </button>
-                        )}
-                    </span>
-                ))}
-                {symbols.length === 0 && <span style={{ color: '#999', fontStyle: 'italic' }}>∅ (Empty)</span>}
+            <div className="multitape-alphabet-display">
+                {/* Sigma Box */}
+                <div className="sigma-box">Σ :</div>
+                
+                <div className="symbol-list">
+                  {/* Symbol Pills */}
+                  {symbols.map(s => (
+                      <span key={s} className={`symbol-tag ${derivedSymbols.has(s) ? 'derived' : 'manual'}`}>
+                          {s}
+                          {!derivedSymbols.has(s) && (
+                              <button 
+                                  className="remove-symbol-btn"
+                                  onClick={() => handleDeleteSymbol(s)}
+                                  title="Remove symbol"
+                              >
+                                  ×
+                              </button>
+                          )}
+                      </span>
+                  ))}
+                  
+                  {/* Inline Input Pill */}
+                  <form onSubmit={handleAddSymbol} style={{ display: 'inline-flex' }}>
+                    <input 
+                        type="text"
+                        value={newSymbol}
+                        onChange={(e) => setNewSymbol(e.target.value)}
+                        placeholder="+"
+                        maxLength={1}
+                        className="symbol-input-inline"
+                        title="Type and press Enter to add symbol"
+                    />
+                  </form>
+                </div>
             </div>
         )}
         
@@ -377,7 +378,11 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
                 <>
                    <thead>
                     <tr>
-                      <th className="diagonal-header"><i>Q</i> \ Read</th>
+                      {/* DIAGONAL HEADER */}
+                      <th className="diagonal-cell">
+                        <span className="diagonal-top">Σ</span>
+                        <span className="diagonal-bottom">Q</span>
+                      </th>
                       {multiTapeColumns.map((col, idx) => (
                         <th key={idx} className="symbol-header" style={{ minWidth: '80px' }}>
                           {col.replace(/,/g, ", ")}
@@ -396,7 +401,6 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
                             let content = null;
                             
                             if (rule) {
-                              // Format: (w,d : w,d) -> end
                               const actionStr = rule.rawWrites.map((w, i) => `${w},${rule.rawDirs[i]}`).join(" : ");
                               content = `(${actionStr}) -> ${rule.end}`;
                             }
@@ -422,7 +426,11 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
               <>
                 <thead>
                   <tr>
-                    <th className="diagonal-header"><i>Q</i> \ Σ</th>
+                    {/* DIAGONAL HEADER */}
+                    <th className="diagonal-cell">
+                        <span className="diagonal-top">Σ</span>
+                        <span className="diagonal-bottom">Q</span>
+                    </th>
                     {symbols.map((symbol) => {
                       const isUsed = derivedSymbols.has(symbol);
                       return (
