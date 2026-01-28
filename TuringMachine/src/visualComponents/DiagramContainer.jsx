@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect, useMemo } from "react";
+import React, { useCallback, useState, useEffect, useMemo, useRef } from "react";
 import ReactFlow, {
   MarkerType,
   Background,
@@ -74,11 +74,20 @@ export default function DiagramContainer({
 
   const [history, setHistory] = useState([]);
   const [future, setFuture] = useState([]);
+  
+  const historyCounter = useRef(0);
 
   // --- HISTORY ---
-  const pushToHistory = useCallback(() => {
-    const clonedNodes = nodes.map((n) => ({ ...n, data: { ...n.data } }));
-    const clonedEdges = edges.map((e) => ({
+  const pushToHistory = useCallback((label = "Unknown Action", snapshotOverride = null) => {
+    historyCounter.current += 1;
+    const actionId = historyCounter.current;
+    
+    // Use override if provided, otherwise use current state
+    const sourceNodes = snapshotOverride ? snapshotOverride.nodes : nodes;
+    const sourceEdges = snapshotOverride ? snapshotOverride.edges : edges;
+
+    const clonedNodes = sourceNodes.map((n) => ({ ...n, data: { ...n.data } }));
+    const clonedEdges = sourceEdges.map((e) => ({
       ...e,
       data: {
         ...e.data,
@@ -87,16 +96,42 @@ export default function DiagramContainer({
     }));
 
     setHistory((h) =>
-      [...h, { nodes: clonedNodes, edges: clonedEdges }].slice(-50)
+      [...h, { 
+        nodes: clonedNodes, 
+        edges: clonedEdges,
+        metadata: { id: actionId, label } 
+      }].slice(-50)
     );
     setFuture([]);
   }, [nodes, edges]);
 
+  // --- DEBOUNCED HISTORY ---
+  const historyTimeoutRef = useRef(null);
+
+  const pushToHistoryDebounced = useCallback((label) => {
+    if (historyTimeoutRef.current) {
+      clearTimeout(historyTimeoutRef.current);
+    }
+    
+    historyTimeoutRef.current = setTimeout(() => {
+      pushToHistory(label);
+      historyTimeoutRef.current = null;
+    }, 200);
+  }, [pushToHistory]);
+
   const handleUndo = () => {
     if (history.length === 0) return;
     const previous = history[history.length - 1];
+    
+    // Save CURRENT state to future before restoring old state
+    const currentSnapshot = { 
+        nodes: nodes.map(n => ({ ...n, data: { ...n.data } })), 
+        edges: edges.map(e => ({ ...e, data: { ...e.data, labels: JSON.parse(JSON.stringify(e.data.labels || [])) } })) 
+    };
+
     setHistory((h) => h.slice(0, -1));
-    setFuture((f) => [...f, { nodes, edges }]);
+    setFuture((f) => [...f, { ...currentSnapshot, metadata: previous.metadata }]);
+    
     setNodes(previous.nodes);
     setEdges(previous.edges);
   };
@@ -104,16 +139,58 @@ export default function DiagramContainer({
   const handleRedo = () => {
     if (future.length === 0) return;
     const next = future[future.length - 1];
+    
+    const currentSnapshot = { 
+        nodes: nodes.map(n => ({ ...n, data: { ...n.data } })), 
+        edges: edges.map(e => ({ ...e, data: { ...e.data, labels: JSON.parse(JSON.stringify(e.data.labels || [])) } })) 
+    };
+
     setFuture((f) => f.slice(0, -1));
-    setHistory((h) => [...h, { nodes, edges }]);
+    setHistory((h) => [...h, { ...currentSnapshot, metadata: next.metadata }]);
+    
     setNodes(next.nodes);
     setEdges(next.edges);
   };
 
+  // --- DRAG SNAPSHOT LOGIC ---
+  const dragStartRef = useRef({ x: 0, y: 0 });
+  const dragStartSnapshotRef = useRef(null); 
+
+  // 1. Single Node Drag
+  const onNodeDragStart = useCallback((event, node) => {
+      dragStartRef.current = { x: node.position.x, y: node.position.y };
+      // Capture full state BEFORE move
+      dragStartSnapshotRef.current = { nodes, edges };
+  }, [nodes, edges]);
+
+  const onNodeDragStop = useCallback((event, node) => {
+      const dx = node.position.x - dragStartRef.current.x;
+      const dy = node.position.y - dragStartRef.current.y;
+      const distance = Math.sqrt(dx*dx + dy*dy);
+
+      if (distance > 5 && dragStartSnapshotRef.current) {
+          pushToHistory("Node Moved", dragStartSnapshotRef.current);
+      }
+      dragStartSnapshotRef.current = null; 
+  }, [pushToHistory]);
+
+  // 2. Multi-Selection Drag
+  const onSelectionDragStart = useCallback(() => {
+      dragStartSnapshotRef.current = { nodes, edges };
+  }, [nodes, edges]);
+
+  const onSelectionDragStop = useCallback(() => {
+      if (dragStartSnapshotRef.current) {
+          pushToHistory("Group Moved", dragStartSnapshotRef.current);
+          dragStartSnapshotRef.current = null;
+      }
+  }, [pushToHistory]);
+
+
   // --- CONNECT ---
   const onConnect = useCallback(
     (params) => {
-      pushToHistory();
+      pushToHistory("Edge Created");
 
       const isSelfLoop = params.source === params.target;
       let px, py, sourceX, sourceY, targetX, targetY;
@@ -152,7 +229,7 @@ export default function DiagramContainer({
     [nodes, pushToHistory, setEdges]
   );
 
-  // --- DRAG & DROP ---
+  // --- DRAG & DROP NEW NODES ---
   const onDragOver = useCallback((event) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
@@ -180,7 +257,7 @@ export default function DiagramContainer({
         data: { label: `S${nodes.length}` },
       };
 
-      pushToHistory();
+      pushToHistory("Node Created");
       setNodes((nds) => [...nds, newNode]);
     },
     [project, pushToHistory, setNodes, nodes.length]
@@ -190,7 +267,8 @@ export default function DiagramContainer({
   const onNodeDoubleClick = (event, node) => {
     event.preventDefault();
     if (node.type !== "normal" && node.type !== "accept") return;
-    pushToHistory();
+    
+    pushToHistory("Node Type Changed");
 
     setNodes((nds) =>
       nds.map((n) =>
@@ -215,7 +293,7 @@ export default function DiagramContainer({
 
   // --- SAVE / DELETE ---
   const handleSaveNodeEdit = (id, newLabel, newType) => {
-    pushToHistory();
+    pushToHistory("Node Edited");
     setNodes((nds) =>
       nds.map((n) =>
         n.id === id
@@ -226,31 +304,20 @@ export default function DiagramContainer({
     setSelectedNode(null);
   };
 
-  // -----------------------------------------------------
-  // UPDATED SAVE HANDLER: Global Sync of Adds/Deletes
-  // -----------------------------------------------------
   const handleSaveEdgeEdit = (id, newLabels, pendingOps = []) => {
-    pushToHistory();
+    pushToHistory("Edge Edited");
 
     setEdges((eds) => {
       return eds.map((e) => {
-        // --- TARGET EDGE ---
-        // It gets the new labels directly (Local UI already reflects Ops)
         if (e.id === id) {
           return { ...e, data: { ...e.data, labels: newLabels } };
         }
-
-        // --- OTHER EDGES ---
-        // Replay pending operations to ensure global consistency
+        
         if (engine === "MultiTape" && pendingOps.length > 0) {
-            
             let updatedLabels = (e.data.labels || []).map(label => {
                 let currentLabel = { ...label };
-                
-                // Replay ops in order
                 pendingOps.forEach(op => {
                     if (op.type === 'ADD') {
-                        // Find current max tape for this edge
                         let max = 0;
                         Object.keys(currentLabel).forEach(k => {
                             if (k.startsWith('tape')) {
@@ -258,23 +325,13 @@ export default function DiagramContainer({
                                 if (!isNaN(n)) max = Math.max(max, n);
                             }
                         });
-                        // Add default at max + 1
                         currentLabel[`tape${max+1}`] = { read: '*', write: '*', direction: 'N' };
-                        
                     } else if (op.type === 'DELETE') {
                         const idx = op.index;
-                        
-                        // Shift logic:
-                        // 1. Delete target
-                        // 2. Move higher indices down
                         const newLabelObj = {};
-                        
-                        // Copy non-tape properties
                         Object.keys(currentLabel).forEach(k => {
                             if (!k.startsWith('tape')) newLabelObj[k] = currentLabel[k];
                         });
-                        
-                        // Find max to iterate
                         let max = 0;
                         Object.keys(currentLabel).forEach(k => {
                             if (k.startsWith('tape')) {
@@ -282,14 +339,11 @@ export default function DiagramContainer({
                                 if (!isNaN(n)) max = Math.max(max, n);
                             }
                         });
-
                         let newIndex = 1;
                         for (let i=1; i<=max; i++) {
-                            if (i === idx) continue; // Skip deleted
-                            
+                            if (i === idx) continue; 
                             const oldKey = `tape${i}`;
                             const newKey = `tape${newIndex}`;
-                            
                             if (currentLabel[oldKey]) {
                                 newLabelObj[newKey] = currentLabel[oldKey];
                             }
@@ -298,13 +352,10 @@ export default function DiagramContainer({
                         currentLabel = newLabelObj;
                     }
                 });
-                
                 return currentLabel;
             });
-            
             return { ...e, data: { ...e.data, labels: updatedLabels } };
         }
-        
         return e;
       });
     });
@@ -313,13 +364,13 @@ export default function DiagramContainer({
   };
 
   const handleDeleteEdge = (id) => {
-    pushToHistory();
+    pushToHistory("Edge Deleted");
     setEdges((eds) => eds.filter((e) => e.id !== id));
     setSelectedEdge(null);
   };
 
   const handleClearAll = () => {
-    pushToHistory();
+    pushToHistory("Cleared All");
     if (onClear) {
       onClear();
     } else {
@@ -349,20 +400,17 @@ export default function DiagramContainer({
     URL.revokeObjectURL(href);
   };
 
-  // --- IMPORT FUNCTION ---
   const handleImport = useCallback((importedData) => {
     if (!importedData || typeof importedData !== 'object') {
         alert("Invalid file format.");
         return;
     }
-    
-    // Validating basic structure
     if (!Array.isArray(importedData.nodes) || !Array.isArray(importedData.edges)) {
         alert("Invalid JSON: File must contain 'nodes' and 'edges' arrays.");
         return;
     }
 
-    pushToHistory();
+    pushToHistory("Imported Diagram");
     setNodes(importedData.nodes);
     setEdges(importedData.edges);
     setSelectedNode(null);
@@ -413,9 +461,16 @@ export default function DiagramContainer({
             onConnect={onConnect}
             onDrop={onDrop}
             onDragOver={onDragOver}
-            onNodeDragStart={pushToHistory}
-            onNodesDelete={pushToHistory}
-            onEdgesDelete={pushToHistory}
+            
+            /* --- DRAG HANDLERS --- */
+            onNodeDragStart={onNodeDragStart} 
+            onNodeDragStop={onNodeDragStop}   
+            onSelectionDragStart={onSelectionDragStart}
+            onSelectionDragStop={onSelectionDragStop}
+
+            onNodesDelete={() => pushToHistoryDebounced("Nodes Deleted")}
+            onEdgesDelete={() => pushToHistoryDebounced("Edges Deleted")}
+            
             fitView 
           >
             <Background />
@@ -423,7 +478,6 @@ export default function DiagramContainer({
           </ReactFlow>
         </div>
 
-        {/* UPDATED CONTROLS */}
         <DiagramControls
           handleClearAll={handleClearAll}
           Undo={handleUndo}

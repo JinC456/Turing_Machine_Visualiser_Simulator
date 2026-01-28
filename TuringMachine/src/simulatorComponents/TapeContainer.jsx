@@ -59,13 +59,14 @@ export default function TapeContainer({
 
   const isFinished = !!(error || success || isTimeout);
 
-  // --- UPDATED EFFECT: Reset logic when input loads ---
+  // --- FIX 1: Removed 'reset' from dependencies to prevent unstable hook reference loops ---
   useEffect(() => {
     if (loadedInput !== undefined) {
       setInputValue(loadedInput);
-      reset(); // <--- Forces simulator to reset state (clear success/error)
+      reset(); 
     }
-  }, [loadedInput, reset]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadedInput]);
 
   useEffect(() => {
     if (!inputValue) {
@@ -84,21 +85,22 @@ export default function TapeContainer({
     }
   }, [inputValue, validAlphabet]);
 
+  // --- FIX 2: Calculate symbolToDisplay OUTSIDE the effect ---
+  // This ensures the effect depends on the string value, not the array reference of 'lastRead'
+  const symbolToDisplay = isMultiTape && Array.isArray(lastRead) 
+      ? lastRead.join(",") 
+      : (lastRead !== null ? lastRead : "");
+
   useEffect(() => {
     setActiveNodeId(tmActiveNode);
     setActiveEdgeId(tmActiveEdge);
     
-    // For display in diagram container
-    const symbolToDisplay = isMultiTape && Array.isArray(lastRead) 
-        ? lastRead.join(",") 
-        : (lastRead !== null ? lastRead : "");
-
     setCurrentSymbol(symbolToDisplay);
     setStepCount(tmStepCount);
   }, [
     tmActiveNode,
     tmActiveEdge,
-    lastRead,
+    symbolToDisplay, // <--- Now depends on the stable string, not the unstable 'lastRead' array
     tmStepCount,
     setActiveNodeId,
     setActiveEdgeId,
@@ -143,11 +145,14 @@ export default function TapeContainer({
 
   }, [inputValue, canUndo, tm, inputError, isMultiTape, numTapes]);
 
+  // --- FIX 3: Removed 'initializeTape' from dependencies ---
+  // 'tm' (and thus initializeTape) likely changes every render, causing an infinite loop here.
   useEffect(() => {
     if (!isRunning && !isFinished && !canUndo) {
         initializeTape();
     }
-  }, [inputValue, isRunning, isFinished, canUndo, initializeTape]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inputValue, isRunning, isFinished, canUndo]); 
 
   useEffect(() => {
     if (!isRunning) return;
