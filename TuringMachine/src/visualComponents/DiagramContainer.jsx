@@ -1,4 +1,3 @@
-/* src/visualComponents/DiagramContainer.jsx */
 import React, { useCallback, useState, useEffect, useMemo } from "react";
 import ReactFlow, {
   MarkerType,
@@ -38,7 +37,8 @@ export default function DiagramContainer({
   activeEdgeId,
   currentSymbol,
   stepCount,
-  engine
+  engine,
+  onClear
 }) {
   const { project, fitView } = useReactFlow();
 
@@ -320,8 +320,12 @@ export default function DiagramContainer({
 
   const handleClearAll = () => {
     pushToHistory();
-    setNodes([]);
-    setEdges([]);
+    if (onClear) {
+      onClear();
+    } else {
+      setNodes([]);
+      setEdges([]);
+    }
   };
 
   const handleExport = () => {
@@ -344,6 +348,26 @@ export default function DiagramContainer({
     document.body.removeChild(link);
     URL.revokeObjectURL(href);
   };
+
+  // --- IMPORT FUNCTION ---
+  const handleImport = useCallback((importedData) => {
+    if (!importedData || typeof importedData !== 'object') {
+        alert("Invalid file format.");
+        return;
+    }
+    
+    // Validating basic structure
+    if (!Array.isArray(importedData.nodes) || !Array.isArray(importedData.edges)) {
+        alert("Invalid JSON: File must contain 'nodes' and 'edges' arrays.");
+        return;
+    }
+
+    pushToHistory();
+    setNodes(importedData.nodes);
+    setEdges(importedData.edges);
+    setSelectedNode(null);
+    setSelectedEdge(null);
+  }, [pushToHistory, setNodes, setEdges]);
 
   const decoratedNodes = nodes.map((node) => ({
     ...node,
@@ -399,11 +423,15 @@ export default function DiagramContainer({
           </ReactFlow>
         </div>
 
+        {/* UPDATED CONTROLS */}
         <DiagramControls
           handleClearAll={handleClearAll}
           Undo={handleUndo}
           Redo={handleRedo}
           handleExport={handleExport}
+          handleImport={handleImport} 
+          canUndo={history.length > 0}
+          canRedo={future.length > 0}
         />
 
         {selectedNode && (

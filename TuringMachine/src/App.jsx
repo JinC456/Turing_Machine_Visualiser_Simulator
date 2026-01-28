@@ -10,8 +10,8 @@ const EXAMPLES = {
   ],
   MultiTape: [
     { value: "palindromeMulti", label: "Palindrome (2-Tape)" },
-    { value: "isequal", label: "Is Equal" },
-    { value: "binary_addition", label: "Binary Addition" },
+    { value: "isequal", label: "Is Equal (2-Tape)" },
+    { value: "binary_addition", label: "Binary Addition (3-Tape)" },
   ],
   NonDeterministic: [
     // Placeholder for future expansion

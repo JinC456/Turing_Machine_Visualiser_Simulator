@@ -196,7 +196,7 @@ export default function EdgeMenu({
   return (
     <div className="popup-overlay">
       <div className="popup-menu" style={{ maxWidth: isMultiTape ? '90vw' : '320px', width: 'auto' }}>
-        <h3>Edit Edge {isMultiTape && "(Multi-Tape)"}</h3>
+        <h3>Edit Edge {isMultiTape }</h3>
         <h4>Use * to indicate blank</h4>
 
         <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>

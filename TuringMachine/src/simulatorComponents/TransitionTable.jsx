@@ -6,12 +6,13 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
   
   const [newSymbol, setNewSymbol] = useState("");
   const [isWindowMode, setIsWindowMode] = useState(false);
+  const [viewMode, setViewMode] = useState("list"); // "list" | "matrix"
 
   const [position, setPosition] = useState({ x: 50, y: 100 });
   const [isDragging, setIsDragging] = useState(false);
   const dragOffset = useRef({ x: 0, y: 0 });
 
-  const [size, setSize] = useState({ width: 500, height: 400 });
+  const [size, setSize] = useState({ width: 600, height: 400 });
   const [isResizing, setIsResizing] = useState(false);
   const resizeStart = useRef({ x: 0, y: 0, width: 0, height: 0 });
 
@@ -74,11 +75,23 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
     };
   }, [isDragging, isResizing]);
 
-  const { symbols, matrix, sortedNodes, derivedSymbols } = useMemo(() => {
+  // --- DATA PROCESSING ---
+  const { 
+    symbols, matrix, sortedNodes, derivedSymbols, 
+    isMultiTape, multiTapeRules, multiTapeColumns, multiTapeMatrix 
+  } = useMemo(() => {
     const derivedSet = new Set();
     const nodeMap = {}; 
+    nodes.forEach((node) => { nodeMap[node.id] = node; });
 
-    // Sort nodes
+    // 1. Detect Multi-Tape
+    const detectedMultiTape = edges.some(edge => 
+      edge.data?.labels?.some(l => 
+        Object.keys(l).some(k => k.startsWith('tape'))
+      )
+    );
+
+    // 2. Sort Nodes
     const sortedNodes = [...nodes].sort((a, b) => {
       if (a.type === 'start') return -1;
       if (b.type === 'start') return 1;
@@ -87,39 +100,118 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
       return labelA.localeCompare(labelB, undefined, { numeric: true });
     });
 
-    nodes.forEach((node) => { nodeMap[node.id] = node; });
+    // 3. Process Data based on Mode
+    if (detectedMultiTape) {
+      // --- MULTI TAPE PROCESSING ---
+      const rules = [];
 
-    const matrix = {};
-    sortedNodes.forEach(n => (matrix[n.id] = {}));
+      let maxTapes = 2;
+      edges.forEach(e => e.data?.labels?.forEach(l => {
+        Object.keys(l).forEach(k => {
+          if(k.startsWith('tape')) {
+            const num = parseInt(k.replace('tape',''), 10);
+            if(!isNaN(num)) maxTapes = Math.max(maxTapes, num);
+          }
+        });
+      }));
 
-    edges.forEach((edge) => {
-      const sourceId = edge.source;
-      const targetId = edge.target;
-      const targetLabel = nodeMap[targetId] ? getNodeLabel(nodeMap[targetId]) : "?";
-      const rules = edge.data?.labels || [];
+      edges.forEach(edge => {
+        const sourceNode = nodeMap[edge.source];
+        const targetNode = nodeMap[edge.target];
+        const sourceLabel = getNodeLabel(sourceNode);
+        const targetLabel = getNodeLabel(targetNode);
 
-      rules.forEach((rule) => {
-        if (rule.read === undefined) return;
-        
-        derivedSet.add(rule.read);
-        if (rule.write) derivedSet.add(rule.write);
-        
-        const cellContent = `${rule.write} ${rule.direction} ${targetLabel}`;
-        
-        if (!matrix[sourceId]) matrix[sourceId] = {};
-        matrix[sourceId][rule.read] = cellContent;
+        edge.data?.labels?.forEach(label => {
+          const reads = [];
+          const writes = [];
+          const dirs = [];
+
+          for(let i=1; i<=maxTapes; i++) {
+            const tData = label[`tape${i}`] || { read: '*', write: '*', direction: 'N' };
+            reads.push(tData.read);
+            writes.push(tData.write);
+            dirs.push(tData.direction);
+
+            // Collect Derived Symbols (excluding wildcards)
+            if (tData.read && tData.read !== '*' && tData.read !== '') derivedSet.add(tData.read);
+            if (tData.write && tData.write !== '*' && tData.write !== '') derivedSet.add(tData.write);
+          }
+
+          rules.push({
+            start: sourceLabel,
+            read: reads.join(","), 
+            write: writes.join(", "),
+            direction: dirs.join(", "),
+            end: targetLabel,
+            rawWrites: writes,
+            rawDirs: dirs,
+            sortKey: `${sourceLabel}-${reads.join(',')}`
+          });
+        });
       });
-    });
 
-    const combinedSet = new Set([...derivedSet, ...manualSymbols]);
-    const sortedSymbols = Array.from(combinedSet).sort();
+      rules.sort((a, b) => a.sortKey.localeCompare(b.sortKey, undefined, { numeric: true }));
 
-    return { 
-      symbols: sortedSymbols, 
-      matrix, 
-      sortedNodes, 
-      derivedSymbols: derivedSet 
-    };
+      // --- MATRIX VIEW PREP ---
+      const uniqueReadTuples = Array.from(new Set(rules.map(r => r.read))).sort();
+      const mtMatrix = {};
+      rules.forEach(r => {
+        if(!mtMatrix[r.start]) mtMatrix[r.start] = {};
+        mtMatrix[r.start][r.read] = r;
+      });
+
+      // Calculate Alphabet for MultiTape
+      const combinedSet = new Set([...derivedSet, ...manualSymbols]);
+      const sortedSymbols = Array.from(combinedSet).sort();
+
+      return { 
+        symbols: sortedSymbols, // Export symbols for list display
+        matrix: {}, 
+        sortedNodes, 
+        derivedSymbols: derivedSet, 
+        isMultiTape: true, 
+        multiTapeRules: rules,
+        multiTapeColumns: uniqueReadTuples,
+        multiTapeMatrix: mtMatrix
+      };
+
+    } else {
+      // --- SINGLE TAPE PROCESSING ---
+      const matrix = {};
+      sortedNodes.forEach(n => (matrix[n.id] = {}));
+
+      edges.forEach((edge) => {
+        const sourceId = edge.source;
+        const targetLabel = nodeMap[edge.target] ? getNodeLabel(nodeMap[edge.target]) : "?";
+        const rules = edge.data?.labels || [];
+
+        rules.forEach((rule) => {
+          if (rule.read === undefined) return;
+          
+          derivedSet.add(rule.read);
+          if (rule.write) derivedSet.add(rule.write);
+          
+          const cellContent = `${rule.write}, ${rule.direction}, ${targetLabel}`;
+          
+          if (!matrix[sourceId]) matrix[sourceId] = {};
+          matrix[sourceId][rule.read] = cellContent;
+        });
+      });
+
+      const combinedSet = new Set([...derivedSet, ...manualSymbols]);
+      const sortedSymbols = Array.from(combinedSet).sort();
+
+      return { 
+        symbols: sortedSymbols, 
+        matrix, 
+        sortedNodes, 
+        derivedSymbols: derivedSet,
+        isMultiTape: false,
+        multiTapeRules: [],
+        multiTapeColumns: [],
+        multiTapeMatrix: {}
+      };
+    }
   }, [nodes, edges, manualSymbols]);
 
   const handleAddSymbol = (e) => {
@@ -154,111 +246,232 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
       } 
     : {};
 
-  const tableContent = (
-    <div 
-      className={containerClass} 
-      style={windowStyle}
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div 
-        className="popup-header"
-        style={{ cursor: isWindowMode ? "grab" : "default" }}
-        onMouseDown={handleMouseDown}
-      >
-          <h3>Transition Table</h3>
-          
-          <div className="header-actions">
-            <button 
-              className="window-toggle-btn" 
-              onClick={() => setIsWindowMode(!isWindowMode)}
-              onMouseDown={(e) => e.stopPropagation()} 
-            >
-              {isWindowMode ? "Modal View" : "Float Window"}
-            </button>
-            <button 
-              className="close-btn" 
-              onClick={onClose}
-              onMouseDown={(e) => e.stopPropagation()}
-            >
-              ×
-            </button>
-          </div>
-      </div>
-
-      <form className="alphabet-controls" onSubmit={handleAddSymbol}>
-        <label>Alphabet (Σ): </label>
-        <input 
-          type="text" 
-          value={newSymbol}
-          onChange={(e) => setNewSymbol(e.target.value)}
-          placeholder="Add char..."
-          maxLength={1}
-          className="symbol-input"
-        />
-        <button type="submit" disabled={!newSymbol.trim()}>Add</button>
-      </form>
-      
-      <div className="table-wrapper">
-        <table className="transition-table">
-          <thead>
-            <tr>
-              <th className="diagonal-header"><i>Q</i> \ Σ</th>
-              {symbols.map((symbol) => {
-                const isUsed = derivedSymbols.has(symbol);
-                return (
-                  <th key={symbol} className="symbol-header">
-                    {symbol}
-                    {!isUsed && (
-                      <button 
-                        className="delete-symbol-btn"
-                        onClick={() => handleDeleteSymbol(symbol)}
-                      >
-                        ×
-                      </button>
-                    )}
-                  </th>
-                );
-              })}
-            </tr>
-          </thead>
-          <tbody>
-            {sortedNodes.map((node) => (
-              <tr key={node.id}>
-                <td className="row-header">{getNodeLabel(node)}</td>
-                {symbols.map((symbol) => {
-                  const content = matrix[node.id]?.[symbol];
-                  return (
-                    <td key={`${node.id}-${symbol}`}>
-                      {content ? (
-                        <span className="rule-cell">{content}</span>
-                      ) : (
-                        <span className="empty-cell">/</span>
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {isWindowMode && (
-        <div 
-          className="resize-handle"
-          onMouseDown={handleResizeMouseDown}
-        />
-      )}
-    </div>
-  );
-
-  if (isWindowMode) {
-    return tableContent;
-  }
-
   return (
-    <div className="popup-overlay" onClick={onClose}>
-      {tableContent}
+    <div className={isWindowMode ? "" : "popup-overlay"} onClick={!isWindowMode ? onClose : undefined}>
+      <div 
+        className={containerClass} 
+        style={windowStyle}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div 
+          className="popup-header"
+          style={{ cursor: isWindowMode ? "grab" : "default" }}
+          onMouseDown={handleMouseDown}
+        >
+            <h3>Transition Table</h3>
+            
+            <div className="header-actions">
+              {isMultiTape && (
+                <button 
+                  className="window-toggle-btn" 
+                  onClick={() => setViewMode(viewMode === "list" ? "matrix" : "list")}
+                  onMouseDown={(e) => e.stopPropagation()} 
+                >
+                  {viewMode === "list" ? "Matrix View" : "List View"}
+                </button>
+              )}
+
+              <button 
+                className="window-toggle-btn" 
+                onClick={() => setIsWindowMode(!isWindowMode)}
+                onMouseDown={(e) => e.stopPropagation()} 
+              >
+                {isWindowMode ? "Modal View" : "Float Window"}
+              </button>
+              <button 
+                className="close-btn" 
+                onClick={onClose}
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                ×
+              </button>
+            </div>
+        </div>
+
+        {/* ALPHABET CONTROLS (Always Visible) */}
+        <form className="alphabet-controls" onSubmit={handleAddSymbol}>
+          <label>Alphabet (Σ): </label>
+          <input 
+            type="text" 
+            value={newSymbol}
+            onChange={(e) => setNewSymbol(e.target.value)}
+            placeholder="Add char..."
+            maxLength={1}
+            className="symbol-input"
+          />
+          <button type="submit" disabled={!newSymbol.trim()}>Add</button>
+        </form>
+
+        {/* ALPHABET DISPLAY (Multi-Tape Specific) */}
+        {isMultiTape && (
+            <div className="alphabet-display" style={{ marginBottom: '10px', display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                <span style={{ fontWeight: 'bold', marginRight: '5px' }}>Symbols:</span>
+                {symbols.map(s => (
+                    <span key={s} style={{ 
+                        padding: '2px 8px', 
+                        background: '#eee', 
+                        borderRadius: '12px', 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        fontSize: '0.9rem',
+                        border: '1px solid #ccc'
+                    }}>
+                        {s}
+                        {!derivedSymbols.has(s) && (
+                            <button 
+                                onClick={() => handleDeleteSymbol(s)}
+                                style={{ 
+                                    marginLeft: '5px', 
+                                    border: 'none', 
+                                    background: 'none', 
+                                    cursor: 'pointer', 
+                                    color: '#d9534f', 
+                                    fontWeight: 'bold',
+                                    padding: '0',
+                                    lineHeight: '1'
+                                }}
+                            >
+                                ×
+                            </button>
+                        )}
+                    </span>
+                ))}
+                {symbols.length === 0 && <span style={{ color: '#999', fontStyle: 'italic' }}>∅ (Empty)</span>}
+            </div>
+        )}
+        
+        <div className="table-wrapper">
+          <table className="transition-table">
+            
+            {/* --- MULTI TAPE LOGIC --- */}
+            {isMultiTape ? (
+              viewMode === "list" ? (
+                // LIST VIEW
+                <>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: 'left', borderRight: 'none' }}>Start State</th>
+                      <th style={{ textAlign: 'center' }}>Read</th>
+                      <th style={{ textAlign: 'center' }}>Write</th>
+                      <th style={{ textAlign: 'center' }}>Direction</th>
+                      <th style={{ textAlign: 'center' }}>Next State</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {multiTapeRules.map((rule, idx) => (
+                      <tr key={idx}>
+                        <td style={{ textAlign: 'left', fontWeight: 'bold' }}>{rule.start}</td>
+                        <td>{rule.read.replace(/,/g, ", ")}</td>
+                        <td>{rule.write}</td>
+                        <td>{rule.direction}</td>
+                        <td style={{ fontStyle: 'italic' }}>{rule.end}</td>
+                      </tr>
+                    ))}
+                    {multiTapeRules.length === 0 && (
+                       <tr><td colSpan="5" style={{ textAlign: 'center', color: '#999' }}>No transitions defined</td></tr>
+                    )}
+                  </tbody>
+                </>
+              ) : (
+                // MATRIX VIEW
+                <>
+                   <thead>
+                    <tr>
+                      <th className="diagonal-header"><i>Q</i> \ Read</th>
+                      {multiTapeColumns.map((col, idx) => (
+                        <th key={idx} className="symbol-header" style={{ minWidth: '80px' }}>
+                          {col.replace(/,/g, ", ")}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedNodes.map((node) => {
+                      const label = getNodeLabel(node);
+                      return (
+                        <tr key={node.id}>
+                          <td className="row-header">{label}</td>
+                          {multiTapeColumns.map((col) => {
+                            const rule = multiTapeMatrix[label]?.[col];
+                            let content = null;
+                            
+                            if (rule) {
+                              // Format: (w,d : w,d) -> end
+                              const actionStr = rule.rawWrites.map((w, i) => `${w},${rule.rawDirs[i]}`).join(" : ");
+                              content = `(${actionStr}) -> ${rule.end}`;
+                            }
+
+                            return (
+                              <td key={`${node.id}-${col}`}>
+                                {content ? (
+                                  <span className="rule-cell" style={{ fontSize: '0.9rem' }}>{content}</span>
+                                ) : (
+                                  <span className="empty-cell">/</span>
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </>
+              )
+            ) : (
+              /* --- SINGLE TAPE (MATRIX VIEW) --- */
+              <>
+                <thead>
+                  <tr>
+                    <th className="diagonal-header"><i>Q</i> \ Σ</th>
+                    {symbols.map((symbol) => {
+                      const isUsed = derivedSymbols.has(symbol);
+                      return (
+                        <th key={symbol} className="symbol-header">
+                          {symbol}
+                          {!isUsed && (
+                            <button 
+                              className="delete-symbol-btn"
+                              onClick={() => handleDeleteSymbol(symbol)}
+                            >
+                              ×
+                            </button>
+                          )}
+                        </th>
+                      );
+                    })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedNodes.map((node) => (
+                    <tr key={node.id}>
+                      <td className="row-header">{getNodeLabel(node)}</td>
+                      {symbols.map((symbol) => {
+                        const content = matrix[node.id]?.[symbol];
+                        return (
+                          <td key={`${node.id}-${symbol}`}>
+                            {content ? (
+                              <span className="rule-cell">{content}</span>
+                            ) : (
+                              <span className="empty-cell">/</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </>
+            )}
+          </table>
+        </div>
+
+        {isWindowMode && (
+          <div 
+            className="resize-handle"
+            onMouseDown={handleResizeMouseDown}
+          />
+        )}
+      </div>
     </div>
   );
 }

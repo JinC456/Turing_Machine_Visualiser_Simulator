@@ -1,5 +1,5 @@
 /* src/Visualiser.jsx */
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ReactFlowProvider, useNodesState, useEdgesState } from 'reactflow';
 
 import TapeContainer from './simulatorComponents/TapeContainer';
@@ -41,6 +41,18 @@ export default function Visualiser({ engine, selectedExample, showTable, setShow
   const [loadedInput, setLoadedInput] = useState("");
   const [manualSymbols, setManualSymbols] = useState([]);
 
+  // NEW: Clear workspace/tape when engine changes
+  useEffect(() => {
+    setNodes([]);
+    setEdges([]);
+    setLoadedInput(""); // This will trigger the TapeContainer to reset its internal state
+    setManualSymbols([]);
+    setStepCount(0);
+    setCurrentSymbol("");
+    setActiveNodeId(null);
+    setActiveEdgeId(null);
+  }, [engine, setNodes, setEdges]);
+
   useEffect(() => {
     if (selectedExample && exampleMap[selectedExample]) {
       const { nodes: newNodes, edges: newEdges, defaultInput } = exampleMap[selectedExample];
@@ -54,6 +66,18 @@ export default function Visualiser({ engine, selectedExample, showTable, setShow
       setManualSymbols([]); 
     }
   }, [selectedExample, setNodes, setEdges]);
+
+  // NEW: Handle full clear (resets loadedInput to prevent ghost inputs)
+  const handleClear = useCallback(() => {
+    setNodes([]);
+    setEdges([]);
+    setLoadedInput("");
+    setManualSymbols([]);
+    setStepCount(0);
+    setCurrentSymbol("");
+    setActiveNodeId(null);
+    setActiveEdgeId(null);
+  }, [setNodes, setEdges]);
 
   // 1. Calculate Valid Alphabet (Read AND Write symbols + Manual)
   const validAlphabet = useMemo(() => {
@@ -120,6 +144,7 @@ export default function Visualiser({ engine, selectedExample, showTable, setShow
             currentSymbol={currentSymbol}
             stepCount={stepCount}
             engine={engine} 
+            onClear={handleClear}
           />
         </div>
 
