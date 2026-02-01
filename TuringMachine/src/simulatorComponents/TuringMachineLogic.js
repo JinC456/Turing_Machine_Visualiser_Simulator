@@ -309,6 +309,7 @@ export const useMultiTapeTuringMachine = (initialCells = 13, numTapes = 2) => {
 };
 
 // --- Non-Deterministic Hook (UPDATED) ---
+// --- Non-Deterministic Hook (UPDATED ID SCHEME) ---
 export const useNonDeterministicTM = (initialCells = 13) => {
   const initialHead = Math.floor(initialCells / 2);
 
@@ -317,20 +318,21 @@ export const useNonDeterministicTM = (initialCells = 13) => {
   const [success, setSuccess] = useState(false);
   const [history, setHistory] = useState([]);
 
-  // UPDATED: Now accepts 'startHead' to respect the container's layout
-  const setInitialThread = useCallback((inputTape, startHead = initialHead) => {
+  // UPDATED: Initialize with ID "1" instead of "root"
+  const setInitialThread = useCallback((inputTape, startHead) => {
     setThreads([{
-      id: "root",
+      id: "1", // <--- CHANGED FROM "root" TO "1"
       tape: inputTape,
-      head: startHead, // Use the correct start position
+      head: startHead, 
       currentNodeId: null, 
       status: "active",
+      stepCount: 0, 
       history: []
     }]);
     setSuccess(false);
     setStepCount(0);
     setHistory([]);
-  }, [initialHead]);
+  }, []);
 
   const stepForward = useCallback((nodes, edges) => {
     if (success) return;

@@ -880,18 +880,20 @@
   font-size: 0.9rem;
 }
 
-/* --- THREAD LIST STYLES (Non-Deterministic) --- */
+/* --- TREE VIEW STYLES --- */
+
 .thread-list-container {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 12px;
   width: 90%;
-  max-height: 50vh;
+  max-height: 60vh;
   overflow-y: auto;
-  padding: 10px;
+  overflow-x: hidden;
+  padding: 15px;
   border: 1px solid #ddd;
   border-radius: 8px;
-  background-color: #fafafa;
+  background-color: #fafafa; /* Light Theme Background */
   box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
 }
 
@@ -902,6 +904,28 @@
   padding: 20px;
 }
 
+/* Tree Row Wrapper */
+.thread-tree-row {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  min-width: 300px;
+}
+
+/* L-Shaped Connector (Dark Grey for visibility on light bg) */
+.tree-connector {
+  position: absolute;
+  left: -22px;     
+  top: -18px;      
+  height: 48px;    /* Connects to the center of the card below */
+  width: 22px;
+  border-left: 2px solid #bbb;   /* Light Grey Line */
+  border-bottom: 2px solid #bbb; /* Light Grey Line */
+  border-bottom-left-radius: 8px;
+  z-index: 0;
+}
+
+/* Base Card Style (White) */
 .thread-card {
   background: white;
   border: 1px solid #ccc;
@@ -912,27 +936,46 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  z-index: 1;
 }
 
+/* Active State (Blue Highlight) */
 .thread-card.active {
   border-left: 5px solid #1a73e8;
+  border-color: #b3d7ff; /* Slight blue tint on border */
 }
 
+/* Accepted State (Green) */
 .thread-card.accepted {
   border-color: #4caf50;
   background-color: #f1f8e9;
   border-left: 5px solid #4caf50;
-  box-shadow: 0 0 10px rgba(76, 175, 80, 0.4);
+  box-shadow: 0 0 8px rgba(76, 175, 80, 0.2);
 }
 
+/* Rejected State (Red) */
 .thread-card.rejected {
   border-color: #d9534f;
   background-color: #fdf7f7;
   border-left: 5px solid #d9534f;
-  animation: fadeOut 0.5s ease forwards;
-  opacity: 0.7;
+  opacity: 0.8;
 }
 
+/* Frozen / Split Parent State (Light Grey - Distinct but not dark) */
+.thread-card.frozen {
+  background-color: #f4f4f4;
+  border-color: #ddd;
+  border-left: 5px solid #999; /* Grey left border */
+  color: #666;
+}
+
+.thread-card.frozen .tape-wrapper {
+  opacity: 0.6; /* Fade the tape slightly to emphasize active children */
+}
+
+/* Header & Text */
 .thread-header {
   display: flex;
   justify-content: space-between;
@@ -940,30 +983,53 @@
   margin-bottom: 8px;
   padding-bottom: 5px;
   border-bottom: 1px solid #eee;
-  font-size: 0.9rem;
+  align-items: center;
 }
 
-.thread-id {
+.thread-id-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.thread-name {
   font-weight: bold;
-  color: #333;
+  font-size: 1rem;
+  color: #333; /* Dark Grey Text */
 }
 
+.thread-meta {
+  font-size: 0.75rem;
+  color: #777; /* Lighter Grey for step count */
+}
+
+/* Status Badges */
 .thread-status-badge {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.thread-status-badge.active { color: #1a73e8; background: #e8f0fe; }
-.thread-status-badge.accepted { color: #2e7d32; background: #c8e6c9; }
-.thread-status-badge.rejected { color: #c62828; background: #ffcdd2; }
+.thread-status-badge.active { color: #1557b0; background: #e8f0fe; border: 1px solid #d2e3fc; }
+.thread-status-badge.accepted { color: #2e7d32; background: #c8e6c9; border: 1px solid #a5d6a7; }
+.thread-status-badge.rejected { color: #c62828; background: #ffcdd2; border: 1px solid #ef9a9a; }
+.thread-status-badge.frozen { color: #555; background: #e0e0e0; border: 1px solid #ccc; }
 
-@keyframes fadeOut {
-  0% { opacity: 1; transform: scale(1); }
-  100% { opacity: 0.5; transform: scale(0.98); }
+/* Tape Adjustments for Tree Cards */
+.thread-card .tape-wrapper {
+  background: #fff;
+  border: 1px solid #ddd;
+  height: 40px;
 }
 
+.thread-card .cell {
+  height: 38px;
+  font-size: 16px;
+  border-right: 1px solid #eee;
+}
 
-
-
+.thread-card .tape-header {
+  top: -35px; /* Adjust pointer position */
+}
