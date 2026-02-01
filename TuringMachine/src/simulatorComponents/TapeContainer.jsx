@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import PlaybackControls from "./PlaybackControls";
 import TapeDisplay from "./TapeDisplay";
-import { useTuringMachine, useMultiTapeTuringMachine } from "./TuringMachineLogic";
+import { useTuringMachine, useMultiTapeTuringMachine, useNonDeterministicTM } from "./TuringMachineLogic";
 import { getNodeLabel } from "./engines/Deterministic";
 
 const CELL_SIZE = 40;
@@ -16,11 +16,10 @@ export default function TapeContainer({
   setStepCount,
   loadedInput,
   validAlphabet,
-  engine,
-  isRunning,
-  setIsRunning
+  engine
 }) {
   const isMultiTape = engine === "MultiTape";
+  const isNonDeterministic = engine === "NonDeterministic";
 
   const numTapes = useMemo(() => {
     if (!isMultiTape) return 1;
@@ -40,15 +39,22 @@ export default function TapeContainer({
 
   const singleTM = useTuringMachine(13);
   const multiTM = useMultiTapeTuringMachine(13, numTapes);
+  const nonDetTM = useNonDeterministicTM(13);
 
-  const tm = isMultiTape ? multiTM : singleTM;
+  let tm;
+  if (isNonDeterministic) tm = nonDetTM;
+  else if (isMultiTape) tm = multiTM;
+  else tm = singleTM;
   
   const { 
-    activeNodeId: tmActiveNode, activeEdgeId: tmActiveEdge, 
-    lastRead, stepCount: tmStepCount, error, success, 
-    stepForward, stepBack, reset, canUndo 
+    error, success, stepForward, stepBack, reset, canUndo, stepCount: tmStepCount 
   } = tm;
 
+  const { setTape: setTapeSingle, setHead: setHeadSingle } = singleTM;
+  const { setTapes: setTapesMulti, setHeads: setHeadsMulti } = multiTM;
+  const { setInitialThread: setThreadNonDet } = nonDetTM;
+
+  const [isRunning, setIsRunning] = useState(false);
   const [inputValue, setInputValue] = useState(loadedInput || "");
   const [isTimeout, setIsTimeout] = useState(false);
   const [inputError, setInputError] = useState(null);
@@ -61,15 +67,13 @@ export default function TapeContainer({
       setInputValue(loadedInput);
       reset(); 
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadedInput]); 
+  }, [loadedInput, reset]);
 
   useEffect(() => {
     if (!inputValue) {
       setInputError(null);
       return;
     }
-
     const chars = inputValue.split("");
     const invalidChars = chars.filter(char => !validAlphabet.has(char));
 
@@ -81,26 +85,26 @@ export default function TapeContainer({
     }
   }, [inputValue, validAlphabet]);
 
-  const symbolToDisplay = isMultiTape && Array.isArray(lastRead) 
-      ? lastRead.join(",") 
-      : (lastRead !== null ? lastRead : "");
-
   useEffect(() => {
-    setActiveNodeId(tmActiveNode);
-    setActiveEdgeId(tmActiveEdge);
-    
-    setCurrentSymbol(symbolToDisplay);
-    setStepCount(tmStepCount);
+    if (isNonDeterministic) {
+        setActiveNodeId(null);
+        setActiveEdgeId(null);
+        setCurrentSymbol(""); 
+        setStepCount(tmStepCount);
+    } else {
+        setActiveNodeId(tm.activeNodeId);
+        setActiveEdgeId(tm.activeEdgeId);
+        
+        const symbolToDisplay = isMultiTape && Array.isArray(tm.lastRead) 
+            ? tm.lastRead.join(",") 
+            : (tm.lastRead !== null ? tm.lastRead : "");
+
+        setCurrentSymbol(symbolToDisplay);
+        setStepCount(tmStepCount);
+    }
   }, [
-    tmActiveNode,
-    tmActiveEdge,
-    symbolToDisplay,
-    tmStepCount,
-    setActiveNodeId,
-    setActiveEdgeId,
-    setCurrentSymbol,
-    setStepCount,
-    isMultiTape
+    tm.activeNodeId, tm.activeEdgeId, tm.lastRead, tmStepCount, tm.threads,
+    setActiveNodeId, setActiveEdgeId, setCurrentSymbol, setStepCount, isMultiTape, isNonDeterministic
   ]);
 
   const initializeTape = useCallback(() => {
@@ -120,28 +124,31 @@ export default function TapeContainer({
       tape1[startPos + i] = char === "*" ? "" : char;
     });
 
-    if (isMultiTape) {
+    if (isNonDeterministic) {
+        setThreadNonDet(tape1, startPos);
+    } else if (isMultiTape) {
         const newTapes = [];
         newTapes.push(tape1);
         for(let i=1; i<numTapes; i++) {
             newTapes.push(Array(requiredSize).fill(""));
         }
-        
-        tm.setTapes(newTapes);
-        tm.setHeads(Array(numTapes).fill(startPos));
+        setTapesMulti(newTapes);
+        setHeadsMulti(Array(numTapes).fill(startPos));
     } else {
-        tm.setTape(tape1);
-        tm.setHead(startPos);
+        setTapeSingle(tape1);
+        setHeadSingle(startPos);
     }
 
-  }, [inputValue, canUndo, tm, inputError, isMultiTape, numTapes]);
+  }, [
+    inputValue, canUndo, inputError, isMultiTape, isNonDeterministic, numTapes,
+    setThreadNonDet, setTapesMulti, setHeadsMulti, setTapeSingle, setHeadSingle
+  ]);
 
   useEffect(() => {
     if (!isRunning && !isFinished && !canUndo) {
         initializeTape();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inputValue, isRunning, isFinished, canUndo, inputError, isMultiTape, numTapes]); 
+  }, [initializeTape, isRunning, isFinished, canUndo]);
 
   useEffect(() => {
     if (!isRunning) return;
@@ -149,30 +156,37 @@ export default function TapeContainer({
     const intervalMs = 1000 / speed;
 
     const interval = setInterval(() => {
-      if (tmStepCount >= 100) {
+      if (tmStepCount >= 200) { 
         setIsRunning(false);
         setIsTimeout(true);
         return;
       }
-
-      if (!error && !success) {
-        stepForward(nodes, edges);
+      
+      if (isNonDeterministic) {
+          if (tm.success) {
+              setIsRunning(false);
+          } else if (tm.threads.length === 0 && tmStepCount > 0) {
+              setIsRunning(false);
+          } else {
+              stepForward(nodes, edges);
+          }
       } else {
-        setIsRunning(false);
+          if (!error && !success) {
+            stepForward(nodes, edges);
+          } else {
+            setIsRunning(false);
+          }
       }
     }, intervalMs);
 
     return () => clearInterval(interval);
-  }, [isRunning, error, success, tmStepCount, stepForward, nodes, edges, speed]);
+  }, [isRunning, error, success, tmStepCount, stepForward, nodes, edges, speed, isNonDeterministic, tm.threads, tm.success]);
 
-  let activeLabel = ""; 
-  if (tmActiveNode) {
-    const node = nodes.find((n) => n.id === tmActiveNode);
-    activeLabel = getNodeLabel(node); 
-  } else {
-    const startNode = nodes.find((n) => n.type === "start");
-    activeLabel = getNodeLabel(startNode) || "START"; 
-  }
+  const activeLabel = (id) => {
+      if (!id) return "START";
+      const n = nodes.find(x => x.id === id);
+      return getNodeLabel(n) || "S?";
+  };
 
   const handleClear = () => {
     setIsRunning(false);
@@ -193,6 +207,11 @@ export default function TapeContainer({
   } else if (isTimeout) {
     statusType = "error"; 
     statusMessage = "Rejected: Time Out";
+  } else if (isNonDeterministic) {
+      if (tmStepCount > 0 && tm.threads.length === 0) {
+          statusType = "error";
+          statusMessage = "Rejected: All threads died";
+      }
   } else if (error) {
     statusType = "error";
     if (error === "No transition defined") {
@@ -205,39 +224,69 @@ export default function TapeContainer({
   const alphabetString = validAlphabet.size > 0 
     ? [...validAlphabet].sort().join(", ") 
     : "∅";
+    
+  const renderThreadList = () => (
+      <div className="thread-list-container">
+          {tm.threads.length === 0 && !success && tmStepCount > 0 && (
+              <div className="empty-threads">All threads rejected.</div>
+          )}
+          {tm.threads.map((thread) => (
+              <div key={thread.id} className={`thread-card ${thread.status}`}>
+                  <div className="thread-header">
+                      {/* Removed "State: ..." from here */}
+                      <span style={{fontWeight: 'bold', color: '#888'}}>Thread</span>
+                      <span className={`thread-status-badge ${thread.status}`}>
+                        {thread.status === 'active' ? '● Running' : 
+                         thread.status === 'accepted' ? '✔ Accept' : '✖ Reject'}
+                      </span>
+                  </div>
+                  {/* Added activeLabel here so it appears on the pointer */}
+                  <TapeDisplay 
+                      tape={thread.tape} 
+                      head={thread.head} 
+                      activeLabel={activeLabel(thread.currentNodeId)} 
+                      cellSize={CELL_SIZE}
+                      width="60vw"
+                  />
+              </div>
+          ))}
+      </div>
+  );
 
   return (
     <div className="tape-container">
       
-      {isMultiTape ? (
-        <div className="multitape-container">
-            {tm.tapes.map((tape, index) => (
-                <div key={index} className="multitape-row">
-                    <div className="multitape-label">
-                        Tape {index + 1}
+      {isNonDeterministic ? renderThreadList() : (
+        isMultiTape ? (
+            <div className="multitape-container">
+                {tm.tapes.map((tape, index) => (
+                    <div key={index} className="multitape-row">
+                        <div className="multitape-label">
+                            Tape {index + 1}
+                        </div>
+                        <div className="tape-display-wrapper">
+                            <TapeDisplay 
+                                tape={tape} 
+                                head={tm.heads[index]} 
+                                activeLabel={activeLabel(tm.activeNodeId)} 
+                                cellSize={CELL_SIZE} 
+                                width="70vw"
+                            />
+                        </div>
                     </div>
-                    <div className="tape-display-wrapper">
-                        <TapeDisplay 
-                            tape={tape} 
-                            head={tm.heads[index]} 
-                            activeLabel={activeLabel} 
-                            cellSize={CELL_SIZE} 
-                            width="70vw"
-                        />
-                    </div>
-                </div>
-            ))}
-        </div>
-      ) : (
-        <div className="singletape-wrapper">
-            <TapeDisplay 
-                tape={tm.tape} 
-                head={tm.head} 
-                activeLabel={activeLabel} 
-                cellSize={CELL_SIZE} 
-                width="80vw"
-            />
-        </div>
+                ))}
+            </div>
+        ) : (
+            <div className="singletape-wrapper">
+                <TapeDisplay 
+                    tape={tm.tape} 
+                    head={tm.head} 
+                    activeLabel={activeLabel(tm.activeNodeId)} 
+                    cellSize={CELL_SIZE} 
+                    width="80vw"
+                />
+            </div>
+        )
       )}
 
       <div className="status-area">
@@ -304,7 +353,6 @@ export default function TapeContainer({
             onChange={(e) => setSpeed(Number(e.target.value))}
           />
         </div>
-
       </div>
     </div>
   );

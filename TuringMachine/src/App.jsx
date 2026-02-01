@@ -14,7 +14,8 @@ const EXAMPLES = {
     { value: "binary_addition", label: "Binary Addition (3-Tape)" },
   ],
   NonDeterministic: [
-    // Placeholder for future expansion
+    { value: "palindrome", label: "Palindrome (NTM Mode)" },
+    { value: "binary_increment", label: "Binary Increment (NTM Mode)" },
   ],
 };
 

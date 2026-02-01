@@ -1,7 +1,7 @@
-/* src/simulatorComponents/TuringMachineLogic.js */
 import { useState, useCallback } from 'react';
 import { stepTM, getStartNode } from './engines/Deterministic';
 import { stepMultiTM } from './engines/MultiTape';
+import { stepNonDeterministicTM } from './engines/NonDeterministic';
 
 // --- Single Tape Hook (Existing) ---
 export const useTuringMachine = (initialCells = 13) => {
@@ -147,7 +147,7 @@ export const useTuringMachine = (initialCells = 13) => {
   };
 };
 
-// --- Multi-Tape Hook ---
+// --- Multi-Tape Hook (Existing) ---
 export const useMultiTapeTuringMachine = (initialCells = 13, numTapes = 2) => {
   const initialHead = Math.floor(initialCells / 2);
 
@@ -305,5 +305,86 @@ export const useMultiTapeTuringMachine = (initialCells = 13, numTapes = 2) => {
   return {
     tapes, heads, activeNodeId, activeEdgeId, lastRead, stepCount, error, success,
     setTapes, setHeads, stepForward, stepBack, reset, canUndo: history.length > 0
+  };
+};
+
+// --- Non-Deterministic Hook (UPDATED) ---
+export const useNonDeterministicTM = (initialCells = 13) => {
+  const initialHead = Math.floor(initialCells / 2);
+
+  const [threads, setThreads] = useState([]);
+  const [stepCount, setStepCount] = useState(0);
+  const [success, setSuccess] = useState(false);
+  const [history, setHistory] = useState([]);
+
+  // UPDATED: Now accepts 'startHead' to respect the container's layout
+  const setInitialThread = useCallback((inputTape, startHead = initialHead) => {
+    setThreads([{
+      id: "root",
+      tape: inputTape,
+      head: startHead, // Use the correct start position
+      currentNodeId: null, 
+      status: "active",
+      history: []
+    }]);
+    setSuccess(false);
+    setStepCount(0);
+    setHistory([]);
+  }, [initialHead]);
+
+  const stepForward = useCallback((nodes, edges) => {
+    if (success) return;
+    
+    // 1. Save History
+    setHistory(prev => [...prev, { threads: threads, stepCount, success }]);
+
+    // 2. Check if we are at Start (no node IDs yet)
+    let currentThreads = threads;
+    const startNode = getStartNode(nodes);
+
+    if (stepCount === 0 && threads.length > 0 && threads[0].currentNodeId === null) {
+       if (!startNode) return; 
+       currentThreads = [{
+           ...threads[0],
+           currentNodeId: startNode.id
+       }];
+    }
+    
+    // 3. Run Step Logic
+    const { threads: nextThreads, globalAccept } = stepNonDeterministicTM({
+        threads: currentThreads,
+        nodes,
+        edges
+    });
+
+    setThreads(nextThreads);
+    setStepCount(c => c + 1);
+    
+    if (globalAccept) {
+        setSuccess(true);
+    }
+
+  }, [threads, stepCount, success]);
+
+  const stepBack = useCallback(() => {
+    setHistory(prev => {
+      if (prev.length === 0) return prev;
+      const previous = prev[prev.length - 1];
+      setThreads(previous.threads);
+      setStepCount(previous.stepCount);
+      setSuccess(previous.success);
+      return prev.slice(0, -1);
+    });
+  }, []);
+
+  const reset = useCallback(() => {
+      setThreads([]); 
+      setStepCount(0);
+      setSuccess(false);
+      setHistory([]);
+  }, []);
+
+  return {
+    threads, setInitialThread, stepForward, stepBack, reset, canUndo: history.length > 0, success, stepCount
   };
 };
