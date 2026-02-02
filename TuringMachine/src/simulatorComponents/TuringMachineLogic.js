@@ -1,9 +1,10 @@
+/* src/simulatorComponents/TuringMachineLogic.js */
 import { useState, useCallback } from 'react';
 import { stepTM, getStartNode } from './engines/Deterministic';
 import { stepMultiTM } from './engines/MultiTape';
 import { stepNonDeterministicTM } from './engines/NonDeterministic';
 
-// --- Single Tape Hook (Existing) ---
+// --- Single Tape Hook (Deterministic) ---
 export const useTuringMachine = (initialCells = 13) => {
   const initialHead = Math.floor(initialCells / 2);
 
@@ -88,12 +89,14 @@ export const useTuringMachine = (initialCells = 13) => {
       tape,
       head,
       nodes,
-      edges
+      edges,
+      stepCount // Pass current count to engine
     });
 
     if (result.halted) {
       setActiveEdgeId(null);
       setError(result.reason);
+      setStepCount(result.stepCount || stepCount);
       return;
     }
 
@@ -133,7 +136,7 @@ export const useTuringMachine = (initialCells = 13) => {
     setActiveNodeId(result.toNodeId);
     setActiveEdgeId(result.edgeId);
     setLastRead(result.read);
-    setStepCount(c => c + 1);
+    setStepCount(result.stepCount); // Use incremented count from engine
 
     if (result.isAccept) {
       setSuccess(true);
@@ -147,7 +150,7 @@ export const useTuringMachine = (initialCells = 13) => {
   };
 };
 
-// --- Multi-Tape Hook (Existing) ---
+// --- Multi-Tape Hook ---
 export const useMultiTapeTuringMachine = (initialCells = 13, numTapes = 2) => {
   const initialHead = Math.floor(initialCells / 2);
 
@@ -211,7 +214,6 @@ export const useMultiTapeTuringMachine = (initialCells = 13, numTapes = 2) => {
         return;
       }
       
-      // Init History
       setHistory(prev => [
         ...prev,
         {
@@ -229,22 +231,22 @@ export const useMultiTapeTuringMachine = (initialCells = 13, numTapes = 2) => {
       return;
     }
 
-    // Call Multi-Tape Engine
     const result = stepMultiTM({
       currentNodeId: currentState,
       tapes,
       heads,
       nodes,
-      edges
+      edges,
+      stepCount // Pass current count to engine
     });
 
     if (result.halted) {
       setActiveEdgeId(null);
       setError(result.reason);
+      setStepCount(result.stepCount || stepCount);
       return;
     }
 
-    // Save History
     setHistory(prev => [
       ...prev,
       {
@@ -257,22 +259,17 @@ export const useMultiTapeTuringMachine = (initialCells = 13, numTapes = 2) => {
       }
     ]);
 
-    // Apply Logic for EACH tape
     const newTapes = tapes.map(t => [...t]);
     const newHeads = [...heads];
     
-    // Iterate over tapes to apply Write, Move, and Expand
     for(let i = 0; i < numTapes; i++) {
-        // 1. Write
         const w = result.writes[i];
         newTapes[i][newHeads[i]] = w === '*' ? "" : w;
 
-        // 2. Move
         const dir = result.directions[i];
         if (dir === "R") newHeads[i]++;
         if (dir === "L") newHeads[i]--;
 
-        // 3. Expand
         const edgeThreshold = 6;
         const expansionSize = 6;
         
@@ -291,16 +288,13 @@ export const useMultiTapeTuringMachine = (initialCells = 13, numTapes = 2) => {
     setActiveNodeId(result.toNodeId);
     setActiveEdgeId(result.edgeId);
     setLastRead(result.reads);
-    setStepCount(c => c + 1);
+    setStepCount(result.stepCount); // Use incremented count from engine
 
     if (result.isAccept) {
       setSuccess(true);
       return;
     }
-  }, [
-    activeNodeId, activeEdgeId, error, success, 
-    tapes, heads, lastRead, stepCount, numTapes
-  ]);
+  }, [activeNodeId, activeEdgeId, error, success, tapes, heads, lastRead, stepCount, numTapes]);
 
   return {
     tapes, heads, activeNodeId, activeEdgeId, lastRead, stepCount, error, success,
@@ -308,8 +302,7 @@ export const useMultiTapeTuringMachine = (initialCells = 13, numTapes = 2) => {
   };
 };
 
-// --- Non-Deterministic Hook (UPDATED) ---
-// --- Non-Deterministic Hook (UPDATED ID SCHEME) ---
+// --- Non-Deterministic Hook ---
 export const useNonDeterministicTM = (initialCells = 13) => {
   const initialHead = Math.floor(initialCells / 2);
 
@@ -318,10 +311,9 @@ export const useNonDeterministicTM = (initialCells = 13) => {
   const [success, setSuccess] = useState(false);
   const [history, setHistory] = useState([]);
 
-  // UPDATED: Initialize with ID "1" instead of "root"
   const setInitialThread = useCallback((inputTape, startHead) => {
     setThreads([{
-      id: "1", // <--- CHANGED FROM "root" TO "1"
+      id: "1", 
       tape: inputTape,
       head: startHead, 
       currentNodeId: null, 
@@ -337,10 +329,8 @@ export const useNonDeterministicTM = (initialCells = 13) => {
   const stepForward = useCallback((nodes, edges) => {
     if (success) return;
     
-    // 1. Save History
     setHistory(prev => [...prev, { threads: threads, stepCount, success }]);
 
-    // 2. Check if we are at Start (no node IDs yet)
     let currentThreads = threads;
     const startNode = getStartNode(nodes);
 
@@ -352,7 +342,6 @@ export const useNonDeterministicTM = (initialCells = 13) => {
        }];
     }
     
-    // 3. Run Step Logic
     const { threads: nextThreads, globalAccept } = stepNonDeterministicTM({
         threads: currentThreads,
         nodes,

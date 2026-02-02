@@ -1,3 +1,5 @@
+/* src/simulatorComponents/engines/Deterministic.js */
+
 export function getStartNode(nodes) {
   return nodes.find(n => n.type === "start") || null;
 }
@@ -25,7 +27,7 @@ export function findTransition(currentNodeId, readSymbol, edges) {
 
     if (rule) {
       return {
-        edgeId: edge.id,     // 🔴 identify the edge
+        edgeId: edge.id,
         toNodeId: edge.target,
         rule
       };
@@ -39,7 +41,7 @@ export function isHalt(transition) {
   return transition === null;
 }
 
-export function stepTM({ currentNodeId, tape, head, nodes, edges }) {
+export function stepTM({ currentNodeId, tape, head, nodes, edges, stepCount = 0 }) {
   const read = tape[head] || "";
 
   const transition = findTransition(currentNodeId, read, edges);
@@ -49,7 +51,8 @@ export function stepTM({ currentNodeId, tape, head, nodes, edges }) {
       halted: true,
       reason: "No transition defined",
       read,
-      fromNodeId: currentNodeId
+      fromNodeId: currentNodeId,
+      stepCount // Return current count on halt
     };
   }
 
@@ -58,17 +61,14 @@ export function stepTM({ currentNodeId, tape, head, nodes, edges }) {
 
   return {
     halted: false,
-
     read,
     write: rule.write,
     direction: rule.direction,
-
     fromNodeId: currentNodeId,
     toNodeId,
-
-    edgeId,                 // 🔴 expose active transition
-
+    edgeId,
     isAccept: isAcceptNode(nextNode),
-    rule
+    rule,
+    stepCount: stepCount + 1 // Increment step count
   };
 }

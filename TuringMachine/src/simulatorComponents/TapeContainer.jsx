@@ -191,14 +191,29 @@ export default function TapeContainer({
         const mockTape = Array(requiredSize).fill("");
         chars.forEach((char, i) => { mockTape[startPos + i] = char === "*" ? "" : char; });
 
-        displayThreads.push({
-            id: "1", // UPDATED: Default ID is "1"
-            tape: mockTape,
-            head: startPos,
-            currentNodeId: null,
-            status: "active",
-            stepCount: 0
-        });
+        return (
+          <div className="thread-list-container">
+              <div className="thread-tree-row">
+                  <div className="thread-card active tree-card">
+                      <div className="thread-header">
+                          <div className="thread-id-info">
+                            <span className="thread-name">Thread 1</span>
+                            <span className="thread-meta">(Step 0)</span>
+                          </div>
+                          <span className="thread-status-badge active">● Running</span>
+                      </div>
+                      
+                      <TapeDisplay 
+                          tape={mockTape} 
+                          head={startPos} 
+                          activeLabel="START" 
+                          cellSize={0} 
+                          width="100%"
+                      />
+                  </div>
+              </div>
+          </div>
+        );
     }
 
     // 3. Numeric Sort (So 1.10 comes after 1.2)
@@ -276,7 +291,7 @@ export default function TapeContainer({
                                   </div>
                                   
                                   <span className={`thread-status-badge ${thread.status}`}>
-                                    {thread.status === 'active' ? '● Run' : 
+                                    {thread.status === 'active' ? '● Running' : 
                                      thread.status === 'frozen' ? '⑂ Split' :
                                      thread.status === 'accepted' ? '✔ Accept' : '✖ Reject'}
                                   </span>
@@ -299,25 +314,47 @@ export default function TapeContainer({
   };
 
   return (
-    <div className="tape-container">
-      {isNonDeterministic ? renderThreadList() : (
-        isMultiTape ? (
+      <div className="tape-container">
+        {/* Conditionally render the step counter: only if NOT Non-Deterministic */}
+        {!isNonDeterministic && (
+          <div className="tape-top-bar">
+            <div className="step-counter-display">
+              <span className="step-label">Step: </span>
+              <span className="step-value">{tmStepCount}</span>
+            </div>
+          </div>
+        )}
+
+        {isNonDeterministic ? renderThreadList() : (
+          isMultiTape ? (
             <div className="multitape-container">
-               {tm.tapes.map((tape, index) => (
-                    <div key={index} className="multitape-row">
-                        <div className="multitape-label">Tape {index + 1}</div>
-                        <div className="tape-display-wrapper">
-                            <TapeDisplay tape={tape} head={tm.heads[index]} activeLabel={activeLabel(tm.activeNodeId)} cellSize={CELL_SIZE} width="70vw" />
-                        </div>
-                    </div>
-                ))}
+              {tm.tapes.map((tape, index) => (
+                <div key={index} className="multitape-row">
+                  <div className="multitape-label">Tape {index + 1}</div>
+                  <div className="tape-display-wrapper">
+                    <TapeDisplay 
+                      tape={tape} 
+                      head={tm.heads[index]} 
+                      activeLabel={activeLabel(tm.activeNodeId)} 
+                      cellSize={CELL_SIZE} 
+                      width="70vw" 
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
-        ) : (
+          ) : (
             <div className="singletape-wrapper">
-                <TapeDisplay tape={tm.tape} head={tm.head} activeLabel={activeLabel(tm.activeNodeId)} cellSize={CELL_SIZE} width="80vw" />
+              <TapeDisplay 
+                tape={tm.tape} 
+                head={tm.head} 
+                activeLabel={activeLabel(tm.activeNodeId)} 
+                cellSize={CELL_SIZE} 
+                width="80vw" 
+              />
             </div>
-        )
-      )}
+          )
+        )}
 
       <div className="status-area">
         {statusMessage && (

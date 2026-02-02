@@ -16,7 +16,7 @@ const EXAMPLES = {
   NonDeterministic: [
     { value: "palindrome", label: "Palindrome (NTM)" },
     { value: "binary_increment", label: "Binary Increment (NTM)" },
-    { value: "Find_hash", label: "Find # (DTM)" },
+    { value: "Find_hash", label: "Find hash (DTM)" },
     { value: "is_equal_NTM", label: "Is Equal (DTM)" }
   ],
 };

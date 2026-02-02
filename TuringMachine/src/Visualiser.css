@@ -183,6 +183,56 @@
 /* ===========================
    TAPE & STATUS
    =========================== */
+
+/* src/Visualiser.css */
+
+.tape-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  /* Removed large gap to allow counter to sit lower */
+  gap: 0px; 
+  position: relative;
+  padding: 20px 0 40px 0; 
+  width: 100%; 
+}
+
+.tape-top-bar {
+  width: 80vw; 
+  display: flex;
+  justify-content: flex-start; 
+  margin: 0 auto; 
+  padding-left: 2px;
+  z-index: 10;
+  margin-bottom: -40px; 
+}
+
+.step-counter-display {
+  display: flex;
+  align-items: center;
+  background-color: #ffffff;
+  overflow: hidden;
+  margin-bottom: 0px; 
+}
+
+.step-label {
+  color: #000000;
+  padding: 4px 8px;
+  font-size: 1rem;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.step-value {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #000000;
+  min-width: 10px;
+  text-align: center;
+  background: white;
+  padding: 4px 0px; 
+}
 .tape-container {
   display: flex;
   align-items: center;
@@ -213,7 +263,7 @@
 }
 
 .multitape-label {
-  font-weight: 800;
+  font-weight: 600;
   font-size: 1.2rem;
   color: #333;
   width: 100px;
@@ -265,8 +315,9 @@
   display: flex;
   align-items: center;
   width: 80vw; 
-  height: 50px;
-  border: 2px solid black;
+  height: 80px;
+  border: 2px solid #d2e3fc;
+  border-radius: 6px;
   padding-bottom: 5px;
   padding-top: 5px;
   overflow: hidden;
@@ -276,7 +327,7 @@
 
 .tape-header {
   position: absolute;
-  top: -45px; 
+  top: -35px; 
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
@@ -687,7 +738,13 @@
   padding-right: 15px;
 }
 
-.rule-cell { white-space: nowrap; }
+.rule-cell {
+  white-space: normal;
+  display: inline-block;
+  min-width: 100px;
+  line-height: 1.4;
+}
+
 .empty-cell { color: #ccc; font-weight: normal; font-style: italic; }
 
 /* --- Alphabet Controls (Single Tape Only) --- */
@@ -825,9 +882,9 @@
 }
 
 .symbol-tag.manual {
-  background-color: #f3e5f5;
-  color: #7b1fa2;
-  border-color: #e1bee7;
+  background-color: #f5e5e5;
+  color: #a21f1f;
+  border-color: #e7bebe;
   padding-right: 8px; 
 }
 
@@ -847,7 +904,7 @@
 }
 
 .symbol-input-inline:focus {
-  border-color: #7b1fa2;
+  border-color: #a21f1f;
   background-color: white;
   width: 40px;
 }
@@ -855,7 +912,7 @@
 .remove-symbol-btn {
   background: none;
   border: none;
-  color: #7b1fa2;
+  color: #a21f1f;
   font-size: 1.1rem;
   cursor: pointer;
   margin-left: 6px;
@@ -872,7 +929,7 @@
 }
 
 .remove-symbol-btn:hover {
-  background-color: rgba(123, 31, 162, 0.1);
+  background-color: rgba(162, 31, 31, 0.1);
   opacity: 1;
 }
 
@@ -934,22 +991,18 @@
 
 /* Base Card Style */
 .thread-card {
-  /* CRITICAL FIXES FOR FLEXBOX OVERFLOW */
   min-width: 0; 
   width: 100%;
-  max-width: 100%; /* Stop card from growing past parent */
+  max-width: 100%;
   box-sizing: border-box;
-  
   background: white;
   border: 1px solid #ccc;
   border-radius: 6px;
   padding: 10px;
-  transition: all 0.2s ease;
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   z-index: 1;
 }
 
@@ -1057,5 +1110,9 @@
 }
 
 .thread-card .tape-header {
-  top: -35px;
+  top: -45px;
+  overflow: visible;
 }
+
+
+

@@ -1,3 +1,4 @@
+/* src/simulatorComponents/TransitionTable.jsx */
 import React, { useMemo, useState, useRef, useEffect } from "react";
 import "../Visualiser.css";
 import { getNodeLabel } from "./engines/Deterministic";
@@ -84,14 +85,12 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
     const nodeMap = {}; 
     nodes.forEach((node) => { nodeMap[node.id] = node; });
 
-    // 1. Detect Multi-Tape
     const detectedMultiTape = edges.some(edge => 
       edge.data?.labels?.some(l => 
         Object.keys(l).some(k => k.startsWith('tape'))
       )
     );
 
-    // 2. Sort Nodes
     const sortedNodes = [...nodes].sort((a, b) => {
       if (a.type === 'start') return -1;
       if (b.type === 'start') return 1;
@@ -100,11 +99,8 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
       return labelA.localeCompare(labelB, undefined, { numeric: true });
     });
 
-    // 3. Process Data based on Mode
     if (detectedMultiTape) {
-      // --- MULTI TAPE PROCESSING ---
       const rules = [];
-
       let maxTapes = 2;
       edges.forEach(e => e.data?.labels?.forEach(l => {
         Object.keys(l).forEach(k => {
@@ -151,30 +147,30 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
 
       rules.sort((a, b) => a.sortKey.localeCompare(b.sortKey, undefined, { numeric: true }));
 
-      // --- MATRIX VIEW PREP ---
       const uniqueReadTuples = Array.from(new Set(rules.map(r => r.read))).sort();
       const mtMatrix = {};
       rules.forEach(r => {
         if(!mtMatrix[r.start]) mtMatrix[r.start] = {};
-        mtMatrix[r.start][r.read] = r;
+        
+        // Handle Non-Determinism in Multi-Tape Matrix View
+        const cellContent = `(${r.rawWrites.map((w, i) => `${w},${r.rawDirs[i]}`).join(" : ")}) -> ${r.end}`;
+        if (mtMatrix[r.start][r.read]) {
+            mtMatrix[r.start][r.read] += ` | ${cellContent}`;
+        } else {
+            mtMatrix[r.start][r.read] = cellContent;
+        }
       });
 
       const combinedSet = new Set([...derivedSet, ...manualSymbols]);
       const sortedSymbols = Array.from(combinedSet).sort();
 
       return { 
-        symbols: sortedSymbols, 
-        matrix: {}, 
-        sortedNodes, 
-        derivedSymbols: derivedSet, 
-        isMultiTape: true, 
-        multiTapeRules: rules, 
-        multiTapeColumns: uniqueReadTuples,
-        multiTapeMatrix: mtMatrix
+        symbols: sortedSymbols, matrix: {}, sortedNodes, derivedSymbols: derivedSet, 
+        isMultiTape: true, multiTapeRules: rules, multiTapeColumns: uniqueReadTuples, multiTapeMatrix: mtMatrix
       };
 
     } else {
-      // --- SINGLE TAPE PROCESSING ---
+      // --- SINGLE TAPE PROCESSING (Updated for NTM) ---
       const matrix = {};
       sortedNodes.forEach(n => (matrix[n.id] = {}));
 
@@ -185,14 +181,18 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
 
         rules.forEach((rule) => {
           if (rule.read === undefined) return;
-          
           derivedSet.add(rule.read);
           if (rule.write) derivedSet.add(rule.write);
           
           const cellContent = `${rule.write}, ${rule.direction}, ${targetLabel}`;
-          
           if (!matrix[sourceId]) matrix[sourceId] = {};
-          matrix[sourceId][rule.read] = cellContent;
+          
+          // Append multiple choices together for NTM
+          if (matrix[sourceId][rule.read]) {
+            matrix[sourceId][rule.read] += ` | ${cellContent}`;
+          } else {
+            matrix[sourceId][rule.read] = cellContent;
+          }
         });
       });
 
@@ -200,14 +200,8 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
       const sortedSymbols = Array.from(combinedSet).sort();
 
       return { 
-        symbols: sortedSymbols, 
-        matrix, 
-        sortedNodes, 
-        derivedSymbols: derivedSet, 
-        isMultiTape: false,
-        multiTapeRules: [],
-        multiTapeColumns: [],
-        multiTapeMatrix: {}
+        symbols: sortedSymbols, matrix, sortedNodes, derivedSymbols: derivedSet, 
+        isMultiTape: false, multiTapeRules: [], multiTapeColumns: [], multiTapeMatrix: {}
       };
     }
   }, [nodes, edges, manualSymbols]);
@@ -216,126 +210,60 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
     e.preventDefault();
     const trimmed = newSymbol.trim();
     if (!trimmed) return;
-    
-    if (!manualSymbols.includes(trimmed)) {
-      setManualSymbols(prev => [...prev, trimmed]);
-    }
+    if (!manualSymbols.includes(trimmed)) setManualSymbols(prev => [...prev, trimmed]);
     setNewSymbol("");
   };
 
   const handleDeleteSymbol = (symbol) => {
-    if (!derivedSymbols.has(symbol)) {
-      setManualSymbols(prev => prev.filter(s => s !== symbol));
-    }
+    if (!derivedSymbols.has(symbol)) setManualSymbols(prev => prev.filter(s => s !== symbol));
   };
 
-  const containerClass = isWindowMode 
-    ? "popup-menu table-popup modeless-window" 
-    : "popup-menu table-popup";
+  const containerClass = isWindowMode ? "popup-menu table-popup modeless-window" : "popup-menu table-popup";
 
   const windowStyle = isWindowMode 
-    ? { 
-        left: `${position.x}px`, 
-        top: `${position.y}px`,
-        width: `${size.width}px`,
-        height: `${size.height}px`,
-        margin: 0,
-        position: 'fixed'
-      } 
+    ? { left: `${position.x}px`, top: `${position.y}px`, width: `${size.width}px`, height: `${size.height}px`, margin: 0, position: 'fixed' } 
     : {};
 
   return (
     <div className={isWindowMode ? "" : "popup-overlay"} onClick={!isWindowMode ? onClose : undefined}>
-      <div 
-        className={containerClass} 
-        style={windowStyle}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div 
-          className="popup-header"
-          style={{ cursor: isWindowMode ? "grab" : "default" }}
-          onMouseDown={handleMouseDown}
-        >
+      <div className={containerClass} style={windowStyle} onClick={(e) => e.stopPropagation()}>
+        <div className="popup-header" style={{ cursor: isWindowMode ? "grab" : "default" }} onMouseDown={handleMouseDown}>
             <h3>Transition Table</h3>
-            
             <div className="header-actions">
               {isMultiTape && (
-                <button 
-                  className="window-toggle-btn" 
-                  onClick={() => setViewMode(viewMode === "list" ? "matrix" : "list")}
-                  onMouseDown={(e) => e.stopPropagation()} 
-                >
+                <button className="window-toggle-btn" onClick={() => setViewMode(viewMode === "list" ? "matrix" : "list")} onMouseDown={(e) => e.stopPropagation()}>
                   {viewMode === "list" ? "Matrix View" : "List View"}
                 </button>
               )}
-
-              <button 
-                className="window-toggle-btn" 
-                onClick={() => setIsWindowMode(!isWindowMode)}
-                onMouseDown={(e) => e.stopPropagation()} 
-              >
+              <button className="window-toggle-btn" onClick={() => setIsWindowMode(!isWindowMode)} onMouseDown={(e) => e.stopPropagation()}>
                 {isWindowMode ? "Modal View" : "Float Window"}
               </button>
-              <button 
-                className="close-btn" 
-                onClick={onClose}
-                onMouseDown={(e) => e.stopPropagation()}
-              >
-                ×
-              </button>
+              <button className="close-btn" onClick={onClose} onMouseDown={(e) => e.stopPropagation()}>×</button>
             </div>
         </div>
 
-        {/* ALPHABET CONTROLS (Only for Single Tape / Legacy) */}
         {!isMultiTape && (
           <form className="alphabet-controls" onSubmit={handleAddSymbol}>
             <label>Alphabet (Σ): </label>
-            <input 
-              type="text" 
-              value={newSymbol}
-              onChange={(e) => setNewSymbol(e.target.value)}
-              placeholder="Add char..."
-              maxLength={1}
-              className="symbol-input"
-            />
+            <input type="text" value={newSymbol} onChange={(e) => setNewSymbol(e.target.value)} placeholder="Add char..." maxLength={1} className="symbol-input" />
             <button type="submit" disabled={!newSymbol.trim()}>Add</button>
           </form>
         )}
 
-        {/* MULTI-TAPE ALPHABET DISPLAY + INLINE INPUT */}
         {isMultiTape && (
             <div className="multitape-alphabet-display">
-                {/* Sigma Box */}
                 <div className="sigma-box">Σ :</div>
-                
                 <div className="symbol-list">
-                  {/* Symbol Pills */}
                   {symbols.map(s => (
                       <span key={s} className={`symbol-tag ${derivedSymbols.has(s) ? 'derived' : 'manual'}`}>
                           {s}
                           {!derivedSymbols.has(s) && (
-                              <button 
-                                  className="remove-symbol-btn"
-                                  onClick={() => handleDeleteSymbol(s)}
-                                  title="Remove symbol"
-                              >
-                                  ×
-                              </button>
+                              <button className="remove-symbol-btn" onClick={() => handleDeleteSymbol(s)} title="Remove symbol">×</button>
                           )}
                       </span>
                   ))}
-                  
-                  {/* Inline Input Pill */}
                   <form onSubmit={handleAddSymbol} style={{ display: 'inline-flex' }}>
-                    <input 
-                        type="text"
-                        value={newSymbol}
-                        onChange={(e) => setNewSymbol(e.target.value)}
-                        placeholder="+"
-                        maxLength={1}
-                        className="symbol-input-inline"
-                        title="Type and press Enter to add symbol"
-                    />
+                    <input type="text" value={newSymbol} onChange={(e) => setNewSymbol(e.target.value)} placeholder="+" maxLength={1} className="symbol-input-inline" title="Type and press Enter to add symbol" />
                   </form>
                 </div>
             </div>
@@ -343,11 +271,8 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
         
         <div className="table-wrapper">
           <table className="transition-table">
-            
-            {/* --- MULTI TAPE LOGIC --- */}
             {isMultiTape ? (
               viewMode === "list" ? (
-                // LIST VIEW
                 <>
                   <thead>
                     <tr>
@@ -368,25 +293,15 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
                         <td style={{ fontStyle: 'italic' }}>{rule.end}</td>
                       </tr>
                     ))}
-                    {multiTapeRules.length === 0 && (
-                       <tr><td colSpan="5" style={{ textAlign: 'center', color: '#999' }}>No transitions defined</td></tr>
-                    )}
                   </tbody>
                 </>
               ) : (
-                // MATRIX VIEW
                 <>
                    <thead>
                     <tr>
-                      {/* DIAGONAL HEADER */}
-                      <th className="diagonal-cell">
-                        <span className="diagonal-top">Σ</span>
-                        <span className="diagonal-bottom">Q</span>
-                      </th>
+                      <th className="diagonal-cell"><span className="diagonal-top">Σ</span><span className="diagonal-bottom">Q</span></th>
                       {multiTapeColumns.map((col, idx) => (
-                        <th key={idx} className="symbol-header" style={{ minWidth: '80px' }}>
-                          {col.replace(/,/g, ", ")}
-                        </th>
+                        <th key={idx} className="symbol-header" style={{ minWidth: '80px' }}>{col.replace(/,/g, ", ")}</th>
                       ))}
                     </tr>
                   </thead>
@@ -397,21 +312,10 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
                         <tr key={node.id}>
                           <td className="row-header">{label}</td>
                           {multiTapeColumns.map((col) => {
-                            const rule = multiTapeMatrix[label]?.[col];
-                            let content = null;
-                            
-                            if (rule) {
-                              const actionStr = rule.rawWrites.map((w, i) => `${w},${rule.rawDirs[i]}`).join(" : ");
-                              content = `(${actionStr}) -> ${rule.end}`;
-                            }
-
+                            const content = multiTapeMatrix[label]?.[col];
                             return (
                               <td key={`${node.id}-${col}`}>
-                                {content ? (
-                                  <span className="rule-cell" style={{ fontSize: '0.9rem' }}>{content}</span>
-                                ) : (
-                                  <span className="empty-cell">/</span>
-                                )}
+                                {content ? <span className="rule-cell" style={{ fontSize: '0.9rem' }}>{content}</span> : <span className="empty-cell">/</span>}
                               </td>
                             );
                           })}
@@ -422,31 +326,16 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
                 </>
               )
             ) : (
-              /* --- SINGLE TAPE (MATRIX VIEW) --- */
               <>
                 <thead>
                   <tr>
-                    {/* DIAGONAL HEADER */}
-                    <th className="diagonal-cell">
-                        <span className="diagonal-top">Σ</span>
-                        <span className="diagonal-bottom">Q</span>
-                    </th>
-                    {symbols.map((symbol) => {
-                      const isUsed = derivedSymbols.has(symbol);
-                      return (
+                    <th className="diagonal-cell"><span className="diagonal-top">Σ</span><span className="diagonal-bottom">Q</span></th>
+                    {symbols.map((symbol) => (
                         <th key={symbol} className="symbol-header">
                           {symbol}
-                          {!isUsed && (
-                            <button 
-                              className="delete-symbol-btn"
-                              onClick={() => handleDeleteSymbol(symbol)}
-                            >
-                              ×
-                            </button>
-                          )}
+                          {!derivedSymbols.has(symbol) && <button className="delete-symbol-btn" onClick={() => handleDeleteSymbol(symbol)}>×</button>}
                         </th>
-                      );
-                    })}
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
@@ -457,11 +346,7 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
                         const content = matrix[node.id]?.[symbol];
                         return (
                           <td key={`${node.id}-${symbol}`}>
-                            {content ? (
-                              <span className="rule-cell">{content}</span>
-                            ) : (
-                              <span className="empty-cell">/</span>
-                            )}
+                            {content ? <span className="rule-cell">{content}</span> : <span className="empty-cell">/</span>}
                           </td>
                         );
                       })}
@@ -472,13 +357,7 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
             )}
           </table>
         </div>
-
-        {isWindowMode && (
-          <div 
-            className="resize-handle"
-            onMouseDown={handleResizeMouseDown}
-          />
-        )}
+        {isWindowMode && <div className="resize-handle" onMouseDown={handleResizeMouseDown} />}
       </div>
     </div>
   );
