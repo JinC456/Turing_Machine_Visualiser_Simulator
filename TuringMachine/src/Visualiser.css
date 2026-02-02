@@ -261,6 +261,7 @@
 
 /* Tape Wrapper */
 .tape-wrapper {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   width: 80vw; 
@@ -342,6 +343,7 @@
   justify-content: center;
   gap: 20px;
   width: 80vw;
+  margin: 0 auto;
 }
 
 .tape-input {
@@ -886,15 +888,18 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  width: 90%;
+  width: 90%;       
+  max-width: 1200px;
+  margin: 0 auto;
   max-height: 60vh;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 15px;
   border: 1px solid #ddd;
   border-radius: 8px;
-  background-color: #fafafa; /* Light Theme Background */
+  background-color: #fafafa;
   box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+  box-sizing: border-box; 
 }
 
 .empty-threads {
@@ -910,23 +915,31 @@
   display: flex;
   align-items: flex-start;
   min-width: 300px;
+  /* FIX: Ensure the row doesn't force width beyond the container */
+  max-width: 100%;
 }
 
-/* L-Shaped Connector (Dark Grey for visibility on light bg) */
+/* L-Shaped Connector */
 .tree-connector {
   position: absolute;
   left: -22px;     
   top: -18px;      
-  height: 48px;    /* Connects to the center of the card below */
+  height: 48px;    
   width: 22px;
-  border-left: 2px solid #bbb;   /* Light Grey Line */
-  border-bottom: 2px solid #bbb; /* Light Grey Line */
+  border-left: 2px solid #bbb;   
+  border-bottom: 2px solid #bbb; 
   border-bottom-left-radius: 8px;
   z-index: 0;
 }
 
-/* Base Card Style (White) */
+/* Base Card Style */
 .thread-card {
+  /* CRITICAL FIXES FOR FLEXBOX OVERFLOW */
+  min-width: 0; 
+  width: 100%;
+  max-width: 100%; /* Stop card from growing past parent */
+  box-sizing: border-box;
+  
   background: white;
   border: 1px solid #ccc;
   border-radius: 6px;
@@ -936,18 +949,31 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 100%;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   z-index: 1;
 }
 
-/* Active State (Blue Highlight) */
-.thread-card.active {
-  border-left: 5px solid #1a73e8;
-  border-color: #b3d7ff; /* Slight blue tint on border */
+/* FIX: Target the React Component Wrapper inside the card */
+.thread-card > div {
+  min-width: 0;
+  max-width: 100%;
 }
 
-/* Accepted State (Green) */
+/* FIX: Force the tape wrapper inside the card to behave */
+.thread-card .tape-wrapper {
+  min-width: 0;
+  width: 100% !important; /* Force width to match card, ignoring 80vw default */
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Active State */
+.thread-card.active {
+  border-left: 5px solid #1a73e8;
+  border-color: #b3d7ff;
+}
+
+/* Accepted State */
 .thread-card.accepted {
   border-color: #4caf50;
   background-color: #f1f8e9;
@@ -955,7 +981,7 @@
   box-shadow: 0 0 8px rgba(76, 175, 80, 0.2);
 }
 
-/* Rejected State (Red) */
+/* Rejected State */
 .thread-card.rejected {
   border-color: #d9534f;
   background-color: #fdf7f7;
@@ -963,16 +989,16 @@
   opacity: 0.8;
 }
 
-/* Frozen / Split Parent State (Light Grey - Distinct but not dark) */
+/* Frozen State */
 .thread-card.frozen {
   background-color: #f4f4f4;
   border-color: #ddd;
-  border-left: 5px solid #999; /* Grey left border */
+  border-left: 5px solid #999;
   color: #666;
 }
 
 .thread-card.frozen .tape-wrapper {
-  opacity: 0.6; /* Fade the tape slightly to emphasize active children */
+  opacity: 0.6;
 }
 
 /* Header & Text */
@@ -994,12 +1020,12 @@
 .thread-name {
   font-weight: bold;
   font-size: 1rem;
-  color: #333; /* Dark Grey Text */
+  color: #333;
 }
 
 .thread-meta {
   font-size: 0.75rem;
-  color: #777; /* Lighter Grey for step count */
+  color: #777;
 }
 
 /* Status Badges */
@@ -1031,5 +1057,5 @@
 }
 
 .thread-card .tape-header {
-  top: -35px; /* Adjust pointer position */
+  top: -35px;
 }

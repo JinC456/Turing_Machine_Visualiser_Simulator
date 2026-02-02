@@ -79,8 +79,8 @@ export function stepNonDeterministicTM({ threads, nodes, edges }) {
       if (trans.rule.direction === "R") newHead++;
       if (trans.rule.direction === "L") newHead--;
 
-      const edgeThreshold = 6;
-      const expansionSize = 6;
+      const edgeThreshold = 15;
+      const expansionSize = 20;
       if (newHead < edgeThreshold) {
         const expansion = Array(expansionSize).fill("");
         newTape = [...expansion, ...newTape];
@@ -126,8 +126,8 @@ export function stepNonDeterministicTM({ threads, nodes, edges }) {
         if (trans.rule.direction === "L") newHead--;
 
         // Handle Expansion
-        const edgeThreshold = 6;
-        const expansionSize = 6;
+        const edgeThreshold = 15;
+        const expansionSize = 25;
         if (newHead < edgeThreshold) {
           const expansion = Array(expansionSize).fill("");
           newTape = [...expansion, ...newTape];

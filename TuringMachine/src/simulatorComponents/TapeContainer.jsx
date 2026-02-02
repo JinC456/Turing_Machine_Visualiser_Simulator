@@ -104,7 +104,7 @@ export default function TapeContainer({
   // --- Initialize Tape ---
   const initializeTape = useCallback(() => {
     if (canUndo || inputError) return; 
-    const defaultSize = 25; 
+    const defaultSize = 50; 
     const startPos = Math.floor(defaultSize / 2);
     const chars = inputValue.split("");
     const requiredSize = Math.max(defaultSize, startPos + chars.length);
@@ -184,7 +184,7 @@ export default function TapeContainer({
     
     // If no threads exist (e.g. after reset), ensure we show a dummy "Root" thread
     if (displayThreads.length === 0 && tmStepCount === 0) {
-        const defaultSize = 25; 
+        const defaultSize = 50; 
         const startPos = Math.floor(defaultSize / 2);
         const chars = inputValue.split("");
         const requiredSize = Math.max(defaultSize, startPos + chars.length);
@@ -208,14 +208,16 @@ export default function TapeContainer({
 
     return (
       <div className="thread-list-wrapper" style={{ width: '90%' }}>
-          {/* View Options Controls */}
           <div className="ntm-view-controls" style={{ 
-              display: 'flex', 
-              gap: '15px', 
-              marginBottom: '10px', 
-              fontSize: '0.9rem',
-              color: '#555' 
-          }}>
+          display: 'flex', 
+          gap: '15px', 
+          marginBottom: '10px', 
+          fontSize: '0.9rem',
+          color: '#555',
+          width: '90%',              
+          maxWidth: '1200px',         
+          margin: '0 auto 10px auto' 
+      }}>
               <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
                   <input 
                     type="checkbox" 
@@ -284,7 +286,7 @@ export default function TapeContainer({
                                   tape={thread.tape} 
                                   head={thread.head} 
                                   activeLabel={activeLabel(thread.currentNodeId)} 
-                                  cellSize={30} 
+                                  cellSize={40} 
                                   width="100%"
                               />
                           </div>

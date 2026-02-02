@@ -9,13 +9,15 @@ const EXAMPLES = {
     { value: "busy_beaver", label: "Busy Beaver (3-state)" },
   ],
   MultiTape: [
-    { value: "palindromeMulti", label: "Palindrome (2-Tape)" },
-    { value: "isequal", label: "Is Equal (2-Tape)" },
+    { value: "palindrome_multi", label: "Palindrome (2-Tape)" },
+    { value: "is_equal_multi", label: "Is Equal (2-Tape)" },
     { value: "binary_addition", label: "Binary Addition (3-Tape)" },
   ],
   NonDeterministic: [
-    { value: "palindrome", label: "Palindrome (NTM Mode)" },
-    { value: "binary_increment", label: "Binary Increment (NTM Mode)" },
+    { value: "palindrome", label: "Palindrome (NTM)" },
+    { value: "binary_increment", label: "Binary Increment (NTM)" },
+    { value: "Find_hash", label: "Find # (DTM)" },
+    { value: "is_equal_NTM", label: "Is Equal (DTM)" }
   ],
 };
 

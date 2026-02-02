@@ -14,8 +14,12 @@ import busyBeaverData from './examples/busy_beaver.json';
 
 // New Multi-Tape Examples
 import palindromeMultiData from './examples/palindrome_multi.json';
-import isEqualData from './examples/is_equal.json';
+import isEqualMultiData from './examples/is_equal_multi.json';
 import binaryAdditionData from './examples/binary_addition.json';
+
+// New NTM Examples
+import isEqualNTMData from './examples/Is_equal_NTM.json';
+import FindHashData from './examples/Find_hash.json';
 
 const exampleMap = {
   // Deterministic
@@ -25,8 +29,12 @@ const exampleMap = {
   
   // Multi-Tape
   palindromeMulti: palindromeMultiData,
-  isequal: isEqualData, 
-  binary_addition: binaryAdditionData
+  is_equal_multi: isEqualMultiData, 
+  binary_addition: binaryAdditionData,
+
+  // Non-Deterministic
+  is_equal_NTM: isEqualNTMData, 
+  Find_hash: FindHashData
 };
 
 export default function Visualiser({ engine, selectedExample, showTable, setShowTable }) {

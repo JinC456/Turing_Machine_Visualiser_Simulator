@@ -116,8 +116,8 @@ export const useTuringMachine = (initialCells = 13) => {
     if (result.direction === "R") newHead++;
     if (result.direction === "L") newHead--;
 
-    const edgeThreshold = 6;
-    const expansionSize = 6;
+    const edgeThreshold = 15;
+    const expansionSize = 25;
 
     if (newHead < edgeThreshold) {
       const expansion = Array(expansionSize).fill("");
