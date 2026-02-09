@@ -21,7 +21,7 @@ export function findAllTransitions(currentNodeId, readSymbol, edges) {
     // Check all labels on this edge
     labels.forEach((rule) => {
       // Standard single-tape check
-      if (rule.read === readSymbol || (rule.read === '*' && readSymbol === "")) {
+      if (rule.read === readSymbol || (rule.read === '␣' && readSymbol === "")) {
         matches.push({
           edgeId: edge.id,
           toNodeId: edge.target,
@@ -72,7 +72,7 @@ export function stepNonDeterministicTM({ threads, nodes, edges }) {
 
       // Apply Logic (Clone, Write, Move, Expand)
       let newTape = [...thread.tape];
-      const valToWrite = trans.rule.write === '*' ? "" : trans.rule.write;
+      const valToWrite = trans.rule.write === '␣' ? "" : trans.rule.write;
       newTape[thread.head] = valToWrite;
 
       let newHead = thread.head;

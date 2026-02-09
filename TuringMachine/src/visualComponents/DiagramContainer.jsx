@@ -336,7 +336,7 @@ export default function DiagramContainer({
                                 if (!isNaN(n)) max = Math.max(max, n);
                             }
                         });
-                        currentLabel[`tape${max+1}`] = { read: '*', write: '*', direction: 'N' };
+                        currentLabel[`tape${max+1}`] = { read: '␣', write: '␣', direction: 'N' };
                     } else if (op.type === 'DELETE') {
                         const idx = op.index;
                         const newLabelObj = {};

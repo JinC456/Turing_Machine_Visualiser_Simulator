@@ -38,7 +38,7 @@ export default function TapeContainer({
             Object.keys(label).forEach(key => {
                 if (key.startsWith('tape')) {
                     const n = parseInt(key.replace('tape', ''), 10);
-                    if (!isNaN(n)) max = Math.max(max, n);
+                    if (!isNaN(n)) max = Math.max(n, max);
                 }
             });
         });
@@ -103,7 +103,7 @@ export default function TapeContainer({
 
   // --- Initialize Tape ---
   const initializeTape = useCallback(() => {
-    if (canUndo || inputError) return; 
+    if (inputError) return; 
     const defaultSize = 50; 
     const startPos = Math.floor(defaultSize / 2);
     const chars = inputValue.split("");
@@ -121,11 +121,14 @@ export default function TapeContainer({
         setTapeSingle(tape1);
         setHeadSingle(startPos);
     }
-  }, [inputValue, canUndo, inputError, isMultiTape, isNonDeterministic, numTapes, setThreadNonDet, setTapesMulti, setHeadsMulti, setTapeSingle, setHeadSingle]);
+  }, [inputValue, inputError, isMultiTape, isNonDeterministic, numTapes, setThreadNonDet, setTapesMulti, setHeadsMulti, setTapeSingle, setHeadSingle]);
 
+  // --- REAL-TIME SYNC ---
   useEffect(() => {
-    if (!isRunning && !isFinished && !canUndo) initializeTape();
-  }, [initializeTape, isRunning, isFinished, canUndo]);
+    if (!canUndo && tmStepCount === 0) {
+      initializeTape();
+    }
+  }, [inputValue, initializeTape, canUndo, tmStepCount]);
 
   // --- Loop ---
   useEffect(() => {
@@ -152,11 +155,21 @@ export default function TapeContainer({
       return getNodeLabel(n) || "S?";
   };
 
+  // FIXED: Ensure initializeTape runs immediately after reset
+  const handleRestart = () => {
+    setIsRunning(false);
+    setIsTimeout(false);
+    reset();
+    setTimeout(initializeTape, 0); 
+  };
+
+  // FIXED: Ensure initializeTape runs immediately after clearing input
   const handleClear = () => {
     setIsRunning(false);
     setIsTimeout(false);
     setInputValue(""); 
     reset(); 
+    setTimeout(initializeTape, 0);
   };
   
   // --- Status ---
@@ -171,7 +184,6 @@ export default function TapeContainer({
 
   // --- RENDER THREAD LIST ---
   const renderThreadList = () => {
-    // 1. Filter
     const visibleThreads = tm.threads.filter(t => {
         if (t.status === 'active' || t.status === 'accepted') return true;
         if (t.status === 'frozen' && showFrozen) return true;
@@ -179,45 +191,7 @@ export default function TapeContainer({
         return false;
     });
 
-    // 2. Fallback Logic (Zero State)
-    let displayThreads = [...visibleThreads];
-    
-    // If no threads exist (e.g. after reset), ensure we show a dummy "Root" thread
-    if (displayThreads.length === 0 && tmStepCount === 0) {
-        const defaultSize = 50; 
-        const startPos = Math.floor(defaultSize / 2);
-        const chars = inputValue.split("");
-        const requiredSize = Math.max(defaultSize, startPos + chars.length);
-        const mockTape = Array(requiredSize).fill("");
-        chars.forEach((char, i) => { mockTape[startPos + i] = char === "␣" ? "" : char; });
-
-        return (
-          <div className="thread-list-container">
-              <div className="thread-tree-row">
-                  <div className="thread-card active tree-card">
-                      <div className="thread-header">
-                          <div className="thread-id-info">
-                            <span className="thread-name">Thread 1</span>
-                            <span className="thread-meta">(Step 0)</span>
-                          </div>
-                          <span className="thread-status-badge active">● Running</span>
-                      </div>
-                      
-                      <TapeDisplay 
-                          tape={mockTape} 
-                          head={startPos} 
-                          activeLabel="START" 
-                          cellSize={0} 
-                          width="100%"
-                      />
-                  </div>
-              </div>
-          </div>
-        );
-    }
-
-    // 3. Numeric Sort (So 1.10 comes after 1.2)
-    const sortedThreads = displayThreads.sort((a, b) => 
+    const sortedThreads = visibleThreads.sort((a, b) => 
       a.id.localeCompare(b.id, undefined, { numeric: true })
     );
 
@@ -255,7 +229,6 @@ export default function TapeContainer({
           </div>
 
           <div className="thread-list-container">
-              {/* Only show "All rejected" if we actually stepped and filtered everything out */}
               {sortedThreads.length === 0 && tmStepCount > 0 && (
                   <div className="empty-threads">
                      All threads rejected (Hidden).
@@ -278,7 +251,6 @@ export default function TapeContainer({
                           <div className={`thread-card ${thread.status} tree-card`}>
                               <div className="thread-header">
                                   <div className="thread-id-info">
-                                    {/* CHANGED: Show Full ID for clarity (e.g., 1.2.1) */}
                                     <span className="thread-name">
                                       Thread {thread.id}
                                     </span>
@@ -315,7 +287,6 @@ export default function TapeContainer({
 
   return (
       <div className="tape-container">
-        {/* Conditionally render the step counter: only if NOT Non-Deterministic */}
         {!isNonDeterministic && (
           <div className="tape-top-bar">
             <div className="step-counter-display">
@@ -375,7 +346,7 @@ export default function TapeContainer({
             onStepBack={() => { setIsRunning(false); setIsTimeout(false); stepBack(); }}
             onStart={() => { if (!isFinished && !inputError) setIsRunning(true); }}
             onStop={() => setIsRunning(false)}
-            onReset={() => { setIsRunning(false); setIsTimeout(false); reset(); }}
+            onReset={handleRestart}
             onClear={handleClear} 
             isRunning={isRunning} isFinished={isFinished || !!inputError} canUndo={canUndo}
         />

@@ -314,7 +314,7 @@ export const useNonDeterministicTM = (initialCells = 13) => {
   const setInitialThread = useCallback((inputTape, startHead) => {
     setThreads([{
       id: "1", 
-      tape: inputTape,
+      tape: [...inputTape],
       head: startHead, 
       currentNodeId: null, 
       status: "active",
@@ -332,7 +332,7 @@ export const useNonDeterministicTM = (initialCells = 13) => {
     setHistory(prev => [...prev, { threads: threads, stepCount, success }]);
 
     let currentThreads = threads;
-    const startNode = getStartNode(nodes);
+    const startNode = nodes.find(n => n.type === "start") || null;
 
     if (stepCount === 0 && threads.length > 0 && threads[0].currentNodeId === null) {
        if (!startNode) return; 

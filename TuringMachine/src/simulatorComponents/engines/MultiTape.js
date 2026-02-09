@@ -78,7 +78,7 @@ export function stepMultiTM({ currentNodeId, tapes, heads, nodes, edges, stepCou
           writes.push(r.write);
           directions.push(r.direction);
       } else {
-          writes.push(reads[i] || "*"); 
+          writes.push(reads[i] || "␣"); 
           directions.push("N");
       }
   }
