@@ -109,7 +109,7 @@ export default function TapeContainer({
     const chars = inputValue.split("");
     const requiredSize = Math.max(defaultSize, startPos + chars.length);
     const tape1 = Array(requiredSize).fill("");
-    chars.forEach((char, i) => { tape1[startPos + i] = char === "*" ? "" : char; });
+    chars.forEach((char, i) => { tape1[startPos + i] = char === "␣" ? "" : char; });
 
     if (isNonDeterministic) setThreadNonDet(tape1, startPos); 
     else if (isMultiTape) {
@@ -189,7 +189,7 @@ export default function TapeContainer({
         const chars = inputValue.split("");
         const requiredSize = Math.max(defaultSize, startPos + chars.length);
         const mockTape = Array(requiredSize).fill("");
-        chars.forEach((char, i) => { mockTape[startPos + i] = char === "*" ? "" : char; });
+        chars.forEach((char, i) => { mockTape[startPos + i] = char === "␣" ? "" : char; });
 
         return (
           <div className="thread-list-container">

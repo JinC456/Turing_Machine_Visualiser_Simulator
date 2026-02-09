@@ -75,8 +75,8 @@
         "t": 0.5,
         "labels": [
           {
-            "read": "*",
-            "write": "*",
+            "read": "␣",
+            "write": "␣",
             "direction": "L"
           }
         ],
@@ -144,7 +144,7 @@
             "direction": "L"
           },
           {
-            "read": "*",
+            "read": "␣",
             "write": "1",
             "direction": "L"
           }

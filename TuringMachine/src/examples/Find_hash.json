@@ -1,5 +1,5 @@
 {
-  "defaultInput": "*****#",
+  "defaultInput": "␣␣␣␣␣#",
   "nodes": [
     {
       "id": "1770043036391",
@@ -82,7 +82,7 @@
         "t": 0.5,
         "labels": [
           {
-            "read": "*",
+            "read": "␣",
             "write": "V",
             "direction": "L"
           }
@@ -107,7 +107,7 @@
         "t": 0.5,
         "labels": [
           {
-            "read": "*",
+            "read": "␣",
             "write": "V",
             "direction": "R"
           }
@@ -188,7 +188,7 @@
         "targetY": 134.9747301833176,
         "labels": [
           {
-            "read": "*",
+            "read": "␣",
             "write": "V",
             "direction": "L"
           }
@@ -222,7 +222,7 @@
         "targetY": 265.83767601426837,
         "labels": [
           {
-            "read": "*",
+            "read": "␣",
             "write": "V",
             "direction": "R"
           }

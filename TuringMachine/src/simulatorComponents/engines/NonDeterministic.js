@@ -118,7 +118,7 @@ export function stepNonDeterministicTM({ threads, nodes, edges }) {
         if (isAccept) globalAccept = true;
 
         let newTape = [...thread.tape];
-        const valToWrite = trans.rule.write === '*' ? "" : trans.rule.write;
+        const valToWrite = trans.rule.write === '␣' ? "" : trans.rule.write;
         newTape[thread.head] = valToWrite;
 
         let newHead = thread.head;

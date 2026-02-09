@@ -106,7 +106,7 @@
               "direction": "R"
             },
             "tape2": {
-              "read": "*",
+              "read": "␣",
               "write": "a",
               "direction": "R"
             }
@@ -118,7 +118,7 @@
               "direction": "R"
             },
             "tape2": {
-              "read": "*",
+              "read": "␣",
               "write": "b",
               "direction": "R"
             }
@@ -148,13 +148,13 @@
         "labels": [
           {
             "tape1": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "N"
             },
             "tape2": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "L"
             }
           }
@@ -187,8 +187,8 @@
         "labels": [
           {
             "tape1": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "N"
             },
             "tape2": {
@@ -199,8 +199,8 @@
           },
           {
             "tape1": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "N"
             },
             "tape2": {
@@ -234,13 +234,13 @@
         "labels": [
           {
             "tape1": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "L"
             },
             "tape2": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "R"
             }
           }
@@ -320,13 +320,13 @@
         "labels": [
           {
             "tape1": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "N"
             },
             "tape2": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "N"
             }
           }

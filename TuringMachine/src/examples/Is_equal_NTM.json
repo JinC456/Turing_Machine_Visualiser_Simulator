@@ -278,8 +278,8 @@
         "t": 0.5,
         "labels": [
           {
-            "read": "*",
-            "write": "*",
+            "read": "␣",
+            "write": "␣",
             "direction": "R"
           }
         ],
@@ -362,8 +362,8 @@
         "t": 0.5,
         "labels": [
           {
-            "read": "*",
-            "write": "*",
+            "read": "␣",
+            "write": "␣",
             "direction": "N"
           }
         ],
@@ -601,8 +601,8 @@
         "t": 0.5,
         "labels": [
           {
-            "read": "*",
-            "write": "*",
+            "read": "␣",
+            "write": "␣",
             "direction": "R"
           }
         ]
@@ -624,8 +624,8 @@
         "t": 0.5,
         "labels": [
           {
-            "read": "*",
-            "write": "*",
+            "read": "␣",
+            "write": "␣",
             "direction": "L"
           }
         ]
@@ -647,8 +647,8 @@
         "t": 0.5,
         "labels": [
           {
-            "read": "*",
-            "write": "*",
+            "read": "␣",
+            "write": "␣",
             "direction": "R"
           }
         ]

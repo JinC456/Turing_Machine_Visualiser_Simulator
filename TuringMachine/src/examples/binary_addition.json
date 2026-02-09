@@ -138,13 +138,13 @@
               "direction": "R"
             },
             "tape2": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "N"
             },
             "tape3": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "N"
             }
           },
@@ -155,13 +155,13 @@
               "direction": "R"
             },
             "tape2": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "N"
             },
             "tape3": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "N"
             }
           }
@@ -188,17 +188,17 @@
           {
             "tape1": {
               "read": "+",
-              "write": "*",
+              "write": "␣",
               "direction": "R"
             },
             "tape2": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "N"
             },
             "tape3": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "N"
             }
           }
@@ -231,34 +231,34 @@
           {
             "tape1": {
               "read": "0",
-              "write": "*",
+              "write": "␣",
               "direction": "R"
             },
             "tape2": {
-              "read": "*",
+              "read": "␣",
               "write": "0",
               "direction": "R"
             },
             "tape3": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "N"
             }
           },
           {
             "tape1": {
               "read": "1",
-              "write": "*",
+              "write": "␣",
               "direction": "R"
             },
             "tape2": {
-              "read": "*",
+              "read": "␣",
               "write": "1",
               "direction": "R"
             },
             "tape3": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "N"
             }
           }
@@ -284,18 +284,18 @@
         "labels": [
           {
             "tape1": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "L"
             },
             "tape2": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "L"
             },
             "tape3": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "N"
             }
           }
@@ -327,8 +327,8 @@
         "labels": [
           {
             "tape1": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "L"
             },
             "tape2": {
@@ -337,15 +337,15 @@
               "direction": "N"
             },
             "tape3": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "N"
             }
           },
           {
             "tape1": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "L"
             },
             "tape2": {
@@ -354,8 +354,8 @@
               "direction": "N"
             },
             "tape3": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "N"
             }
           }
@@ -391,8 +391,8 @@
               "direction": "N"
             },
             "tape3": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "N"
             }
           },
@@ -408,8 +408,8 @@
               "direction": "N"
             },
             "tape3": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "N"
             }
           },
@@ -425,8 +425,8 @@
               "direction": "N"
             },
             "tape3": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "N"
             }
           },
@@ -442,8 +442,8 @@
               "direction": "N"
             },
             "tape3": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "N"
             }
           }
@@ -488,7 +488,7 @@
               "direction": "L"
             },
             "tape3": {
-              "read": "*",
+              "read": "␣",
               "write": "1",
               "direction": "L"
             }
@@ -505,7 +505,7 @@
               "direction": "L"
             },
             "tape3": {
-              "read": "*",
+              "read": "␣",
               "write": "1",
               "direction": "L"
             }
@@ -522,7 +522,7 @@
               "direction": "L"
             },
             "tape3": {
-              "read": "*",
+              "read": "␣",
               "write": "0",
               "direction": "L"
             }
@@ -534,12 +534,12 @@
               "direction": "L"
             },
             "tape2": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "L"
             },
             "tape3": {
-              "read": "*",
+              "read": "␣",
               "write": "1",
               "direction": "L"
             }
@@ -551,20 +551,20 @@
               "direction": "L"
             },
             "tape2": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "L"
             },
             "tape3": {
-              "read": "*",
+              "read": "␣",
               "write": "0",
               "direction": "L"
             }
           },
           {
             "tape1": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "L"
             },
             "tape2": {
@@ -573,15 +573,15 @@
               "direction": "L"
             },
             "tape3": {
-              "read": "*",
+              "read": "␣",
               "write": "1",
               "direction": "L"
             }
           },
           {
             "tape1": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "L"
             },
             "tape2": {
@@ -590,7 +590,7 @@
               "direction": "L"
             },
             "tape3": {
-              "read": "*",
+              "read": "␣",
               "write": "0",
               "direction": "L"
             }
@@ -630,7 +630,7 @@
               "direction": "L"
             },
             "tape3": {
-              "read": "*",
+              "read": "␣",
               "write": "0",
               "direction": "L"
             }
@@ -660,18 +660,18 @@
         "labels": [
           {
             "tape1": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "N"
             },
             "tape2": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "N"
             },
             "tape3": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "N"
             }
           }
@@ -707,15 +707,15 @@
               "direction": "L"
             },
             "tape3": {
-              "read": "*",
+              "read": "␣",
               "write": "1",
               "direction": "L"
             }
           },
           {
             "tape1": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "L"
             },
             "tape2": {
@@ -724,7 +724,7 @@
               "direction": "L"
             },
             "tape3": {
-              "read": "*",
+              "read": "␣",
               "write": "1",
               "direction": "L"
             }
@@ -736,12 +736,12 @@
               "direction": "L"
             },
             "tape2": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "L"
             },
             "tape3": {
-              "read": "*",
+              "read": "␣",
               "write": "1",
               "direction": "L"
             }
@@ -787,7 +787,7 @@
               "direction": "L"
             },
             "tape3": {
-              "read": "*",
+              "read": "␣",
               "write": "0",
               "direction": "L"
             }
@@ -804,7 +804,7 @@
               "direction": "L"
             },
             "tape3": {
-              "read": "*",
+              "read": "␣",
               "write": "0",
               "direction": "L"
             }
@@ -821,15 +821,15 @@
               "direction": "L"
             },
             "tape3": {
-              "read": "*",
+              "read": "␣",
               "write": "1",
               "direction": "L"
             }
           },
           {
             "tape1": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "L"
             },
             "tape2": {
@@ -838,7 +838,7 @@
               "direction": "L"
             },
             "tape3": {
-              "read": "*",
+              "read": "␣",
               "write": "0",
               "direction": "L"
             }
@@ -850,12 +850,12 @@
               "direction": "L"
             },
             "tape2": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "L"
             },
             "tape3": {
-              "read": "*",
+              "read": "␣",
               "write": "0",
               "direction": "L"
             }
@@ -880,17 +880,17 @@
         "labels": [
           {
             "tape1": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "N"
             },
             "tape2": {
-              "read": "*",
-              "write": "*",
+              "read": "␣",
+              "write": "␣",
               "direction": "N"
             },
             "tape3": {
-              "read": "*",
+              "read": "␣",
               "write": "1",
               "direction": "N"
             }
