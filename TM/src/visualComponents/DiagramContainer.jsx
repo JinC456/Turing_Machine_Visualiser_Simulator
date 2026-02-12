@@ -430,13 +430,25 @@ export default function DiagramContainer({
     setSelectedEdge(null);
   }, [pushToHistory, setNodes, setEdges, isLocked]);
 
-  const decoratedNodes = nodes.map((node) => ({
-    ...node,
-    data: {
-      ...node.data,
-      isActive: node.id === activeNodeId,
-    },
-  }));
+  const decoratedNodes = nodes.map((node) => {
+    let activeThreadColors = [];
+    
+    if (engine === "NonDeterministic" && Array.isArray(activeNodeId)) {
+      // ONLY count threads that are currently 'active' (not rejected/accepted/frozen)
+      activeThreadColors = activeNodeId
+        .filter(t => t.currentNodeId === node.id && t.status === 'active')
+        .map(t => t.color);
+    }
+
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        isActive: engine === "NonDeterministic" ? activeThreadColors.length > 0 : node.id === activeNodeId,
+        threadColors: activeThreadColors // Array of hex codes
+      },
+    };
+  });
 
   const decoratedEdges = edges.map((edge) => {
     const isActive = edge.id === activeEdgeId;

@@ -312,19 +312,20 @@ export const useNonDeterministicTM = (initialCells = 13) => {
   const [history, setHistory] = useState([]);
 
   const setInitialThread = useCallback((inputTape, startHead) => {
-    setThreads([{
-      id: "1", 
-      tape: [...inputTape],
-      head: startHead, 
-      currentNodeId: null, 
-      status: "active",
-      stepCount: 0, 
-      history: []
-    }]);
-    setSuccess(false);
-    setStepCount(0);
-    setHistory([]);
-  }, []);
+      setThreads([{
+        id: "1", 
+        tape: [...inputTape],
+        head: startHead, 
+        currentNodeId: null, 
+        status: "active",
+        stepCount: 0, 
+        history: [],
+        color: "#e6194b" // Manually assign the first color
+      }]);
+      setSuccess(false);
+      setStepCount(0);
+      setHistory([]);
+    }, []);
 
   const stepForward = useCallback((nodes, edges) => {
     if (success) return;

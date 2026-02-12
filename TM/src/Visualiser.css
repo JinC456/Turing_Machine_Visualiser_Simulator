@@ -69,14 +69,20 @@
   justify-content: center;
   align-items: center;
   padding: 2px;
-  background-color: white;
+  background-color: white; /* Important: Node background hides the center of the rings */
+  position: relative; 
+  box-sizing: border-box;
 }
 
 .node.active {
-  border: 3px solid #cde81a;
-  box-shadow: 0 0 15px rgba(205, 232, 26, 0.8);
+  /* Removed fixed yellow border so thread colors can show via rings */
   transform: scale(1.1);
   transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.node.active .node-body {
+  box-shadow: 0 0 10px rgba(0,0,0,0.15);
 }
 
 .inner-circle {
@@ -103,6 +109,31 @@
   color: black;
   user-select: none;
   pointer-events: none;
+}
+
+/* --- NODE RINGS (Fix for NTM Stacking) --- */
+.node-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%); /* Keeps rings perfectly centered */
+  border: 3px solid;
+  border-radius: 50%;
+  pointer-events: none;
+  transition: all 0.2s ease;
+  z-index: -1; /* Placed behind the node */
+}
+
+.node-body {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
+  background-color: inherit; 
+  box-sizing: border-box; 
+  z-index: 2; /* Ensures text/content sits above the rings */
 }
 
 /* ===========================
@@ -183,15 +214,11 @@
 /* ===========================
    TAPE & STATUS
    =========================== */
-
-/* src/Visualiser.css */
-
 .tape-container {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  /* Removed large gap to allow counter to sit lower */
   gap: 0px; 
   position: relative;
   padding: 20px 0 40px 0; 
@@ -232,16 +259,6 @@
   text-align: center;
   background: white;
   padding: 4px 0px; 
-}
-.tape-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 40px; 
-  position: relative;
-  padding: 20px 0 40px 0; 
-  width: 100%; 
 }
 
 /* --- Multi-Tape Layout --- */
@@ -534,24 +551,23 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: space-between; /* Pushes checkbox to the right */
+  justify-content: space-between; 
   gap: 10px;
   font-size: 0.9rem;
   width: 100%;
 }
 
 .label-row input[type="text"] {
-  flex: 1; /* Allows text box to fill space while keeping checkbox in line */
+  flex: 1; 
   margin-right: 5px;
 }
 
-/* Reserve a fixed slot for the warning message */
 .warning-text {
   color: #d9534f;
   font-size: 0.85rem;
   text-align: center;
   margin: 10px 0;
-  height: 35px; /* Fixed height so it doesn't push the Save/Cancel buttons */
+  height: 35px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -708,7 +724,6 @@
   position: relative;
   min-width: 100px;
   padding: 0 !important;
-  /* Diagonal Line Logic */
   background-image: linear-gradient(to top right, transparent 48%, black 49%, black 51%, transparent 52%);
   border-right: 2px solid black;
 }
@@ -762,7 +777,7 @@
 
 .empty-cell { color: #ccc; font-weight: normal; font-style: italic; }
 
-/* --- Alphabet Controls (Single Tape Only) --- */
+/* --- Alphabet Controls --- */
 .alphabet-controls {
   margin-bottom: 15px;
   display: flex;
@@ -795,7 +810,6 @@
 
 .alphabet-controls button:hover { background-color: #d0d0d0; }
 
-/* --- Table Header Symbols --- */
 .symbol-header { position: relative; padding-right: 25px !important; }
 
 .delete-symbol-btn {
@@ -819,7 +833,6 @@
   border-radius: 50%;
 }
 
-/* --- Alphabet Label (Controls) --- */
 .input-wrapper {
   position: relative;
   display: flex;
@@ -844,7 +857,7 @@
   border-radius: 4px;
 }
 
-/* --- Multi-Tape Alphabet Display (SIMPLIFIED & INLINE) --- */
+/* --- Multi-Tape Alphabet --- */
 .multitape-alphabet-display {
   margin-bottom: 20px;
   background-color: #fff;
@@ -853,12 +866,11 @@
   padding: 10px 15px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.03);
   display: flex;
-  flex-direction: row; /* Horizontal Layout */
+  flex-direction: row; 
   align-items: center;
   gap: 15px;
 }
 
-/* "Literally a box with Sigma" */
 .sigma-box {
   font-size: 1.5rem;
   font-weight: bold;
@@ -903,7 +915,6 @@
   padding-right: 8px; 
 }
 
-/* New Inline Input */
 .symbol-input-inline {
   width: 30px;
   padding: 6px 0;
@@ -988,7 +999,6 @@
   display: flex;
   align-items: flex-start;
   min-width: 300px;
-  /* FIX: Ensure the row doesn't force width beyond the container */
   max-width: 100%;
 }
 
@@ -1022,16 +1032,14 @@
   z-index: 1;
 }
 
-/* FIX: Target the React Component Wrapper inside the card */
 .thread-card > div {
   min-width: 0;
   max-width: 100%;
 }
 
-/* FIX: Force the tape wrapper inside the card to behave */
 .thread-card .tape-wrapper {
   min-width: 0;
-  width: 100% !important; /* Force width to match card, ignoring 80vw default */
+  width: 100% !important; 
   max-width: 100%;
   box-sizing: border-box;
 }
@@ -1129,6 +1137,3 @@
   top: -45px;
   overflow: visible;
 }
-
-
-
