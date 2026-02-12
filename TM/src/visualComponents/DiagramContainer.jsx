@@ -434,7 +434,6 @@ export default function DiagramContainer({
     let activeThreadColors = [];
     
     if (engine === "NonDeterministic" && Array.isArray(activeNodeId)) {
-      // ONLY count threads that are currently 'active' (not rejected/accepted/frozen)
       activeThreadColors = activeNodeId
         .filter(t => t.currentNodeId === node.id && t.status === 'active')
         .map(t => t.color);
@@ -445,24 +444,42 @@ export default function DiagramContainer({
       data: {
         ...node.data,
         isActive: engine === "NonDeterministic" ? activeThreadColors.length > 0 : node.id === activeNodeId,
-        threadColors: activeThreadColors // Array of hex codes
+        threadColors: activeThreadColors
       },
     };
   });
 
   const decoratedEdges = edges.map((edge) => {
-    const isActive = edge.id === activeEdgeId;
+    let isActive = edge.id === activeEdgeId;
+    let activeThreadColors = [];
+    let activeThreadsOnEdge = [];
+
+    // NTM Logic: Find threads traversing this edge
+    if (engine === "NonDeterministic" && Array.isArray(activeNodeId)) {
+       // Filter threads that are currently moving along this edge
+       activeThreadsOnEdge = activeNodeId.filter(t => t.activeEdgeId === edge.id && t.status === 'active');
+       
+       if (activeThreadsOnEdge.length > 0) {
+           isActive = true;
+           activeThreadColors = activeThreadsOnEdge.map(t => t.color);
+       }
+    }
+
     return {
       ...edge,
       markerEnd: {
         ...edge.markerEnd,
-        color: isActive ? "#c7b52a" : "#333", 
+        color: activeThreadColors.length > 0 
+            ? activeThreadColors[activeThreadColors.length - 1] 
+            : (isActive ? "#c7b52a" : "#333"), 
       },
       data: {
         ...edge.data,
         isActive: isActive,
         activeSymbol: isActive ? currentSymbol : null,
-        stepCount: isActive ? stepCount : null 
+        stepCount: isActive ? stepCount : null,
+        threadColors: activeThreadColors,
+        activeThreads: activeThreadsOnEdge // <--- PASS FULL THREAD OBJECTS
       },
     };
   });
@@ -472,10 +489,7 @@ export default function DiagramContainer({
       <div className="diagram-container flex">
         <NodeMenu />
 
-        {/* --- MOVED BORDER STYLE HERE --- */}
-        <div 
-            className={`reactflow-wrapper ${isLocked ? "locked" : ""}`}
-        >
+        <div className={`reactflow-wrapper ${isLocked ? "locked" : ""}`}>
           <ReactFlow
             nodes={decoratedNodes}
             edges={decoratedEdges}
@@ -489,21 +503,15 @@ export default function DiagramContainer({
             onConnect={onConnect}
             onDrop={onDrop}
             onDragOver={onDragOver}
-            
-            /* --- LOCK INTERACTIONS --- */
             nodesDraggable={!isLocked}
             nodesConnectable={!isLocked}
             deleteKeyCode={isLocked ? null : ["Backspace", "Delete"]}
-
-            /* --- DRAG HANDLERS --- */
             onNodeDragStart={onNodeDragStart} 
             onNodeDragStop={onNodeDragStop}   
             onSelectionDragStart={onSelectionDragStart}
             onSelectionDragStop={onSelectionDragStop}
-
             onNodesDelete={() => !isLocked && pushToHistoryDebounced("Nodes Deleted")}
             onEdgesDelete={() => !isLocked && pushToHistoryDebounced("Edges Deleted")}
-            
             fitView 
           >
             <Background />

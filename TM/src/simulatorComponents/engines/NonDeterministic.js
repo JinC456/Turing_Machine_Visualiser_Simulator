@@ -1,12 +1,55 @@
 /* src/simulatorComponents/engines/NonDeterministic.js */
 
-// Distinct colors for NTM threads
-const THREAD_COLORS = [
-  "#e6194b", "#3cb44b", "#ffe119", "#4363d8", "#f58231", 
-  "#911eb4", "#46f0f0", "#f032e6", "#bcf60c", "#fabebe", 
-  "#008080", "#e6beff", "#9a6324", "#fffac8", "#800000", 
-  "#aaffc3", "#808000", "#ffd8b1", "#000075", "#808080"
+// A curated "High Contrast" Brights Palette.
+const HSL_PALETTE = [
+  [0, 100, 50],    // 0. Red
+  [180, 100, 40],  // 1. Teal
+  [280, 100, 55],  // 2. Electric Purple
+  [60, 100, 40],   // 3. Dark Gold
+  [210, 100, 50],  // 4. Azure Blue
+  [120, 100, 40],  // 5. Vivid Green
+  [300, 100, 50],  // 6. Magenta
+  [30, 100, 50],   // 7. Orange
+  [240, 100, 55],  // 8. Bright Blue
+  [150, 100, 40],  // 9. Emerald
+  [330, 100, 55],  // 10. Hot Pink
+  [190, 100, 45],  // 11. Cyan
+  [260, 100, 60],  // 12. Lavender
+  [15, 100, 50],   // 13. Red-Orange
+  [90, 100, 45],   // 14. Lime Green
+  [200, 100, 50],  // 15. Sky Blue
+  [45, 100, 45],   // 16. Amber
+  [315, 100, 55],  // 17. Fuchsia
+  [255, 100, 55],  // 18. Indigo
+  [345, 100, 50]   // 19. Crimson
 ];
+
+function fnv1aHash(str) {
+  let hash = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+export function generateThreadColor(str) {
+  const hash = fnv1aHash(str);
+  const depth = str.split('.').length;
+  const depthOffset = depth * 11; 
+
+  const index = (hash + depthOffset) % HSL_PALETTE.length;
+  let [h, s, l] = HSL_PALETTE[index];
+
+  const cycle = Math.floor((hash + depthOffset) / HSL_PALETTE.length);
+  if (cycle > 0) {
+     h = (h + (cycle * 137.5)) % 360; 
+     const lightShift = (cycle % 2 === 0) ? 15 : -10;
+     l = Math.max(35, Math.min(75, l + lightShift));
+  }
+
+  return `hsl(${h}, ${s}%, ${l}%)`;
+}
 
 function isAcceptNode(node) {
   return node && node.type === "accept";
@@ -23,7 +66,7 @@ export function findAllTransitions(currentNodeId, readSymbol, edges) {
         matches.push({
           edgeId: edge.id,
           toNodeId: edge.target,
-          rule
+          rule // We pass the rule object so we can track it later
         });
       }
     });
@@ -83,18 +126,18 @@ export function stepNonDeterministicTM({ threads, nodes, edges }) {
         currentNodeId: trans.toNodeId,
         activeEdgeId: trans.edgeId,
         lastRead: read,
+        lastRule: trans.rule, // <--- SAVE THE RULE HERE
         status: isAccept ? "accepted" : "active",
         stepCount: (thread.stepCount || 0) + 1,
         history: [...(thread.history || []), trans.toNodeId],
-        color: thread.color || THREAD_COLORS[0]
+        color: thread.color 
       });
     }
     else {
-      nextThreads.push({
-        ...thread,
-        status: "frozen" 
-      });
+      // Freeze parent
+      nextThreads.push({ ...thread, status: "frozen" });
 
+      // Branch
       transitions.forEach((trans, index) => {
         const nextNode = nodes.find(n => n.id === trans.toNodeId);
         const isAccept = isAcceptNode(nextNode);
@@ -120,9 +163,7 @@ export function stepNonDeterministicTM({ threads, nodes, edges }) {
         }
 
         const nextId = `${thread.id}.${index + 1}`;
-        // Assign a new color from the list based on a hash of the thread ID
-        const colorIdx = (nextThreads.length + index) % THREAD_COLORS.length;
-
+        
         nextThreads.push({
           id: nextId, 
           parentId: thread.id,
@@ -131,17 +172,15 @@ export function stepNonDeterministicTM({ threads, nodes, edges }) {
           currentNodeId: trans.toNodeId,
           activeEdgeId: trans.edgeId,
           lastRead: read,
+          lastRule: trans.rule, // <--- SAVE THE RULE HERE
           status: isAccept ? "accepted" : "active",
           stepCount: (thread.stepCount || 0) + 1,
           history: [...(thread.history || []), trans.toNodeId],
-          color: THREAD_COLORS[colorIdx]
+          color: generateThreadColor(nextId)
         });
       });
     }
   });
 
-  return {
-    threads: nextThreads,
-    globalAccept
-  };
+  return { threads: nextThreads, globalAccept };
 }
