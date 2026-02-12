@@ -9,18 +9,36 @@ export default function AcceptNode({ data = {} }) {
 
   const colors = data.threadColors || [];
   
+  let nodeStyle = {};
+  
+  if (data.isActive) {
+      if (colors.length === 0) {
+          // DTM / MultiTape -> Yellow
+          nodeStyle = { borderColor: '#cde81a', borderWidth: '3px' };
+      } else if (colors.length === 1) {
+          // NTM Single -> Thread Color
+          nodeStyle = { borderColor: colors[0], borderWidth: '3px' };
+      } else {
+          // NTM Multi -> Black
+          nodeStyle = { borderColor: 'black', borderWidth: '2px' };
+      }
+  }
+  
   return (
-    <div className={`node accept ${data.isActive ? 'active' : ''}`}>
-      {/* RINGS: Render for ALL threads */}
-      {colors.map((color, idx) => (
+    <div 
+      className={`node accept ${data.isActive ? 'active' : ''}`}
+      style={nodeStyle}
+    >
+      {/* Render Stacked Rings ONLY if multiple threads */}
+      {colors.length > 1 && colors.map((color, idx) => (
         <div 
           key={idx}
           className="node-ring"
           style={{ 
             borderColor: color,
-            width: `${60 + (idx * 10)}px`,
-            height: `${60 + (idx * 10)}px`,
-            zIndex: -1 - idx
+            width: `${50 + (idx * 8)}px`,
+            height: `${50 + (idx * 8)}px`,
+            zIndex: -idx
           }}
         />
       ))}

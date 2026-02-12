@@ -430,12 +430,15 @@ export default function DiagramContainer({
     setSelectedEdge(null);
   }, [pushToHistory, setNodes, setEdges, isLocked]);
 
+  // --- RENDER PREP ---
+
   const decoratedNodes = nodes.map((node) => {
     let activeThreadColors = [];
     
     if (engine === "NonDeterministic" && Array.isArray(activeNodeId)) {
       activeThreadColors = activeNodeId
-        .filter(t => t.currentNodeId === node.id && t.status === 'active')
+        // FIXED: Include 'accepted' threads so the final step remains visible
+        .filter(t => t.currentNodeId === node.id && (t.status === 'active' || t.status === 'accepted'))
         .map(t => t.color);
     }
 
@@ -456,8 +459,8 @@ export default function DiagramContainer({
 
     // NTM Logic: Find threads traversing this edge
     if (engine === "NonDeterministic" && Array.isArray(activeNodeId)) {
-       // Filter threads that are currently moving along this edge
-       activeThreadsOnEdge = activeNodeId.filter(t => t.activeEdgeId === edge.id && t.status === 'active');
+       // FIXED: Include 'accepted' threads so the final edge traversal remains highlighted
+       activeThreadsOnEdge = activeNodeId.filter(t => t.activeEdgeId === edge.id && (t.status === 'active' || t.status === 'accepted'));
        
        if (activeThreadsOnEdge.length > 0) {
            isActive = true;
@@ -469,9 +472,10 @@ export default function DiagramContainer({
       ...edge,
       markerEnd: {
         ...edge.markerEnd,
+        // NTM: Use top thread color. DTM: Use Yellow (active) or Grey (inactive)
         color: activeThreadColors.length > 0 
             ? activeThreadColors[activeThreadColors.length - 1] 
-            : (isActive ? "#c7b52a" : "#333"), 
+            : (isActive ? "#cde81a" : "#333"), 
       },
       data: {
         ...edge.data,
@@ -479,7 +483,7 @@ export default function DiagramContainer({
         activeSymbol: isActive ? currentSymbol : null,
         stepCount: isActive ? stepCount : null,
         threadColors: activeThreadColors,
-        activeThreads: activeThreadsOnEdge // <--- PASS FULL THREAD OBJECTS
+        activeThreads: activeThreadsOnEdge // Pass threads to edge for badge logic
       },
     };
   });

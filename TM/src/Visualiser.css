@@ -3,10 +3,34 @@
 /* ===========================
    ANIMATIONS
    =========================== */
+
+/* DTM/MultiTape: Toned down pulse (Less aggressive expansion) */
 @keyframes edge-pulse {
-  0% { stroke-width: 4; filter: drop-shadow(0 0 8px rgba(205, 232, 26, 0.6)); }
-  50% { stroke-width: 8; filter: drop-shadow(0 0 15px rgba(205, 232, 26, 1)); }
-  100% { stroke-width: 4; filter: drop-shadow(0 0 8px rgba(205, 232, 26, 0.6)); }
+  0% { 
+    stroke-width: 3; 
+    filter: drop-shadow(0 0 3px rgba(205, 232, 26, 0.4)); 
+  }
+  50% { 
+    stroke-width: 5; 
+    filter: drop-shadow(0 0 8px rgba(205, 232, 26, 0.8)); 
+  }
+  100% { 
+    stroke-width: 3; 
+    filter: drop-shadow(0 0 3px rgba(205, 232, 26, 0.4)); 
+  }
+}
+
+/* NTM: Brightness Pulse (Does not change width, preserves stacking) */
+@keyframes thread-pulse {
+  0% { 
+    filter: brightness(1) drop-shadow(0 0 1px rgba(0,0,0,0.1)); 
+  }
+  50% { 
+    filter: brightness(1.4) drop-shadow(0 0 4px rgba(255,255,255,0.5)); 
+  }
+  100% { 
+    filter: brightness(1) drop-shadow(0 0 1px rgba(0,0,0,0.1)); 
+  }
 }
 
 @keyframes slideDown {
@@ -58,7 +82,7 @@
   transition: transform 0.2s ease;
 }
 
-.node-container:active { cursor: grabbing; transform: scale(1.05); }
+.node-container:active { cursor: grabbing; transform: scale(1.02); }
 
 .node {
   width: 50px;
@@ -69,20 +93,20 @@
   justify-content: center;
   align-items: center;
   padding: 2px;
-  background-color: white; /* Important: Node background hides the center of the rings */
+  background-color: white; 
   position: relative; 
   box-sizing: border-box;
+  transition: transform 0.2s ease, border-color 0.2s ease;
 }
 
 .node.active {
-  /* Removed fixed yellow border so thread colors can show via rings */
-  transform: scale(1.1);
-  transition: all 0.2s ease;
+  /* Toned down scaling from 1.1 to 1.05 */
+  transform: scale(1.05);
   z-index: 10;
 }
 
 .node.active .node-body {
-  box-shadow: 0 0 10px rgba(0,0,0,0.15);
+  box-shadow: 0 0 8px rgba(0,0,0,0.1);
 }
 
 .inner-circle {
@@ -111,17 +135,19 @@
   pointer-events: none;
 }
 
-/* --- NODE RINGS (Fix for NTM Stacking) --- */
+/* --- NODE RINGS (NTM) --- */
 .node-ring {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%); /* Keeps rings perfectly centered */
+  transform: translate(-50%, -50%); 
   border: 3px solid;
   border-radius: 50%;
   pointer-events: none;
   transition: all 0.2s ease;
-  z-index: -1; /* Placed behind the node */
+  z-index: -1; 
+  /* Add subtle pulse to rings when they appear */
+  animation: thread-pulse 0.4s ease-out;
 }
 
 .node-body {
@@ -133,7 +159,7 @@
   border-radius: 50%;
   background-color: inherit; 
   box-sizing: border-box; 
-  z-index: 2; /* Ensures text/content sits above the rings */
+  z-index: 2; 
 }
 
 /* ===========================
@@ -162,12 +188,18 @@
 
 .edge-path.selected { stroke: black; stroke-width: 3; }
 
+/* DTM / MultiTape Active Edge */
 .edge-path.active {
   stroke: #cde81a;
-  stroke-width: 4;
+  /* Animation defined in keyframes above */
   animation: edge-pulse 0.4s ease-out;
-  filter: drop-shadow(0 0 8px rgba(205, 232, 26, 0.6));
-  transition: stroke 0.2s ease, stroke-width 0.2s ease, filter 0.2s ease;
+  transition: stroke 0.2s ease;
+}
+
+/* NTM Active Thread Edge */
+.edge-path.active-thread {
+  /* Uses brightness pulse to avoid messing up width stacking */
+  animation: thread-pulse 0.5s ease-out;
 }
 
 .edge-path.active ~ marker { fill: #cde81a; stroke: #cde81a; }

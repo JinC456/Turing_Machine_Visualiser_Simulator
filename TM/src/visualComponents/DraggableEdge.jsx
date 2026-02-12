@@ -48,7 +48,7 @@ export default function DraggableEdge({
   
   const stepCount = data?.stepCount;
   const threadColors = data?.threadColors || [];
-  const activeThreads = data?.activeThreads || []; // Retrieve full thread objects
+  const activeThreads = data?.activeThreads || []; 
 
   let px, py;
   let path;
@@ -198,7 +198,6 @@ export default function DraggableEdge({
         // --- DETERMINE ACTIVE STATE PER LABEL ---
         if (activeThreads.length > 0) {
             // NTM: Filter threads that specifically used *this* label
-            // We use JSON.stringify to compare the label object content safely
             const matchingThreads = activeThreads.filter(t => {
                 if (!t.lastRule) return false;
                 return JSON.stringify(t.lastRule) === JSON.stringify(label);
@@ -250,8 +249,15 @@ export default function DraggableEdge({
               {labelText}
             </text>
             
-            {/* Text */}
-            <text x={lx} y={ly} textAnchor="middle" fill="black" fontSize={12} fontWeight={isRuleActive ? "bold" : "normal"}>
+            {/* Text: Falls back to Yellow if active but no badges (DTM), else Black */}
+            <text 
+              x={lx} 
+              y={ly} 
+              textAnchor="middle" 
+              fill={(isRuleActive && badgeColors.length === 0) ? "#cde81a" : "black"} 
+              fontSize={12} 
+              fontWeight={isRuleActive ? "bold" : "normal"}
+            >
               {labelText}
             </text>
 

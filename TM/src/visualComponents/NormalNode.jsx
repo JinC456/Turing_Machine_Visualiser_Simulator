@@ -1,3 +1,4 @@
+/* src/visualComponents/NormalNode.jsx */
 import React, { useRef } from "react";
 import "../Visualiser.css";
 import Handles, { useAutoFontSize } from "./Handles";
@@ -8,24 +9,42 @@ export default function NormalNode({ data = {} }) {
   
   const colors = data.threadColors || [];
   
+  // Determine border style for the Node itself
+  let nodeStyle = {};
+  
+  if (data.isActive) {
+      if (colors.length === 0) {
+          // DTM / MultiTape Active -> Default Yellow Border
+          nodeStyle = { borderColor: '#cde81a', borderWidth: '3px' };
+      } else if (colors.length === 1) {
+          // NTM Single Thread -> Thread Color Border
+          nodeStyle = { borderColor: colors[0], borderWidth: '3px' };
+      } else {
+          // NTM Multi Thread -> Neutral Black Border (Rings are outside)
+          nodeStyle = { borderColor: 'black', borderWidth: '2px' };
+      }
+  }
+
   return (
-    <div className={`node normal ${data.isActive ? 'active' : ''}`}>
-      {/* RINGS: Render for ALL threads (including the first one) */}
-      {colors.map((color, idx) => (
+    <div 
+      className={`node normal ${data.isActive ? 'active' : ''}`}
+      style={nodeStyle}
+    >
+      {/* Render Stacked Rings ONLY if multiple threads (NTM) */}
+      {colors.length > 1 && colors.map((color, idx) => (
         <div 
           key={idx}
           className="node-ring"
           style={{ 
             borderColor: color,
-            /* Start larger than the 50px node */
-            width: `${60 + (idx * 10)}px`, 
-            height: `${60 + (idx * 10)}px`,
-            zIndex: -1 - idx // Stack behind
+            width: `${50 + (idx * 8)}px`,
+            height: `${50 + (idx * 8)}px`,
+            zIndex: -idx
           }}
         />
       ))}
       
-      {/* Node Body */}
+      {/* Main Node Body (Transparent, contains label) */}
       <div className="node-body">
         {data?.label && (
           <div ref={labelRef} className="node-label">
