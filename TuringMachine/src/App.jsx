@@ -14,10 +14,10 @@ const EXAMPLES = {
     { value: "binary_addition", label: "Binary Addition (3-Tape)" },
   ],
   NonDeterministic: [
-    { value: "palindrome", label: "Palindrome (NTM)" },
-    { value: "binary_increment", label: "Binary Increment (NTM)" },
-    { value: "Find_hash", label: "Find hash (DTM)" },
-    { value: "is_equal_NTM", label: "Is Equal (DTM)" }
+    { value: "palindrome", label: "Palindrome (DTM)" },
+    { value: "binary_increment", label: "Binary Increment (DTM)" },
+    { value: "Find_hash", label: "Find hash (NTM)" },
+    { value: "is_equal_NTM", label: "Is Equal (NTM)" }
   ],
 };
 

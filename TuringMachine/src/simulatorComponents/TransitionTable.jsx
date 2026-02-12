@@ -123,13 +123,13 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
           const dirs = [];
 
           for(let i=1; i<=maxTapes; i++) {
-            const tData = label[`tape${i}`] || { read: '␣', write: '␣', direction: 'N' };
+            const tData = label[`tape${i}`] || { read: "␣", write: "␣", direction: 'N' };
             reads.push(tData.read);
             writes.push(tData.write);
             dirs.push(tData.direction);
 
-            if (tData.read && tData.read !== '␣' && tData.read !== '') derivedSet.add(tData.read);
-            if (tData.write && tData.write !== '␣' && tData.write !== '') derivedSet.add(tData.write);
+            if (tData.read && tData.read !== "␣" && tData.read !== '') derivedSet.add(tData.read);
+            if (tData.write && tData.write !== "␣" && tData.write !== '') derivedSet.add(tData.write);
           }
 
           rules.push({

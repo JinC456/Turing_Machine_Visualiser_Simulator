@@ -176,7 +176,7 @@ export default function DraggableEdge({
                 tapeKeys.forEach((k, i) => {
                     const t = label[k];
                     const r = currentReads[i] || ""; // might be undefined if sim has more tapes than rule?
-                    if (t.read !== r && !(t.read === '␣' && r === '')) {
+                    if (t.read !== r && !(t.read === "␣" && r === '')) {
                         allMatch = false;
                     }
                 });
@@ -187,7 +187,7 @@ export default function DraggableEdge({
             labelText = `${label.read}, ${label.write}, ${label.direction}`;
             isRuleActive = data?.isActive && (
                 label.read === data.activeSymbol || 
-                (label.read === '␣' && data.activeSymbol === "")
+                (label.read === "␣" && data.activeSymbol === "")
             );
         }
 

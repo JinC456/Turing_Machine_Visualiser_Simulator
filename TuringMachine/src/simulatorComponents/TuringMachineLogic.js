@@ -113,7 +113,7 @@ export const useTuringMachine = (initialCells = 13) => {
     ]);
 
     let newTape = [...tape];
-    newTape[head] = result.write === '␣' ? "" : result.write;
+    newTape[head] = result.write === "␣" ? "" : result.write;
 
     let newHead = head;
     if (result.direction === "R") newHead++;
@@ -264,7 +264,7 @@ export const useMultiTapeTuringMachine = (initialCells = 13, numTapes = 2) => {
     
     for(let i = 0; i < numTapes; i++) {
         const w = result.writes[i];
-        newTapes[i][newHeads[i]] = w === '␣' ? "" : w;
+        newTapes[i][newHeads[i]] = w === "␣" ? "" : w;
 
         const dir = result.directions[i];
         if (dir === "R") newHeads[i]++;

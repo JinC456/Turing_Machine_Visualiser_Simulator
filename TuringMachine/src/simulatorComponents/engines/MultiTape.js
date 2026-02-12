@@ -29,7 +29,7 @@ export function findTransition(currentNodeId, readSymbols, edges) {
             const currentSym = readSymbols[i];
             
             if (ruleData) {
-                if (ruleData.read !== currentSym && !(ruleData.read === '␣' && currentSym === "")) {
+                if (ruleData.read !== currentSym && !(ruleData.read === "␣" && currentSym === "")) {
                     return false;
                 }
             }

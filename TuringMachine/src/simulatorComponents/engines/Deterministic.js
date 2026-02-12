@@ -22,7 +22,7 @@ export function findTransition(currentNodeId, readSymbol, edges) {
     const labels = edge.data?.labels || [];
 
     const rule = labels.find(l =>
-      l.read === readSymbol || (l.read === '␣' && readSymbol === "")
+      l.read === readSymbol || (l.read === "␣" && readSymbol === "")
     );
 
     if (rule) {
