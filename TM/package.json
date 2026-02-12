@@ -1,0 +1,39 @@
+{
+  "name": "turing_machine_visualiser_simulator",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "predeploy": "npm run build", 
+    "deploy": "gh-pages -d dist"  
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JinC456/Turing_Machine_Visualiser_Simulator.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/JinC456/Turing_Machine_Visualiser_Simulator/issues"
+  },
+  "homepage": "https://github.com/JinC456/Turing_Machine_Visualiser_Simulator#readme",
+  "dependencies": {
+    "cytoscape": "^3.33.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-draggable": "^4.5.0",
+    "react-rnd": "^10.5.2",
+    "reactflow": "^11.11.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.1.0",
+    "baseline-browser-mapping": "^2.9.18",
+    "gh-pages": "^6.3.0",
+    "vite": "^7.1.10"
+  }
+}

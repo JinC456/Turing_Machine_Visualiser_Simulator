@@ -1,0 +1,1134 @@
+/* src/Visualiser.css */
+
+/* ===========================
+   ANIMATIONS
+   =========================== */
+@keyframes edge-pulse {
+  0% { stroke-width: 4; filter: drop-shadow(0 0 8px rgba(205, 232, 26, 0.6)); }
+  50% { stroke-width: 8; filter: drop-shadow(0 0 15px rgba(205, 232, 26, 1)); }
+  100% { stroke-width: 4; filter: drop-shadow(0 0 8px rgba(205, 232, 26, 0.6)); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===========================
+   GENERAL
+   =========================== */
+.visualiser {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  gap: 20px;
+  width: 100%;
+}
+
+.diagram-container-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  width: 100%;
+  justify-content: center;
+}
+
+.diagram-container {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  user-select: none;
+  width: 85vw;
+}
+
+/* ===========================
+   NODE
+   =========================== */
+.node-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.node-container {
+  position: relative;
+  cursor: grab;
+  transition: transform 0.2s ease;
+}
+
+.node-container:active { cursor: grabbing; transform: scale(1.05); }
+
+.node {
+  width: 50px;
+  height: 50px;
+  border: 2px solid black;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2px;
+  background-color: white;
+}
+
+.node.active {
+  border: 3px solid #cde81a;
+  box-shadow: 0 0 15px rgba(205, 232, 26, 0.8);
+  transform: scale(1.1);
+  transition: all 0.2s ease;
+}
+
+.inner-circle {
+  width: 34px;
+  height: 34px;
+  border: 2px solid black;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2px;
+}
+
+.accept { background-color: #6ad66a; }
+.start { background-color: white; }
+.normal { background-color: white; }
+
+.arrow {
+  position: absolute;
+  left: -20px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 20px;
+  color: black;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* ===========================
+  HANDLE
+   =========================== */
+.react-flow__handle {
+  opacity: 0;
+  transition: opacity 0.2s;
+  width: 1px;
+  height: 1px;
+}
+
+.node:hover .react-flow__handle { opacity: 1; }
+
+/* ===========================
+   EDGE
+   =========================== */
+.react-flow__edges { z-index: 10 !important; }  
+   
+.edge-path {
+  stroke: #333;
+  stroke-width: 2;
+  fill: none;
+  transition: stroke 0.2s ease, stroke-width 0.2s ease;
+}
+
+.edge-path.selected { stroke: black; stroke-width: 3; }
+
+.edge-path.active {
+  stroke: #cde81a;
+  stroke-width: 4;
+  animation: edge-pulse 0.4s ease-out;
+  filter: drop-shadow(0 0 8px rgba(205, 232, 26, 0.6));
+  transition: stroke 0.2s ease, stroke-width 0.2s ease, filter 0.2s ease;
+}
+
+.edge-path.active ~ marker { fill: #cde81a; stroke: #cde81a; }
+
+.edge-hitbox { stroke: transparent; stroke-width: 20; fill: none; pointer-events: stroke; }
+
+.edge-handle {
+  r: 8px;
+  fill: white;
+  stroke: blue;
+  stroke-width: 2px;
+  cursor: grab;
+  pointer-events: all;
+}
+
+/* ===========================
+   DIAGRAM CONTROLS
+   =========================== */
+.diagram-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-height: 300px;
+  overflow: auto;
+}
+
+.diagram-controls button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.history-controls { display: flex; flex-direction: row; gap: 12px; }
+
+.reactflow-wrapper {
+  flex-grow: 1;
+  height: 65vh; 
+  border: 3px solid transparent; 
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  box-sizing: border-box; 
+  transition: border 0.3s ease;
+}
+
+.reactflow-wrapper.locked { border: 3px solid #ec7505; }
+
+/* ===========================
+   TAPE & STATUS
+   =========================== */
+
+/* src/Visualiser.css */
+
+.tape-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  /* Removed large gap to allow counter to sit lower */
+  gap: 0px; 
+  position: relative;
+  padding: 20px 0 40px 0; 
+  width: 100%; 
+}
+
+.tape-top-bar {
+  width: 80vw; 
+  display: flex;
+  justify-content: flex-start; 
+  margin: 0 auto; 
+  padding-left: 2px;
+  z-index: 10;
+  margin-bottom: -40px; 
+}
+
+.step-counter-display {
+  display: flex;
+  align-items: center;
+  background-color: #ffffff;
+  overflow: hidden;
+  margin-bottom: 0px; 
+}
+
+.step-label {
+  color: #000000;
+  padding: 4px 8px;
+  font-size: 1rem;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.step-value {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #000000;
+  min-width: 10px;
+  text-align: center;
+  background: white;
+  padding: 4px 0px; 
+}
+.tape-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 40px; 
+  position: relative;
+  padding: 20px 0 40px 0; 
+  width: 100%; 
+}
+
+/* --- Multi-Tape Layout --- */
+.multitape-container {
+  display: flex;
+  flex-direction: column;
+  gap: 60px;
+  width: 100%;
+  align-items: center;
+  padding-top: 20px;
+}
+
+.multitape-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  width: 90%;
+}
+
+.multitape-label {
+  font-weight: 600;
+  font-size: 1.2rem;
+  color: #333;
+  width: 100px;
+  text-align: right;
+  margin-right: 25px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tape-display-wrapper { position: relative; flex-grow: 1; overflow: visible; }
+.singletape-wrapper { position: relative; overflow: visible; }
+
+.status-area {
+  position: absolute;
+  bottom: 80px; 
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  height: 30px; 
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none; 
+  width: auto;
+}
+
+.status-message {
+  display: flex;
+  align-items: center;
+  gap: 8px; 
+  padding: 4px 12px; 
+  border-radius: 6px;
+  font-size: 0.85rem; 
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  animation: slideDown 0.3s ease-out;
+  pointer-events: auto; 
+  white-space: nowrap;
+}
+
+.status-message.error { background-color: #fdeded; color: #5f2120; border: 1px solid #f5c6cb; }
+.status-message.success { background-color: #edf7ed; color: #1e4620; border: 1px solid #c3e6cb; }
+
+.status-icon { font-size: 1.1rem; }
+.status-text { display: flex; flex-direction: column; }
+
+/* Tape Wrapper */
+.tape-wrapper {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  width: 80vw; 
+  height: 80px;
+  border: 2px solid #d2e3fc;
+  border-radius: 6px;
+  padding-bottom: 5px;
+  padding-top: 5px;
+  overflow: hidden;
+  background-color: #f8f8f8;
+  margin-bottom: 10px;
+}
+
+.tape-header {
+  position: absolute;
+  top: -35px; 
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  font-family: sans-serif;
+  text-align: center;
+  pointer-events: none; 
+}
+
+.tape-pointer { display: flex; flex-direction: column; align-items: center; }
+
+.tape-start-label {
+  font-size: 18px; 
+  font-weight: 800;
+  color: #000000; 
+  background-color: transparent; 
+  padding: 0; 
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  white-space: nowrap;
+  margin-bottom: 0px; 
+}
+
+.tape-arrow {
+  font-size: 40px; 
+  line-height: 0.8;
+  color: #000000; 
+  margin-top: 0px; 
+}
+
+.tape {
+  display: flex;
+  position: relative;
+  height: 40px;
+  left: calc(50% - 20px); 
+  transition: transform 0.2s ease-out;
+}
+
+.cell {
+  height: 40px;
+  border: 1px solid black;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 18px;
+  background-color: white;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.cell.active {
+  background-color: #d7e9ff;
+  border: 2px solid #1a73e8;
+  color: black;
+}
+
+/* ===========================
+   CONTROLS ROW
+   =========================== */
+.controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  width: 80vw;
+  margin: 0 auto;
+}
+
+.tape-input {
+  width: 200px;
+  padding: 8px 12px;
+  font-size: 1rem;
+  border: 2px solid #333;
+  border-radius: 6px;
+  outline: none;
+  text-align: center;
+}
+
+.tape-input:focus { border-color: #1a73e8; }
+.tape-input.error { border-color: #d9534f; background-color: #fdf7f7; }
+
+.playback-controls {
+  position: relative;
+  bottom: auto;
+  display: flex;
+  gap: 5px;
+}
+
+.playback-controls button {
+  padding: 8px 12px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.speed-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f0f0f0;
+  padding: 5px 15px;
+  border-radius: 20px;
+  border: 1px solid #ccc;
+}
+
+.speed-control label {
+  font-size: 0.9rem;
+  font-weight: bold;
+  white-space: nowrap;
+  width: 80px;
+}
+
+.speed-control input[type="range"] { width: 100px; cursor: pointer; }
+
+/* ===========================
+   POPUP (GENERIC)
+   =========================== */
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(3px);
+}
+
+.popup-menu {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  width: 100%;
+  min-width: 330px;
+  font-family: sans-serif;
+  animation: popIn 0.2s ease-out;
+  display: flex;
+  flex-direction: column;
+}
+
+.popup-menu h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: black;
+  text-align: center;
+}
+
+.form-group {
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: gray;
+  margin-bottom: 8px;
+  text-align: left;
+  width: 100%;
+}
+
+.form-group input[type="text"] {
+  padding: 10px 12px;
+  border: 1px solid darkgray;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+  width: 90%;       
+  margin: 0 auto;
+}
+
+.form-group input[type="text"]:focus { border-color: #1170d6; }
+
+.popup-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding-top: 10px;
+}
+
+.popup-actions button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.label-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 8px 4px;
+  border-bottom: 1px solid #ddd;
+}
+
+.label-row label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between; /* Pushes checkbox to the right */
+  gap: 10px;
+  font-size: 0.9rem;
+  width: 100%;
+}
+
+.label-row input[type="text"] {
+  flex: 1; /* Allows text box to fill space while keeping checkbox in line */
+  margin-right: 5px;
+}
+
+/* Reserve a fixed slot for the warning message */
+.warning-text {
+  color: #d9534f;
+  font-size: 0.85rem;
+  text-align: center;
+  margin: 10px 0;
+  height: 35px; /* Fixed height so it doesn't push the Save/Cancel buttons */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+.direction-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  width: 100%;
+}
+
+.direction-buttons button {
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width:100%;
+  background-color: #eee;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.direction-buttons button.selected { background-color: #84afdd; color: rgb(0, 0, 0); }
+
+.add-label-button {
+  margin-top: 8px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background-color: #f2f2f2;
+  cursor: pointer;
+}
+
+.add-label-button:hover { background-color: #e0e0e0; }
+
+.remove-button {
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background-color: #f8d7da;
+  cursor: pointer;
+  font-size: 0.85rem;
+  margin: 4px;
+}
+
+.remove-button:hover { background-color: #f5c2c7; }
+
+/* ===========================
+   TRANSITION TABLE POPUP
+   =========================== */
+.table-popup {
+  min-width: 400px;
+  width: auto;
+  max-width: 90vw;
+  padding: 25px;
+  background: white;
+  border-radius: 8px;
+  position: relative; 
+}
+
+.popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-shrink: 0; 
+}
+
+.popup-header h3 { margin: 0; font-size: 1.5rem; }
+
+.header-actions { display: flex; align-items: center; gap: 12px; }
+
+.window-toggle-btn {
+  background-color: #f1f1f1;
+  border: 1px solid #ccc;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.window-toggle-btn:hover { background-color: #e0e0e0; }
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+  padding: 0 5px;
+}
+
+.close-btn:hover { color: #000; }
+
+.table-wrapper {
+  max-height: 60vh;
+  overflow-y: auto;
+  overflow-x: auto; 
+  padding-right: 15px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* --- Modeless Window State --- */
+.modeless-window {
+  z-index: 2000;
+  max-width: none;
+  max-height: none;
+  background-color: rgba(255, 255, 255, 0.95); 
+  backdrop-filter: blur(5px);
+  border: 1px solid #999;
+  display: flex;
+  flex-direction: column;
+}
+
+.modeless-window .popup-header:active { cursor: grabbing !important; }
+
+.modeless-window .table-wrapper { max-height: none; flex: 1; min-height: 0; }
+
+/* --- RESIZE HANDLE --- */
+.resize-handle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 18px;
+  height: 18px;
+  cursor: nwse-resize;
+  background: linear-gradient(135deg, transparent 50%, #bbb 50%);
+  border-bottom-right-radius: 8px;
+  z-index: 10;
+}
+
+.resize-handle:hover { background: linear-gradient(135deg, transparent 50%, #888 50%); }
+
+/* --- Academic Table Style --- */
+.transition-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 1rem;
+  color: #000;
+  margin: 0 auto;
+  table-layout: auto;
+}
+
+.transition-table thead tr { border-bottom: 2px solid black; }
+
+/* --- DIAGONAL HEADER CELL --- */
+.diagonal-cell {
+  position: relative;
+  min-width: 100px;
+  padding: 0 !important;
+  /* Diagonal Line Logic */
+  background-image: linear-gradient(to top right, transparent 48%, black 49%, black 51%, transparent 52%);
+  border-right: 2px solid black;
+}
+
+.diagonal-top {
+  position: absolute;
+  top: 5px;
+  right: 8px;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.diagonal-bottom {
+  position: absolute;
+  bottom: 5px;
+  left: 8px;
+  font-weight: bold;
+  font-style: italic;
+  font-size: 1rem;
+}
+
+/* Column Headers */
+.transition-table th {
+  padding: 12px 25px;
+  text-align: center;
+  font-weight: bold;
+  vertical-align: bottom;
+}
+
+.transition-table td {
+  padding: 12px 25px;
+  text-align: center;
+  border-bottom: 1px solid #eee;
+}
+
+/* First Column (States) */
+.row-header {
+  font-weight: bold;
+  font-style: italic;
+  border-right: 2px solid black;
+  text-align: right;
+  padding-right: 15px;
+}
+
+.rule-cell {
+  white-space: normal;
+  display: inline-block;
+  min-width: 100px;
+  line-height: 1.4;
+}
+
+.empty-cell { color: #ccc; font-weight: normal; font-style: italic; }
+
+/* --- Alphabet Controls (Single Tape Only) --- */
+.alphabet-controls {
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: #f9f9f9;
+  padding: 8px 12px;
+  border-radius: 6px;
+  width: fit-content;
+  flex-shrink: 0; 
+}
+
+.alphabet-controls label { font-weight: bold; color: #333; }
+
+.symbol-input {
+  width: 60px;
+  padding: 4px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.alphabet-controls button {
+  padding: 4px 10px;
+  cursor: pointer;
+  background-color: #e0e0e0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.alphabet-controls button:hover { background-color: #d0d0d0; }
+
+/* --- Table Header Symbols --- */
+.symbol-header { position: relative; padding-right: 25px !important; }
+
+.delete-symbol-btn {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: transparent;
+  border: none;
+  color: #d9534f;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  font-weight: bold;
+  opacity: 0.6;
+  padding: 2px 5px;
+}
+
+.delete-symbol-btn:hover {
+  opacity: 1;
+  background-color: rgba(217, 83, 79, 0.1);
+  border-radius: 50%;
+}
+
+/* --- Alphabet Label (Controls) --- */
+.input-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column; 
+}
+
+.alphabet-label {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 5px;
+  font-size: 0.85rem;
+  color: #555;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.alphabet-label span {
+  color: #000;
+  background-color: #e8e8e8;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+/* --- Multi-Tape Alphabet Display (SIMPLIFIED & INLINE) --- */
+.multitape-alphabet-display {
+  margin-bottom: 20px;
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 10px 15px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+  display: flex;
+  flex-direction: row; /* Horizontal Layout */
+  align-items: center;
+  gap: 15px;
+}
+
+/* "Literally a box with Sigma" */
+.sigma-box {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #333;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background-color: #f9f9f9;
+}
+
+.symbol-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.symbol-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.symbol-tag.derived {
+  background-color: #e3f2fd;
+  color: #1565c0;
+  border-color: #bbdefb;
+}
+
+.symbol-tag.manual {
+  background-color: #f5e5e5;
+  color: #a21f1f;
+  border-color: #e7bebe;
+  padding-right: 8px; 
+}
+
+/* New Inline Input */
+.symbol-input-inline {
+  width: 30px;
+  padding: 6px 0;
+  text-align: center;
+  border: 1px dashed #ccc;
+  border-radius: 16px;
+  background-color: #fafafa;
+  font-weight: bold;
+  font-size: 0.95rem;
+  outline: none;
+  transition: all 0.2s;
+  cursor: text;
+}
+
+.symbol-input-inline:focus {
+  border-color: #a21f1f;
+  background-color: white;
+  width: 40px;
+}
+
+.remove-symbol-btn {
+  background: none;
+  border: none;
+  color: #a21f1f;
+  font-size: 1.1rem;
+  cursor: pointer;
+  margin-left: 6px;
+  padding: 0;
+  line-height: 1;
+  opacity: 0.6;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.remove-symbol-btn:hover {
+  background-color: rgba(162, 31, 31, 0.1);
+  opacity: 1;
+}
+
+.empty-alphabet {
+  color: #999;
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+/* --- TREE VIEW STYLES --- */
+
+.thread-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 90%;       
+  max-width: 1200px;
+  margin: 0 auto;
+  max-height: 60vh;
+  min-height: 150px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #fafafa;
+  box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+  box-sizing: border-box; 
+}
+
+.empty-threads {
+  text-align: center;
+  color: #d9534f;
+  font-weight: bold;
+  padding: 20px;
+}
+
+/* Tree Row Wrapper */
+.thread-tree-row {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  min-width: 300px;
+  /* FIX: Ensure the row doesn't force width beyond the container */
+  max-width: 100%;
+}
+
+/* L-Shaped Connector */
+.tree-connector {
+  position: absolute;
+  left: -22px;     
+  top: -18px;      
+  height: 48px;    
+  width: 22px;
+  border-left: 2px solid #bbb;   
+  border-bottom: 2px solid #bbb; 
+  border-bottom-left-radius: 8px;
+  z-index: 0;
+}
+
+/* Base Card Style */
+.thread-card {
+  min-width: 0; 
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 10px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 1;
+}
+
+/* FIX: Target the React Component Wrapper inside the card */
+.thread-card > div {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* FIX: Force the tape wrapper inside the card to behave */
+.thread-card .tape-wrapper {
+  min-width: 0;
+  width: 100% !important; /* Force width to match card, ignoring 80vw default */
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Active State */
+.thread-card.active {
+  border-left: 5px solid #1a73e8;
+  border-color: #b3d7ff;
+}
+
+/* Accepted State */
+.thread-card.accepted {
+  border-color: #4caf50;
+  background-color: #f1f8e9;
+  border-left: 5px solid #4caf50;
+  box-shadow: 0 0 8px rgba(76, 175, 80, 0.2);
+}
+
+/* Rejected State */
+.thread-card.rejected {
+  border-color: #d9534f;
+  background-color: #fdf7f7;
+  border-left: 5px solid #d9534f;
+  opacity: 0.8;
+}
+
+/* Frozen State */
+.thread-card.frozen {
+  background-color: #f4f4f4;
+  border-color: #ddd;
+  border-left: 5px solid #999;
+  color: #666;
+}
+
+.thread-card.frozen .tape-wrapper {
+  opacity: 0.6;
+}
+
+/* Header & Text */
+.thread-header {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 8px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #eee;
+  align-items: center;
+}
+
+.thread-id-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.thread-name {
+  font-weight: bold;
+  font-size: 1rem;
+  color: #333;
+}
+
+.thread-meta {
+  font-size: 0.75rem;
+  color: #777;
+}
+
+/* Status Badges */
+.thread-status-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.thread-status-badge.active { color: #1557b0; background: #e8f0fe; border: 1px solid #d2e3fc; }
+.thread-status-badge.accepted { color: #2e7d32; background: #c8e6c9; border: 1px solid #a5d6a7; }
+.thread-status-badge.rejected { color: #c62828; background: #ffcdd2; border: 1px solid #ef9a9a; }
+.thread-status-badge.frozen { color: #555; background: #e0e0e0; border: 1px solid #ccc; }
+
+/* Tape Adjustments for Tree Cards */
+.thread-card .tape-wrapper {
+  background: #fff;
+  border: 1px solid #ddd;
+  height: 40px;
+}
+
+.thread-card .cell {
+  height: 38px;
+  font-size: 16px;
+  border-right: 1px solid #eee;
+}
+
+.thread-card .tape-header {
+  top: -45px;
+  overflow: visible;
+}
+
+
+

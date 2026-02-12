@@ -1,0 +1,343 @@
+{
+  "defaultInput": "aabbaa",
+  "nodes": [
+    {
+      "id": "1768845757853",
+      "type": "start",
+      "position": {
+        "x": -330.886326644982,
+        "y": -40.06562833010889
+      },
+      "data": {
+        "label": "S0"
+      },
+      "width": 57,
+      "height": 57,
+      "selected": false,
+      "positionAbsolute": {
+        "x": -330.886326644982,
+        "y": -40.06562833010889
+      },
+      "dragging": false
+    },
+    {
+      "id": "1768845759686",
+      "type": "normal",
+      "position": {
+        "x": -159.96525835153832,
+        "y": -41.989483239438414
+      },
+      "data": {
+        "label": "S1"
+      },
+      "width": 57,
+      "height": 57,
+      "selected": false,
+      "positionAbsolute": {
+        "x": -159.96525835153832,
+        "y": -41.989483239438414
+      },
+      "dragging": false
+    },
+    {
+      "id": "1768845761935",
+      "type": "normal",
+      "position": {
+        "x": -13.979036438922634,
+        "y": -44.077840915681975
+      },
+      "data": {
+        "label": "S2"
+      },
+      "width": 59,
+      "height": 59,
+      "selected": false,
+      "positionAbsolute": {
+        "x": -13.979036438922634,
+        "y": -44.077840915681975
+      },
+      "dragging": false
+    },
+    {
+      "id": "1768845763550",
+      "type": "accept",
+      "position": {
+        "x": 158.98021123712698,
+        "y": -44.976571065769235
+      },
+      "data": {
+        "label": "S3"
+      },
+      "width": 57,
+      "height": 57,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 158.98021123712698,
+        "y": -44.976571065769235
+      },
+      "dragging": false
+    }
+  ],
+  "edges": [
+    {
+      "source": "1768845757853",
+      "sourceHandle": "T",
+      "target": "1768845757853",
+      "targetHandle": "TR",
+      "id": "edge-1768845774795",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "px": -307.2972693806422,
+        "py": -119.42694991053364,
+        "t": 0.5,
+        "sourceX": -321.5472693806422,
+        "sourceY": -5.4269499105336365,
+        "targetX": -293.0472693806422,
+        "targetY": -5.4269499105336365,
+        "labels": [
+          {
+            "tape1": {
+              "read": "a",
+              "write": "a",
+              "direction": "R"
+            },
+            "tape2": {
+              "read": "␣",
+              "write": "a",
+              "direction": "R"
+            }
+          },
+          {
+            "tape1": {
+              "read": "b",
+              "write": "b",
+              "direction": "R"
+            },
+            "tape2": {
+              "read": "␣",
+              "write": "b",
+              "direction": "R"
+            }
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null,
+        "dxOffset": 8.839711911196293,
+        "dyOffset": 22.590366558052825
+      },
+      "selected": false
+    },
+    {
+      "source": "1768845757853",
+      "sourceHandle": "R",
+      "target": "1768845759686",
+      "targetHandle": "L",
+      "id": "edge-1768846440934",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "t": 0.5,
+        "labels": [
+          {
+            "tape1": {
+              "read": "␣",
+              "write": "␣",
+              "direction": "N"
+            },
+            "tape2": {
+              "read": "␣",
+              "write": "␣",
+              "direction": "L"
+            }
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null
+      },
+      "selected": false
+    },
+    {
+      "source": "1768845759686",
+      "sourceHandle": "T",
+      "target": "1768845759686",
+      "targetHandle": "TR",
+      "id": "edge-1768846500551",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "px": -130.50333089687354,
+        "py": -125.5656283301089,
+        "t": 0.5,
+        "sourceX": -144.75333089687354,
+        "sourceY": -11.565628330108893,
+        "targetX": -116.25333089687354,
+        "targetY": -11.565628330108893,
+        "labels": [
+          {
+            "tape1": {
+              "read": "␣",
+              "write": "␣",
+              "direction": "N"
+            },
+            "tape2": {
+              "read": "a",
+              "write": "a",
+              "direction": "L"
+            }
+          },
+          {
+            "tape1": {
+              "read": "␣",
+              "write": "␣",
+              "direction": "N"
+            },
+            "tape2": {
+              "read": "b",
+              "write": "b",
+              "direction": "L"
+            }
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null,
+        "dxOffset": 5.89319123082373,
+        "dyOffset": 19.643770942640963
+      },
+      "selected": false
+    },
+    {
+      "source": "1768845759686",
+      "sourceHandle": "R",
+      "target": "1768845761935",
+      "targetHandle": "L",
+      "id": "edge-1768846534078",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "t": 0.5,
+        "labels": [
+          {
+            "tape1": {
+              "read": "␣",
+              "write": "␣",
+              "direction": "L"
+            },
+            "tape2": {
+              "read": "␣",
+              "write": "␣",
+              "direction": "R"
+            }
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null
+      },
+      "selected": true
+    },
+    {
+      "source": "1768845761935",
+      "sourceHandle": "T",
+      "target": "1768845761935",
+      "targetHandle": "TR",
+      "id": "edge-1768846622466",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "px": 15.520963561077366,
+        "py": -132.57784091568197,
+        "t": 0.5,
+        "sourceX": 0.770963561077366,
+        "sourceY": -14.577840915681975,
+        "targetX": 30.270963561077366,
+        "targetY": -14.577840915681975,
+        "labels": [
+          {
+            "tape1": {
+              "read": "a",
+              "write": "a",
+              "direction": "L"
+            },
+            "tape2": {
+              "read": "a",
+              "write": "a",
+              "direction": "R"
+            }
+          },
+          {
+            "tape1": {
+              "read": "b",
+              "write": "b",
+              "direction": "L"
+            },
+            "tape2": {
+              "read": "b",
+              "write": "b",
+              "direction": "R"
+            }
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null,
+        "dxOffset": 8.839711911196293,
+        "dyOffset": 21.608118062889336
+      },
+      "selected": false
+    },
+    {
+      "source": "1768845761935",
+      "sourceHandle": "R",
+      "target": "1768845763550",
+      "targetHandle": "L",
+      "id": "edge-1768846647715",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "t": 0.5,
+        "labels": [
+          {
+            "tape1": {
+              "read": "␣",
+              "write": "␣",
+              "direction": "N"
+            },
+            "tape2": {
+              "read": "␣",
+              "write": "␣",
+              "direction": "N"
+            }
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null,
+        "dxOffset": 0.9821735601241878,
+        "dyOffset": -0.9821735601241878
+      },
+      "selected": false
+    }
+  ]
+}

@@ -1,0 +1,239 @@
+{
+  "defaultInput": "␣␣␣␣␣#",
+  "nodes": [
+    {
+      "id": "1770043036391",
+      "type": "start",
+      "position": {
+        "x": -2.8709644562864582,
+        "y": 158.92006393886834
+      },
+      "data": {
+        "label": "S0"
+      },
+      "width": 57,
+      "height": 57,
+      "selected": false,
+      "positionAbsolute": {
+        "x": -2.8709644562864582,
+        "y": 158.92006393886834
+      },
+      "dragging": false
+    },
+    {
+      "id": "1770043042082",
+      "type": "normal",
+      "position": {
+        "x": 139.90314829187986,
+        "y": 106.4747301833176
+      },
+      "data": {
+        "label": "S1"
+      },
+      "width": 57,
+      "height": 57
+    },
+    {
+      "id": "1770043043847",
+      "type": "normal",
+      "position": {
+        "x": 141.9268020933894,
+        "y": 237.33767601426837
+      },
+      "data": {
+        "label": "S2"
+      },
+      "width": 57,
+      "height": 57
+    },
+    {
+      "id": "1770043066132",
+      "type": "accept",
+      "position": {
+        "x": 280.20981186320853,
+        "y": 165.16069042709452
+      },
+      "data": {
+        "label": "S3"
+      },
+      "width": 57,
+      "height": 57,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 280.20981186320853,
+        "y": 165.16069042709452
+      },
+      "dragging": false
+    }
+  ],
+  "edges": [
+    {
+      "source": "1770043036391",
+      "sourceHandle": "R",
+      "target": "1770043042082",
+      "targetHandle": "L",
+      "id": "edge-1770043046655",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "t": 0.5,
+        "labels": [
+          {
+            "read": "␣",
+            "write": "V",
+            "direction": "L"
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null
+      }
+    },
+    {
+      "source": "1770043036391",
+      "sourceHandle": "R",
+      "target": "1770043043847",
+      "targetHandle": "L",
+      "id": "edge-1770043057213",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "t": 0.5,
+        "labels": [
+          {
+            "read": "␣",
+            "write": "V",
+            "direction": "R"
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null
+      }
+    },
+    {
+      "source": "1770043042082",
+      "sourceHandle": "R",
+      "target": "1770043066132",
+      "targetHandle": "L",
+      "id": "edge-1770043072966",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "t": 0.5,
+        "labels": [
+          {
+            "read": "#",
+            "write": "#",
+            "direction": "N"
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null
+      }
+    },
+    {
+      "source": "1770043043847",
+      "sourceHandle": "R",
+      "target": "1770043066132",
+      "targetHandle": "L",
+      "id": "edge-1770043085212",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "t": 0.5,
+        "labels": [
+          {
+            "read": "#",
+            "write": "#",
+            "direction": "N"
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null
+      }
+    },
+    {
+      "source": "1770043042082",
+      "sourceHandle": "TL",
+      "target": "1770043042082",
+      "targetHandle": "T",
+      "id": "edge-1770043124385",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "px": 168.40314829187986,
+        "py": 20.974730183317604,
+        "t": 0.5,
+        "sourceX": 154.15314829187986,
+        "sourceY": 134.9747301833176,
+        "targetX": 182.65314829187986,
+        "targetY": 134.9747301833176,
+        "labels": [
+          {
+            "read": "␣",
+            "write": "V",
+            "direction": "L"
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null,
+        "dxOffset": 2.184059851177065,
+        "dyOffset": 16.016688858260004
+      },
+      "selected": false
+    },
+    {
+      "source": "1770043043847",
+      "sourceHandle": "TL",
+      "target": "1770043043847",
+      "targetHandle": "T",
+      "id": "edge-1770043138578",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "px": 170.4268020933894,
+        "py": 151.83767601426837,
+        "t": 0.5,
+        "sourceX": 156.1768020933894,
+        "sourceY": 265.83767601426837,
+        "targetX": 184.6768020933894,
+        "targetY": 265.83767601426837,
+        "labels": [
+          {
+            "read": "␣",
+            "write": "V",
+            "direction": "R"
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null,
+        "dxOffset": 7.857463416032804,
+        "dyOffset": 21.608118062889336
+      },
+      "selected": true
+    }
+  ]
+}
