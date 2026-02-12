@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import { stepTM, getStartNode } from './engines/Deterministic';
 import { stepMultiTM } from './engines/MultiTape';
-import { stepNonDeterministicTM } from './engines/NonDeterministic';
+import { stepNonDeterministicTM, generateThreadColor } from './engines/NonDeterministic';
 
 // --- Single Tape Hook (Deterministic) ---
 export const useTuringMachine = (initialCells = 13) => {
@@ -312,19 +312,20 @@ export const useNonDeterministicTM = (initialCells = 13) => {
   const [history, setHistory] = useState([]);
 
   const setInitialThread = useCallback((inputTape, startHead) => {
-    setThreads([{
-      id: "1", 
-      tape: [...inputTape],
-      head: startHead, 
-      currentNodeId: null, 
-      status: "active",
-      stepCount: 0, 
-      history: []
-    }]);
-    setSuccess(false);
-    setStepCount(0);
-    setHistory([]);
-  }, []);
+      setThreads([{
+        id: "1", 
+        tape: [...inputTape],
+        head: startHead, 
+        currentNodeId: null, 
+        status: "active",
+        stepCount: 0, 
+        history: [],
+        color: generateThreadColor("1") // Automatically generate unique color for thread "1"
+      }]);
+      setSuccess(false);
+      setStepCount(0);
+      setHistory([]);
+    }, []);
 
   const stepForward = useCallback((nodes, edges) => {
     if (success) return;

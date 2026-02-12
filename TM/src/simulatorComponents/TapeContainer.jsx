@@ -88,7 +88,8 @@ export default function TapeContainer({
   // --- Sync Parent State ---
   useEffect(() => {
     if (isNonDeterministic) {
-        setActiveNodeId(null);
+        // Pass full threads array so DiagramContainer can visualize them
+        setActiveNodeId(tm.threads); 
         setActiveEdgeId(null);
         setCurrentSymbol(""); 
         setStepCount(tmStepCount);
@@ -99,7 +100,7 @@ export default function TapeContainer({
         setCurrentSymbol(symbolToDisplay);
         setStepCount(tmStepCount);
     }
-  }, [tm.activeNodeId, tm.activeEdgeId, tm.lastRead, tmStepCount, setActiveNodeId, setActiveEdgeId, setCurrentSymbol, setStepCount, isMultiTape, isNonDeterministic]);
+  }, [tm.activeNodeId, tm.threads, tm.activeEdgeId, tm.lastRead, tmStepCount, setActiveNodeId, setActiveEdgeId, setCurrentSymbol, setStepCount, isMultiTape, isNonDeterministic]);
 
   // --- Initialize Tape ---
   const initializeTape = useCallback(() => {
@@ -155,7 +156,6 @@ export default function TapeContainer({
       return getNodeLabel(n) || "S?";
   };
 
-  // FIXED: Ensure initializeTape runs immediately after reset
   const handleRestart = () => {
     setIsRunning(false);
     setIsTimeout(false);
@@ -163,7 +163,6 @@ export default function TapeContainer({
     setTimeout(initializeTape, 0); 
   };
 
-  // FIXED: Ensure initializeTape runs immediately after clearing input
   const handleClear = () => {
     setIsRunning(false);
     setIsTimeout(false);
@@ -251,9 +250,19 @@ export default function TapeContainer({
                           <div className={`thread-card ${thread.status} tree-card`}>
                               <div className="thread-header">
                                   <div className="thread-id-info">
-                                    <span className="thread-name">
-                                      Thread {thread.id}
-                                    </span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      {/* Added Color Indicator */}
+                                      <div style={{ 
+                                        width: '14px', 
+                                        height: '14px', 
+                                        borderRadius: '3px', 
+                                        backgroundColor: thread.color || '#e6194b',
+                                        border: '1px solid rgba(0,0,0,0.1)'
+                                      }} />
+                                      <span className="thread-name">
+                                        Thread {thread.id}
+                                      </span>
+                                    </div>
                                     <span className="thread-meta">
                                       {thread.status === 'frozen' 
                                         ? ` (Frozen at Step ${thread.stepCount})` 

@@ -1,4 +1,4 @@
-// ... (Imports and helper functions remain the same)
+/* src/visualComponents/DraggableEdge.jsx */
 import React, { useContext, createContext, useCallback } from 'react';
 import { useReactFlow } from 'reactflow';
 
@@ -47,11 +47,13 @@ export default function DraggableEdge({
   const dyOffset = edge?.data?.dyOffset ?? 0;
   
   const stepCount = data?.stepCount;
+  const threadColors = data?.threadColors || [];
+  const activeThreads = data?.activeThreads || []; 
 
   let px, py;
   let path;
 
-  // ... (Path calculation logic for SelfLoop and Normal edges remains same) ...
+  // --- Path Calculation Logic ---
   if (isSelfLoop) {
     const loopDist = 60; 
     let baseX = sourceX;
@@ -144,99 +146,137 @@ export default function DraggableEdge({
 
   return (
     <>
-      <path
-        key={`path-${id}-${stepCount}`} 
-        d={path}
-        className={`edge-path ${selected ? 'selected' : ''} ${data?.isActive ? 'active' : ''}`}
-        markerEnd={markerEnd}
-      />
+      {/* 1. DRAW WIRES (Concentric) - Show ALL threads traversing this edge */}
+      {threadColors.length > 0 ? (
+          threadColors.map((color, idx) => {
+            const width = 3 + (threadColors.length - 1 - idx) * 3;
+            const isTop = idx === threadColors.length - 1;
+            return (
+              <path
+                key={`edge-${idx}`}
+                d={path}
+                className="edge-path active-thread"
+                style={{ 
+                    stroke: color, 
+                    strokeWidth: width,
+                    transition: 'stroke-width 0.2s, stroke 0.2s',
+                    fill: 'none'
+                }}
+                markerEnd={isTop ? markerEnd : undefined} 
+              />
+            );
+          })
+      ) : (
+          <path
+            key={`path-${id}-${stepCount}`} 
+            d={path}
+            className={`edge-path ${selected ? 'selected' : ''} ${data?.isActive ? 'active' : ''}`}
+            markerEnd={markerEnd}
+          />
+      )}
       
+      {/* Hitbox */}
       <path d={path} className="edge-hitbox" />
       
       {labels.map((label, index) => {
         let labelText = "";
         let isRuleActive = false;
+        let badgeColors = [];
 
-        // Check if label has any tape keys
+        // --- DETERMINE LABEL TEXT ---
         const tapeKeys = Object.keys(label).filter(k => k.startsWith('tape')).sort();
-        
         if (tapeKeys.length > 0) {
-            // Multi-Tape Format: (1,0,L : 1,1,R : ...)
             const parts = tapeKeys.map(k => {
                 const t = label[k];
                 return `${t.read},${t.write},${t.direction}`;
             });
             labelText = `(${parts.join(' : ')})`;
-
-            if (data?.isActive && data?.activeSymbol) {
-                // activeSymbol is comma joined string of reads: "a,b,c"
-                const currentReads = data.activeSymbol.split(",");
-                // Check if all parts match
-                let allMatch = true;
-                tapeKeys.forEach((k, i) => {
-                    const t = label[k];
-                    const r = currentReads[i] || ""; // might be undefined if sim has more tapes than rule?
-                    if (t.read !== r && !(t.read === "␣" && r === '')) {
-                        allMatch = false;
-                    }
-                });
-                isRuleActive = allMatch;
-            }
         } else {
-            // Standard Format
             labelText = `${label.read}, ${label.write}, ${label.direction}`;
-            isRuleActive = data?.isActive && (
-                label.read === data.activeSymbol || 
-                (label.read === "␣" && data.activeSymbol === "")
-            );
         }
 
-        // --- Positioning Logic ---
+        // --- DETERMINE ACTIVE STATE PER LABEL ---
+        if (activeThreads.length > 0) {
+            // NTM: Filter threads that specifically used *this* label
+            const matchingThreads = activeThreads.filter(t => {
+                if (!t.lastRule) return false;
+                return JSON.stringify(t.lastRule) === JSON.stringify(label);
+            });
+            
+            if (matchingThreads.length > 0) {
+                isRuleActive = true;
+                badgeColors = matchingThreads.map(t => t.color);
+            }
+        } 
+        else if (data?.isActive) {
+            // Deterministic Fallback (Single Symbol Check)
+            if (tapeKeys.length > 0) {
+                if (data.activeSymbol) {
+                    const currentReads = data.activeSymbol.split(",");
+                    let allMatch = true;
+                    tapeKeys.forEach((k, i) => {
+                        const t = label[k];
+                        const r = currentReads[i] || ""; 
+                        if (t.read !== r && !(t.read === "␣" && r === '')) allMatch = false;
+                    });
+                    isRuleActive = allMatch;
+                }
+            } else {
+                isRuleActive = (label.read === data.activeSymbol || 
+                               (label.read === "␣" && data.activeSymbol === ""));
+            }
+        }
+
+        // --- Positioning ---
         let lx = px;
         let ly = py;
         const totalHeight = labels.length * labelSpacing;
         const centeredY = py - (totalHeight / 2) + (index * labelSpacing) + (labelSpacing / 2);
 
-        if (dir === 'top') {
-           ly = py - 15 - (index * labelSpacing); 
-        } else if (dir === 'bottom') {
-           ly = py + 25 + (index * labelSpacing);
-        } else if (dir === 'left') {
-           lx = px - 55; 
-           ly = centeredY;
-        } else if (dir === 'right') {
-           lx = px + 55; 
-           ly = centeredY;
-        } else {
-           ly = py - 15 - (index * labelSpacing);
-        }
+        if (dir === 'top')    ly = py - 15 - (index * labelSpacing); 
+        else if (dir === 'bottom') ly = py + 25 + (index * labelSpacing);
+        else if (dir === 'left') { lx = px - 55; ly = centeredY; }
+        else if (dir === 'right') { lx = px + 55; ly = centeredY; }
+        else ly = py - 15 - (index * labelSpacing);
+
+        const textWidth = labelText.length * 7; 
+        const badgeStartX = lx + (textWidth / 2) + 8;
 
         return (
           <g key={`${index}-${stepCount}`} style={{ pointerEvents: "none", userSelect: "none" }}>
-            <text
-              x={lx}
-              y={ly}
-              textAnchor="middle"
-              stroke="white"
-              strokeWidth="4" 
-              fontSize={isRuleActive ? 14 : 12}
-              fontWeight={isRuleActive ? "bold" : "normal"}
-              style={{ transition: "all 0.2s ease" }}
-            >
+            {/* Outline */}
+            <text x={lx} y={ly} textAnchor="middle" stroke="white" strokeWidth="4" fontSize={12} fontWeight={isRuleActive ? "bold" : "normal"}>
               {labelText}
             </text>
             
-            <text
-              x={lx}
-              y={ly}
-              textAnchor="middle"
-              fill={isRuleActive ? "#cde81a" : "#000"}
-              fontSize={isRuleActive ? 14 : 12}
+            {/* Text: Falls back to Yellow if active but no badges (DTM), else Black */}
+            <text 
+              x={lx} 
+              y={ly} 
+              textAnchor="middle" 
+              fill={(isRuleActive && badgeColors.length === 0) ? "#cde81a" : "black"} 
+              fontSize={12} 
               fontWeight={isRuleActive ? "bold" : "normal"}
-              style={{ transition: "all 0.2s ease" }}
             >
               {labelText}
             </text>
+
+            {/* BADGES: Only for the specific threads on this specific rule */}
+            {isRuleActive && badgeColors.length > 0 && (
+                <g>
+                   {badgeColors.map((color, idx) => (
+                     <circle
+                       key={`badge-${idx}`}
+                       cx={badgeStartX + (idx * 10)} 
+                       cy={ly - 4}
+                       r={4}
+                       fill={color}
+                       stroke="white"
+                       strokeWidth="1"
+                     />
+                   ))}
+                </g>
+            )}
           </g>
         );
       })}

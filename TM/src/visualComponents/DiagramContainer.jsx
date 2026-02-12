@@ -430,27 +430,60 @@ export default function DiagramContainer({
     setSelectedEdge(null);
   }, [pushToHistory, setNodes, setEdges, isLocked]);
 
-  const decoratedNodes = nodes.map((node) => ({
-    ...node,
-    data: {
-      ...node.data,
-      isActive: node.id === activeNodeId,
-    },
-  }));
+  // --- RENDER PREP ---
+
+  const decoratedNodes = nodes.map((node) => {
+    let activeThreadColors = [];
+    
+    if (engine === "NonDeterministic" && Array.isArray(activeNodeId)) {
+      activeThreadColors = activeNodeId
+        // FIXED: Include 'accepted' threads so the final step remains visible
+        .filter(t => t.currentNodeId === node.id && (t.status === 'active' || t.status === 'accepted'))
+        .map(t => t.color);
+    }
+
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        isActive: engine === "NonDeterministic" ? activeThreadColors.length > 0 : node.id === activeNodeId,
+        threadColors: activeThreadColors
+      },
+    };
+  });
 
   const decoratedEdges = edges.map((edge) => {
-    const isActive = edge.id === activeEdgeId;
+    let isActive = edge.id === activeEdgeId;
+    let activeThreadColors = [];
+    let activeThreadsOnEdge = [];
+
+    // NTM Logic: Find threads traversing this edge
+    if (engine === "NonDeterministic" && Array.isArray(activeNodeId)) {
+       // FIXED: Include 'accepted' threads so the final edge traversal remains highlighted
+       activeThreadsOnEdge = activeNodeId.filter(t => t.activeEdgeId === edge.id && (t.status === 'active' || t.status === 'accepted'));
+       
+       if (activeThreadsOnEdge.length > 0) {
+           isActive = true;
+           activeThreadColors = activeThreadsOnEdge.map(t => t.color);
+       }
+    }
+
     return {
       ...edge,
       markerEnd: {
         ...edge.markerEnd,
-        color: isActive ? "#c7b52a" : "#333", 
+        // NTM: Use top thread color. DTM: Use Yellow (active) or Grey (inactive)
+        color: activeThreadColors.length > 0 
+            ? activeThreadColors[activeThreadColors.length - 1] 
+            : (isActive ? "#cde81a" : "#333"), 
       },
       data: {
         ...edge.data,
         isActive: isActive,
         activeSymbol: isActive ? currentSymbol : null,
-        stepCount: isActive ? stepCount : null 
+        stepCount: isActive ? stepCount : null,
+        threadColors: activeThreadColors,
+        activeThreads: activeThreadsOnEdge // Pass threads to edge for badge logic
       },
     };
   });
@@ -460,10 +493,7 @@ export default function DiagramContainer({
       <div className="diagram-container flex">
         <NodeMenu />
 
-        {/* --- MOVED BORDER STYLE HERE --- */}
-        <div 
-            className={`reactflow-wrapper ${isLocked ? "locked" : ""}`}
-        >
+        <div className={`reactflow-wrapper ${isLocked ? "locked" : ""}`}>
           <ReactFlow
             nodes={decoratedNodes}
             edges={decoratedEdges}
@@ -477,21 +507,15 @@ export default function DiagramContainer({
             onConnect={onConnect}
             onDrop={onDrop}
             onDragOver={onDragOver}
-            
-            /* --- LOCK INTERACTIONS --- */
             nodesDraggable={!isLocked}
             nodesConnectable={!isLocked}
             deleteKeyCode={isLocked ? null : ["Backspace", "Delete"]}
-
-            /* --- DRAG HANDLERS --- */
             onNodeDragStart={onNodeDragStart} 
             onNodeDragStop={onNodeDragStop}   
             onSelectionDragStart={onSelectionDragStart}
             onSelectionDragStop={onSelectionDragStop}
-
             onNodesDelete={() => !isLocked && pushToHistoryDebounced("Nodes Deleted")}
             onEdgesDelete={() => !isLocked && pushToHistoryDebounced("Edges Deleted")}
-            
             fitView 
           >
             <Background />
