@@ -308,7 +308,7 @@ export default function TapeContainer({
                                     </span>
                                 </div>
                                 <span 
-                                    className={`thread-status-badge ${thread.status === 'active' && tmStepCount === 0 && !isRunning ? 'frozen' : thread.status}`}
+                                    className={`thread-status-badge ${thread.status}`}
                                     style={{ cursor: thread.status === 'rejected' ? 'pointer' : 'default' }}
                                     onClick={() => {
                                         if (thread.status === 'rejected') {
