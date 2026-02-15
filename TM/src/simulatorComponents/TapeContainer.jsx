@@ -88,7 +88,6 @@ export default function TapeContainer({
   // --- Sync Parent State ---
   useEffect(() => {
     if (isNonDeterministic) {
-        // Pass full threads array so DiagramContainer can visualize them
         setActiveNodeId(tm.threads); 
         setActiveEdgeId(null);
         setCurrentSymbol(""); 
@@ -168,20 +167,97 @@ export default function TapeContainer({
     setIsTimeout(false);
     setInputValue(""); 
     reset(); 
-    setTimeout(initializeTape, 0);
+    const emptyTape = Array(50).fill("");
+    const startPos = 25;
+    if (isNonDeterministic) setThreadNonDet(emptyTape, startPos);
+    else if (isMultiTape) {
+      setTapesMulti(Array.from({length: numTapes}, () => [...emptyTape]));
+      setHeadsMulti(Array(numTapes).fill(startPos));
+    } else {
+      setTapeSingle(emptyTape);
+      setHeadSingle(startPos);
+    }
   };
   
-  // --- Status ---
-  let statusMessage = null;
-  let statusType = "";
-  if (inputError) { statusType = "error"; statusMessage = inputError; }
-  else if (success) { statusType = "success"; statusMessage = "Accepted"; }
-  else if (isTimeout) { statusType = "error"; statusMessage = "Rejected: Time Out"; }
-  else if (error) { statusType = "error"; statusMessage = `Rejected: ${error}`; }
+  // Rejection logic for clickable badge
+  const showRejectReason = () => {
+    if (isTimeout) alert("Rejected: Execution timed out (Max steps reached).");
+    else if (error) alert(`Rejected: ${error}`);
+    else alert("Rejected: Machine halted in a non-accepting state.");
+  };
 
   const alphabetString = validAlphabet.size > 0 ? [...validAlphabet].sort().join(", ") : "∅";
 
-  // --- RENDER THREAD LIST ---
+  // --- DETERMINISTIC / MULTI-TAPE CARD RENDER ---
+  const renderStandardCard = () => {
+    let cardStatusClass = 'active';
+    let statusBadgeText = 'Ready';
+
+    if (success) {
+        cardStatusClass = 'accepted';
+        statusBadgeText = '✔ Accepted';
+    } else if (error || isTimeout) {
+        cardStatusClass = 'rejected';
+        statusBadgeText = '✖ Rejected';
+    } else if (isRunning) {
+        cardStatusClass = 'active';
+        statusBadgeText = '● Running';
+    }
+
+    return (
+        <div className="thread-list-container" style={{ width: '90%', border: 'none', gap: '20px' }}>
+            {isMultiTape ? tm.tapes.map((tape, index) => (
+                <div key={index} className="thread-tree-row" style={{ width: '100%' }}>
+                    <div className={`thread-card ${cardStatusClass} tree-card`} style={{ width: '100%', marginTop: '0px' }}>
+                        <div className="thread-header">
+                            <div className="thread-id-info">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <div style={{ width: '14px', height: '14px', borderRadius: '3px', backgroundColor: '#cde81a', border: '1px solid rgba(0,0,0,0.1)' }} />
+                                    <span className="thread-name">Tape {index + 1}</span>
+                                </div>
+                                <span className="thread-meta">(Step {tmStepCount})</span>
+                            </div>
+                            <span 
+                                className={`thread-status-badge ${cardStatusClass}`}
+                                style={{ cursor: cardStatusClass === 'rejected' ? 'pointer' : 'default' }}
+                                onClick={() => cardStatusClass === 'rejected' && showRejectReason()}
+                                title={cardStatusClass === 'rejected' ? "Click for reason" : ""}
+                            >
+                                {statusBadgeText}
+                            </span>
+                        </div>
+                        <TapeDisplay tape={tape} head={tm.heads[index]} activeLabel={activeLabel(tm.activeNodeId)} cellSize={CELL_SIZE} width="100%" />
+                    </div>
+                </div>
+            )) : (
+                <div className="thread-tree-row" style={{ width: '100%' }}>
+                    <div className={`thread-card ${cardStatusClass} tree-card`} style={{ width: '100%', marginTop: '0' }}>
+                        <div className="thread-header">
+                            <div className="thread-id-info">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <div style={{ width: '14px', height: '14px', borderRadius: '3px', backgroundColor: '#cde81a', border: '1px solid rgba(0,0,0,0.1)' }} />
+                                    <span className="thread-name">Tape</span>
+                                </div>
+                                <span className="thread-meta">(Step {tmStepCount})</span>
+                            </div>
+                            <span 
+                                className={`thread-status-badge ${cardStatusClass}`}
+                                style={{ cursor: cardStatusClass === 'rejected' ? 'pointer' : 'default' }}
+                                onClick={() => cardStatusClass === 'rejected' && showRejectReason()}
+                                title={cardStatusClass === 'rejected' ? "Click for reason" : ""}
+                            >
+                                {statusBadgeText}
+                            </span>
+                        </div>
+                        <TapeDisplay tape={tm.tape} head={tm.head} activeLabel={activeLabel(tm.activeNodeId)} cellSize={CELL_SIZE} width="100%" />
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+  };
+
+  // --- NTM THREAD LIST RENDER ---
   const renderThreadList = () => {
     const visibleThreads = tm.threads.filter(t => {
         if (t.status === 'active' || t.status === 'accepted') return true;
@@ -190,160 +266,75 @@ export default function TapeContainer({
         return false;
     });
 
-    const sortedThreads = visibleThreads.sort((a, b) => 
-      a.id.localeCompare(b.id, undefined, { numeric: true })
-    );
+    const sortedThreads = visibleThreads.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
 
     return (
       <div className="thread-list-wrapper" style={{ width: '90%' }}>
-          <div className="ntm-view-controls" style={{ 
-          display: 'flex', 
-          gap: '15px', 
-          marginBottom: '10px', 
-          fontSize: '0.9rem',
-          color: '#555',
-          width: '90%',              
-          maxWidth: '1200px',         
-          margin: '0 auto 10px auto' 
-      }}>
+          <div className="ntm-view-controls" style={{ display: 'flex', gap: '15px', marginBottom: '10px', fontSize: '0.9rem', color: '#555', width: '90%', maxWidth: '1200px', margin: '0 auto 10px auto' }}>
               <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                  <input 
-                    type="checkbox" 
-                    checked={showFrozen} 
-                    onChange={(e) => setShowFrozen(e.target.checked)}
-                    style={{ marginRight: '6px' }}
-                  />
+                  <input type="checkbox" checked={showFrozen} onChange={(e) => setShowFrozen(e.target.checked)} style={{ marginRight: '6px' }} />
                   Show History (Frozen)
               </label>
-              
               <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                  <input 
-                    type="checkbox" 
-                    checked={showRejected} 
-                    onChange={(e) => setShowRejected(e.target.checked)}
-                    style={{ marginRight: '6px' }}
-                  />
+                  <input type="checkbox" checked={showRejected} onChange={(e) => setShowRejected(e.target.checked)} style={{ marginRight: '6px' }} />
                   Show Rejected
               </label>
           </div>
+          <div className="thread-list-container" style={{ padding: '15px' }}>
+            {!showRejected && tm.threads.some(t => t.reason === "No Start Node") ? (
+                <div className="empty-threads">No Start Node found in diagram.</div>
+            ) : (
+                !showRejected && sortedThreads.length === 0 && tmStepCount > 0 && (
+                    <div className="empty-threads">All threads rejected (Hidden).</div>
+                )
+            )}
 
-          <div className="thread-list-container">
-              {sortedThreads.length === 0 && tmStepCount > 0 && (
-                  <div className="empty-threads">
-                     All threads rejected (Hidden).
-                  </div>
-              )}
-              
-              {sortedThreads.map((thread) => {
-                  const depth = thread.id.split('.').length - 1;
-                  const indent = depth * 35; 
-                  const hasConnector = depth > 0;
-
-                  return (
-                      <div 
-                        key={thread.id} 
-                        className="thread-tree-row"
-                        style={{ marginLeft: `${indent}px` }}
-                      >
-                          {hasConnector && <div className="tree-connector"></div>}
-
-                          <div className={`thread-card ${thread.status} tree-card`}>
-                              <div className="thread-header">
-                                  <div className="thread-id-info">
+            {sortedThreads.map((thread) => {
+                const depth = thread.id.split('.').length - 1;
+                const indent = depth * 35; 
+                const hasConnector = depth > 0;
+                return (
+                    <div key={thread.id} className="thread-tree-row" style={{ marginLeft: `${indent}px` }}>
+                        {hasConnector && <div className="tree-connector"></div>}
+                        <div className={`thread-card ${thread.status} tree-card`}>
+                            <div className="thread-header">
+                                <div className="thread-id-info">
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                      {/* Added Color Indicator */}
-                                      <div style={{ 
-                                        width: '14px', 
-                                        height: '14px', 
-                                        borderRadius: '3px', 
-                                        backgroundColor: thread.color || '#e6194b',
-                                        border: '1px solid rgba(0,0,0,0.1)'
-                                      }} />
-                                      <span className="thread-name">
-                                        Thread {thread.id}
-                                      </span>
+                                        <div style={{ width: '14px', height: '14px', borderRadius: '3px', backgroundColor: thread.color || '#e6194b', border: '1px solid rgba(0,0,0,0.1)' }} />
+                                        <span className="thread-name">Thread {thread.id}</span>
                                     </div>
                                     <span className="thread-meta">
-                                      {thread.status === 'frozen' 
-                                        ? ` (Frozen at Step ${thread.stepCount})` 
-                                        : ` (Step ${thread.stepCount})`
-                                      }
+                                        {thread.status === 'frozen' ? ` (Split at Step ${thread.stepCount})` : ` (Step ${thread.stepCount})`}
                                     </span>
-                                  </div>
-                                  
-                                  <span className={`thread-status-badge ${thread.status}`}>
-                                    {thread.status === 'active' ? '● Running' : 
-                                     thread.status === 'frozen' ? '⑂ Split' :
-                                     thread.status === 'accepted' ? '✔ Accept' : '✖ Reject'}
-                                  </span>
-                              </div>
-                              
-                              <TapeDisplay 
-                                  tape={thread.tape} 
-                                  head={thread.head} 
-                                  activeLabel={activeLabel(thread.currentNodeId)} 
-                                  cellSize={40} 
-                                  width="100%"
-                              />
-                          </div>
-                      </div>
-                  );
-              })}
-          </div>
+                                </div>
+                                <span 
+                                    className={`thread-status-badge ${thread.status === 'active' && tmStepCount === 0 && !isRunning ? 'frozen' : thread.status}`}
+                                    style={{ cursor: thread.status === 'rejected' ? 'pointer' : 'default' }}
+                                    onClick={() => {
+                                        if (thread.status === 'rejected') {
+                                            alert(thread.reason || "Thread halted at non-accepting state.");
+                                        }
+                                    }}
+                                >
+                                    {thread.status === 'active' 
+                                        ? (tmStepCount === 0 && !isRunning ? 'READY' : '● RUNNING') 
+                                        : thread.status === 'frozen' ? '⑂ SPLIT' :
+                                        thread.status === 'accepted' ? '✔ ACCEPT' : '✖ REJECT'}
+                                </span>
+                            </div>
+                            <TapeDisplay tape={thread.tape} head={thread.head} activeLabel={activeLabel(thread.currentNodeId)} cellSize={40} width="100%" />
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
       </div>
     );
   };
 
   return (
       <div className="tape-container">
-        {!isNonDeterministic && (
-          <div className="tape-top-bar">
-            <div className="step-counter-display">
-              <span className="step-label">Step: </span>
-              <span className="step-value">{tmStepCount}</span>
-            </div>
-          </div>
-        )}
-
-        {isNonDeterministic ? renderThreadList() : (
-          isMultiTape ? (
-            <div className="multitape-container">
-              {tm.tapes.map((tape, index) => (
-                <div key={index} className="multitape-row">
-                  <div className="multitape-label">Tape {index + 1}</div>
-                  <div className="tape-display-wrapper">
-                    <TapeDisplay 
-                      tape={tape} 
-                      head={tm.heads[index]} 
-                      activeLabel={activeLabel(tm.activeNodeId)} 
-                      cellSize={CELL_SIZE} 
-                      width="70vw" 
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="singletape-wrapper">
-              <TapeDisplay 
-                tape={tm.tape} 
-                head={tm.head} 
-                activeLabel={activeLabel(tm.activeNodeId)} 
-                cellSize={CELL_SIZE} 
-                width="80vw" 
-              />
-            </div>
-          )
-        )}
-
-      <div className="status-area">
-        {statusMessage && (
-          <div className={`status-message ${statusType}`}>
-            <span className="status-icon">{statusType === "success" ? "✅" : "❌"}</span>
-            <strong>{statusMessage}</strong>
-          </div>
-        )}
-      </div>
+        {isNonDeterministic ? renderThreadList() : renderStandardCard()}
 
       <div className="controls-row">
         <div className="input-wrapper">
