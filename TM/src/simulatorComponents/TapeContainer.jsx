@@ -293,10 +293,19 @@ export default function TapeContainer({
                 const depth = thread.id.split('.').length - 1;
                 const indent = depth * 35; 
                 const hasConnector = depth > 0;
+
+                // 1. Calculate if this specific thread is caught in the timeout
+                const isTimedOut = thread.status === 'active' && isTimeout;
+                
+                // 2. Override status: If timed out, treat as 'rejected' (Red Badge)
+                const effectiveStatus = isTimedOut ? 'rejected' : thread.status;
+
                 return (
                     <div key={thread.id} className="thread-tree-row" style={{ marginLeft: `${indent}px` }}>
                         {hasConnector && <div className="tree-connector"></div>}
-                        <div className={`thread-card ${thread.status} tree-card`}>
+                        
+                        {/* Use effectiveStatus for the card border color */}
+                        <div className={`thread-card ${effectiveStatus} tree-card`}>
                             <div className="thread-header">
                                 <div className="thread-id-info">
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -307,19 +316,22 @@ export default function TapeContainer({
                                         {thread.status === 'frozen' ? ` (Split at Step ${thread.stepCount})` : ` (Step ${thread.stepCount})`}
                                     </span>
                                 </div>
+
+                                {/* BADGE LOGIC */}
                                 <span 
-                                    className={`thread-status-badge ${thread.status}`}
-                                    style={{ cursor: thread.status === 'rejected' ? 'pointer' : 'default' }}
+                                    className={`thread-status-badge ${effectiveStatus === 'active' ? 'active' : effectiveStatus}`}
+                                    style={{ cursor: effectiveStatus === 'rejected' ? 'pointer' : 'default' }}
                                     onClick={() => {
-                                        if (thread.status === 'rejected') {
-                                            alert(thread.reason || "Thread halted at non-accepting state.");
-                                        }
+                                        if (isTimedOut) alert("Rejected: Execution timed out (Max steps reached).");
+                                        else if (thread.status === 'rejected') alert(thread.reason || "Thread halted at non-accepting state.");
                                     }}
                                 >
-                                    {thread.status === 'active' 
+                                    {/* Display 'TIME OUT' if that's why we stopped */}
+                                    {isTimedOut ? '✖ TIME OUT' :
+                                    thread.status === 'active' 
                                         ? (tmStepCount === 0 && !isRunning ? 'READY' : '● RUNNING') 
                                         : thread.status === 'frozen' ? '⑂ SPLIT' :
-                                        thread.status === 'accepted' ? '✔ ACCEPT' : '✖ REJECT'}
+                                        thread.status === 'accepted' ? '✔ ACCEPTED' : '✖ REJECTED'}
                                 </span>
                             </div>
                             <TapeDisplay tape={thread.tape} head={thread.head} activeLabel={activeLabel(thread.currentNodeId)} cellSize={40} width="100%" />
