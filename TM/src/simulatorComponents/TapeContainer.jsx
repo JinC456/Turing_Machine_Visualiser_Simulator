@@ -11,6 +11,7 @@ const CELL_SIZE = 40;
 export default function TapeContainer({
   nodes,
   edges,
+  setNodes,
   activeNodeId,
   setActiveNodeId,
   setActiveEdgeId,
@@ -84,6 +85,17 @@ export default function TapeContainer({
     if (invalidChars.length > 0) setInputError(`Invalid: ${[...new Set(invalidChars)].join(", ")}`);
     else setInputError(null);
   }, [inputValue, validAlphabet]);
+
+  useEffect(() => {
+    if (nodes && setNodes && !isRunning) {
+        const startNode = nodes.find(n => n.type === 'start');
+        if (startNode && startNode.data.input !== inputValue) {
+            setNodes(nds => nds.map(n => 
+            n.type === 'start' ? { ...n, data: { ...n.data, input: inputValue } } : n
+            ));
+        }
+    }
+  }, [inputValue, nodes, setNodes, isRunning]);
 
   // --- Sync Parent State ---
   useEffect(() => {

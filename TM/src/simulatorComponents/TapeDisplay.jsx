@@ -11,26 +11,6 @@ export default function TapeDisplay({ tape, head, activeLabel, cellSize = 40, wi
     prevHead.current = head;
   }, [head]);
 
-  // 2. DEBUGGING LOGS
-  useEffect(() => {
-    if (wrapperRef.current) {
-      const el = wrapperRef.current;
-      console.log(`[TapeDebug] Step:`, {
-        tapeLength: tape.length,
-        cellSize,
-        wrapperWidth: el.offsetWidth,   // How wide the box IS on screen
-        contentWidth: el.scrollWidth,   // How wide the content WANTS to be
-        isOverflowing: el.scrollWidth > el.offsetWidth, // Should be TRUE for large tapes
-        headPosition: head,
-        calculatedLeft: `calc(50% - ${cellSize / 2}px)`
-      });
-
-      // Visual Check in Console
-      if (el.offsetWidth > 2000) {
-        console.error("⚠️ CRITICAL: The wrapper has exploded in width! Flexbox is not constraining it.");
-      }
-    }
-  }, [tape, head, cellSize]);
 
   const displayLabel = activeLabel === "" ? "" : (activeLabel || "START");
 
@@ -59,19 +39,27 @@ export default function TapeDisplay({ tape, head, activeLabel, cellSize = 40, wi
             height: `${cellSize}px` 
           }}
         >
-          {tape.map((symbol, index) => (
-            <div
-              key={index}
-              className={`cell ${index === head ? "active" : ""}`}
-              style={{ 
-                width: `${cellSize}px`,
-                height: `${cellSize}px`,
-                fontSize: `${cellSize * 0.45}px`
-              }}
-            >
-              {symbol || ""}
-            </div>
-          ))}
+          {tape.map((symbol, index) => {
+            const hasMarker = typeof symbol === 'string' && symbol.includes('^');
+            const cleanSymbol = hasMarker ? symbol.replace('^', '') : symbol;
+
+            return (
+              <div
+                key={index}
+                className={`cell ${index === head ? "active" : ""}`}
+                style={{ 
+                  width: `${cellSize}px`,
+                  height: `${cellSize}px`,
+                  fontSize: `${cellSize * 0.45}px`
+                }}
+              >
+                <div className="cell-content-wrapper">
+                  {hasMarker && <span className="diacritic-marker">^</span>}
+                  {cleanSymbol || ""}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

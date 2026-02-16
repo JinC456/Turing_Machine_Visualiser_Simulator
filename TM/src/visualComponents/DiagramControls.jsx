@@ -8,9 +8,12 @@ export default function DiagramControls({
   handleImport,
   canUndo,
   canRedo,
-  isLocked // NEW PROP
+  isLocked,
+  engine,
+  onConvert
 }) {
   const fileInputRef = useRef(null);
+
 
   const onImportClick = () => {
     if (!isLocked) {
@@ -67,6 +70,12 @@ export default function DiagramControls({
         style={{ display: "none" }}
         onChange={onFileChange}
       />
+
+      {engine === "MultiTape" && (
+        <button onClick={onConvert} className="convert-btn">
+          Simululate Single Tape
+        </button>
+      )}
     </div>
   );
 }

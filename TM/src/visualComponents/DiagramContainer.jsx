@@ -15,6 +15,8 @@ import AcceptNode from "./AcceptNode";
 import DraggableEdge, { HistoryContext } from "./DraggableEdge";
 import NodeEditMenu from "./NodeEditMenu";
 import EdgeMenu from "./EdgeMenu";
+import SingleTapeModal from "../simulatorComponents/singleTapeModal";
+
 
 const nodeTypes = {
   start: StartNode,
@@ -41,6 +43,7 @@ export default function DiagramContainer({
   onClear,
   isLocked
 }) {
+  const [showSingleTapeModal, setShowSingleTapeModal] = useState(false);
   const { project, fitView } = useReactFlow();
 
   const globalTapeCount = useMemo(() => {
@@ -532,7 +535,23 @@ export default function DiagramContainer({
           canUndo={!isLocked && history.length > 0}
           canRedo={!isLocked && future.length > 0}
           isLocked={isLocked} 
+          engine={engine}
+          onConvert={() => {
+              if (engine === "MultiTape") {
+                  setShowSingleTapeModal(true);
+              }
+          }}
         />
+
+        {showSingleTapeModal && (
+          <SingleTapeModal 
+            nodes={nodes} 
+            edges={edges}
+            initialInput={nodes.find(n => n.type === 'start')?.data?.input || ""}
+            onClose={() => setShowSingleTapeModal(false)} 
+          />
+        )}
+
 
         {selectedNode && (
           <NodeEditMenu
