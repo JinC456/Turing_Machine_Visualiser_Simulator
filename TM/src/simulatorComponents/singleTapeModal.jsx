@@ -8,7 +8,6 @@ import '../Visualiser.css';
 const CELL_SIZE = 40;
 
 export default function SingleTapeModal({ nodes, edges, initialInput, onClose }) {
-    // ... [Previous State] ...
     const [localInput, setLocalInput] = useState(initialInput || "");
     const [tape, setTape] = useState([]);
     const [head, setHead] = useState(0);
@@ -31,24 +30,21 @@ export default function SingleTapeModal({ nodes, edges, initialInput, onClose })
     }, [initialInput]);
 
     const initialize = useCallback(() => {
-        const startNode = nodes.find(n => n.type === 'start');
-        if (!startNode) {
-            setStatusMessage("Error: No Start Node found.");
-            return;
-        }
-
         const inputChars = localInput ? localInput.split('') : [""];
         let numTapes = 2; 
-        edges.forEach(e => {
-            e.data?.labels?.forEach(l => {
-                Object.keys(l).forEach(k => {
-                    if (k.startsWith('tape')) {
-                        const n = parseInt(k.replace('tape', ''));
-                        if (!isNaN(n)) numTapes = Math.max(numTapes, n);
-                    }
+        
+        if (edges) {
+            edges.forEach(e => {
+                e.data?.labels?.forEach(l => {
+                    Object.keys(l).forEach(k => {
+                        if (k.startsWith('tape')) {
+                            const n = parseInt(k.replace('tape', ''));
+                            if (!isNaN(n)) numTapes = Math.max(numTapes, n);
+                        }
+                    });
                 });
             });
-        });
+        }
 
         const PADDING = 50; 
         const blanks = Array(PADDING).fill("");
@@ -70,7 +66,6 @@ export default function SingleTapeModal({ nodes, edges, initialInput, onClose })
 
         setTape(newTape);
         setHead(PADDING);
-        setActiveNodeId(startNode.id);
         setStepCount(1);
         setMicroStep(0); 
         setPhase("IDLE");
@@ -81,7 +76,18 @@ export default function SingleTapeModal({ nodes, edges, initialInput, onClose })
         setTapeOffset(0);
         setIsRunning(false);
         setHistory([]); 
+
+       const startNode = nodes.find(n => n.type === 'start');
+        
+        if (!startNode) {
+            setActiveNodeId(null);
+            setStatusMessage("Error: No Start Node found."); 
+            return;
+        }
+
+        setActiveNodeId(startNode.id);
         setStatusMessage("Initialized. Press Start or Step.");
+
     }, [nodes, edges, localInput]);
 
     useEffect(() => {
