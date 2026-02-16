@@ -3,7 +3,7 @@ import React, { useMemo, useState, useRef, useEffect } from "react";
 import "../Visualiser.css";
 import { getNodeLabel } from "./engines/Deterministic";
 
-export default function TransitionTable({ nodes, edges, manualSymbols, setManualSymbols, onClose }) {
+export default function TransitionTable({ nodes, edges, manualSymbols, setManualSymbols, onClose, onDeleteSymbol, onReplaceSymbol }) {
   
   const [newSymbol, setNewSymbol] = useState("");
   const [isWindowMode, setIsWindowMode] = useState(false);
@@ -17,6 +17,8 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
   const [isResizing, setIsResizing] = useState(false);
   const resizeStart = useRef({ x: 0, y: 0, width: 0, height: 0 });
 
+  const [replacementChar, setReplacementChar] = useState("");
+  const [cleanupTarget, setCleanupTarget] = useState(null);
 
   const handleMouseDown = (e) => {
     if (isWindowMode) {
@@ -113,9 +115,9 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
 
       edges.forEach(edge => {
         const sourceNode = nodeMap[edge.source];
-        const targetNode = nodeMap[edge.target];
+        if(!sourceNode) return;
         const sourceLabel = getNodeLabel(sourceNode);
-        const targetLabel = getNodeLabel(targetNode);
+        const targetLabel = nodeMap[edge.target] ? getNodeLabel(nodeMap[edge.target]) : "?";
 
         edge.data?.labels?.forEach(label => {
           const reads = [];
@@ -134,6 +136,7 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
 
           rules.push({
             start: sourceLabel,
+            startId: edge.source,
             read: reads.join(","), 
             write: writes.join(", "),
             direction: dirs.join(", "),
@@ -150,14 +153,13 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
       const uniqueReadTuples = Array.from(new Set(rules.map(r => r.read))).sort();
       const mtMatrix = {};
       rules.forEach(r => {
-        if(!mtMatrix[r.start]) mtMatrix[r.start] = {};
+        if(!mtMatrix[r.startId]) mtMatrix[r.startId] = {};
         
-        // Handle Non-Determinism in Multi-Tape Matrix View
         const cellContent = `(${r.rawWrites.map((w, i) => `${w},${r.rawDirs[i]}`).join(" : ")}) -> ${r.end}`;
-        if (mtMatrix[r.start][r.read]) {
-            mtMatrix[r.start][r.read] += ` | ${cellContent}`;
+        if (mtMatrix[r.startId][r.read]) {
+            mtMatrix[r.startId][r.read] += ` | ${cellContent}`;
         } else {
-            mtMatrix[r.start][r.read] = cellContent;
+            mtMatrix[r.startId][r.read] = cellContent;
         }
       });
 
@@ -170,7 +172,6 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
       };
 
     } else {
-      // --- SINGLE TAPE PROCESSING (Updated for NTM) ---
       const matrix = {};
       sortedNodes.forEach(n => (matrix[n.id] = {}));
 
@@ -187,7 +188,6 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
           const cellContent = `${rule.write}, ${rule.direction}, ${targetLabel}`;
           if (!matrix[sourceId]) matrix[sourceId] = {};
           
-          // Append multiple choices together for NTM
           if (matrix[sourceId][rule.read]) {
             matrix[sourceId][rule.read] += ` | ${cellContent}`;
           } else {
@@ -215,7 +215,21 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
   };
 
   const handleDeleteSymbol = (symbol) => {
-    if (!derivedSymbols.has(symbol)) setManualSymbols(prev => prev.filter(s => s !== symbol));
+    if (derivedSymbols.has(symbol)) {
+      setCleanupTarget(symbol); 
+    } else {
+      setManualSymbols(prev => prev.filter(s => s !== symbol));
+    }
+  };
+
+  const executeCleanup = (action) => {
+    if (action === 'delete') {
+      onDeleteSymbol(cleanupTarget);
+    } else if (action === 'replace') {
+      onReplaceSymbol(cleanupTarget, replacementChar); 
+    }
+    setCleanupTarget(null);
+    setReplacementChar("");
   };
 
   const containerClass = isWindowMode ? "popup-menu table-popup modeless-window" : "popup-menu table-popup";
@@ -242,33 +256,30 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
             </div>
         </div>
 
-        {!isMultiTape && (
+        {isMultiTape ? (
+          <div className="multitape-alphabet-display">
+              <div className="sigma-box">Σ :</div>
+              <div className="symbol-list">
+                {symbols.map((symbol) => (
+                  <span key={symbol} className={`symbol-tag ${derivedSymbols.has(symbol) ? 'derived' : 'manual'}`}>
+                    {symbol}
+                    {/* Using remove-symbol-btn class to fix missing X on pills */}
+                    <button className="remove-symbol-btn" onClick={() => handleDeleteSymbol(symbol)}>×</button>
+                  </span>
+                ))}
+                <form onSubmit={handleAddSymbol} style={{ display: 'inline-flex' }}>
+                  <input type="text" value={newSymbol} onChange={(e) => setNewSymbol(e.target.value)} placeholder="+" maxLength={1} className="symbol-input-inline" title="Type and press Enter to add symbol" />
+                </form>
+              </div>
+          </div>
+        ) : (
           <form className="alphabet-controls" onSubmit={handleAddSymbol}>
             <label>Alphabet (Σ): </label>
             <input type="text" value={newSymbol} onChange={(e) => setNewSymbol(e.target.value)} placeholder="Add char..." maxLength={1} className="symbol-input" />
             <button type="submit" disabled={!newSymbol.trim()}>Add</button>
           </form>
         )}
-
-        {isMultiTape && (
-            <div className="multitape-alphabet-display">
-                <div className="sigma-box">Σ :</div>
-                <div className="symbol-list">
-                  {symbols.map(s => (
-                      <span key={s} className={`symbol-tag ${derivedSymbols.has(s) ? 'derived' : 'manual'}`}>
-                          {s}
-                          {!derivedSymbols.has(s) && (
-                              <button className="remove-symbol-btn" onClick={() => handleDeleteSymbol(s)} title="Remove symbol">×</button>
-                          )}
-                      </span>
-                  ))}
-                  <form onSubmit={handleAddSymbol} style={{ display: 'inline-flex' }}>
-                    <input type="text" value={newSymbol} onChange={(e) => setNewSymbol(e.target.value)} placeholder="+" maxLength={1} className="symbol-input-inline" title="Type and press Enter to add symbol" />
-                  </form>
-                </div>
-            </div>
-        )}
-        
+              
         <div className="table-wrapper">
           <table className="transition-table">
             {isMultiTape ? (
@@ -298,31 +309,31 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
               ) : (
                 <>
                    <thead>
-                    <tr>
-                      <th className="diagonal-cell"><span className="diagonal-top">Σ</span><span className="diagonal-bottom">Q</span></th>
-                      {multiTapeColumns.map((col, idx) => (
-                        <th key={idx} className="symbol-header" style={{ minWidth: '80px' }}>{col.replace(/,/g, " : ")}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sortedNodes.map((node) => {
-                      const label = getNodeLabel(node);
-                      return (
+                      <tr>
+                        <th className="diagonal-cell"><span className="diagonal-top">Read</span><span className="diagonal-bottom">Q</span></th>
+                        {multiTapeColumns.map((tuple) => (
+                          <th key={tuple} className="symbol-header">
+                            {tuple}
+                            {/* No X in headers for Multi-tape per previous request */}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedNodes.map((node) => (
                         <tr key={node.id}>
-                          <td className="row-header">{label}</td>
-                          {multiTapeColumns.map((col) => {
-                            const content = multiTapeMatrix[label]?.[col];
+                          <td className="row-header">{getNodeLabel(node)}</td>
+                          {multiTapeColumns.map((tuple) => {
+                            const content = multiTapeMatrix[node.id]?.[tuple];
                             return (
-                              <td key={`${node.id}-${col}`}>
-                                {content ? <span className="rule-cell" style={{ fontSize: '0.9rem' }}>{content}</span> : <span className="empty-cell">/</span>}
+                              <td key={`${node.id}-${tuple}`}>
+                                {content ? <span className="rule-cell" style={{ fontSize: '0.85rem' }}>{content}</span> : <span className="empty-cell">/</span>}
                               </td>
                             );
                           })}
                         </tr>
-                      );
-                    })}
-                  </tbody>
+                      ))}
+                    </tbody>
                 </>
               )
             ) : (
@@ -331,11 +342,14 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
                   <tr>
                     <th className="diagonal-cell"><span className="diagonal-top">Σ</span><span className="diagonal-bottom">Q</span></th>
                     {symbols.map((symbol) => (
-                        <th key={symbol} className="symbol-header">
-                          {symbol}
-                          {!derivedSymbols.has(symbol) && <button className="delete-symbol-btn" onClick={() => handleDeleteSymbol(symbol)}>×</button>}
-                        </th>
-                    ))}
+                      <th key={symbol} className="symbol-header" style={{ position: 'relative' }}>
+                        {/* Colored text for DTM/NTM headers: Blue for derived, Red for manual */}
+                        <span style={{ color: derivedSymbols.has(symbol) ? '#1565c0' : '#a21f1f' }}>
+                            {symbol}
+                        </span>
+                        <button className="delete-symbol-btn" onClick={() => handleDeleteSymbol(symbol)}>×</button>
+                      </th>
+                  ))}
                   </tr>
                 </thead>
                 <tbody>
@@ -359,6 +373,57 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
         </div>
         {isWindowMode && <div className="resize-handle" onMouseDown={handleResizeMouseDown} />}
       </div>
+      {cleanupTarget && (
+        <div className="popup-overlay" style={{ zIndex: 3000 }} onClick={(e) => e.stopPropagation()}>
+          <div className="popup-menu" style={{ maxWidth: '400px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
+            <h3>Manage Symbol: "{cleanupTarget}"</h3>
+            <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '20px', textAlign: 'center' }}>
+              This symbol is used in the diagram. Deleting it will remove all rules that read this character.
+            </p>
+            
+            <div className="form-group">
+              <label>Replace with another character?</label>
+              <input 
+                type="text" 
+                maxLength={1} 
+                value={replacementChar}
+                onChange={(e) => setReplacementChar(e.target.value)}
+                placeholder="New char..." 
+                className="symbol-input"
+                style={{ width: '80%', margin: '0 auto' }}
+              />
+            </div>
+
+            <div className="popup-actions" style={{ flexDirection: 'column', gap: '10px' }}>
+              <button 
+                className="add-label-button" 
+                style={{ backgroundColor: '#d1e7dd', width: '100%', color: '#0f5132' }}
+                onClick={() => executeCleanup('replace')}
+                disabled={!replacementChar.trim()}
+              >
+                Replace Everywhere
+              </button>
+              <button 
+                className="remove-button" 
+                style={{ width: '100%', margin: 0 }}
+                onClick={() => executeCleanup('delete')}
+              >
+                Delete All Rules with "{cleanupTarget}"
+              </button>
+              <button 
+                className="window-toggle-btn" 
+                style={{ width: '100%' }}
+                onClick={() => {
+                   setCleanupTarget(null);
+                   setReplacementChar("");
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

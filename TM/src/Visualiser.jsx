@@ -112,6 +112,45 @@ export default function Visualiser({ engine, selectedExample, showTable, setShow
     return new Set([...derived, ...manualSymbols]);
   }, [edges, manualSymbols]);
 
+  const handleSymbolScrub = useCallback((targetChar) => {
+    setEdges(prev => prev.map(edge => ({
+      ...edge,
+      data: {
+        ...edge.data,
+        labels: edge.data.labels.filter(l => {
+          if (engine === "MultiTape") {
+            return !Object.keys(l).some(k => k.startsWith('tape') && l[k].read === targetChar);
+          }
+          return l.read !== targetChar;
+        })
+      }
+    })).filter(edge => edge.data.labels.length > 0));
+  }, [engine, setEdges]);
+
+  const handleSymbolReplace = useCallback((oldChar, newChar) => {
+    setEdges(prev => prev.map(edge => ({
+      ...edge,
+      data: {
+        ...edge.data,
+        labels: edge.data.labels.map(l => {
+          const newL = { ...l };
+          if (engine === "MultiTape") {
+            Object.keys(newL).forEach(k => {
+              if (k.startsWith('tape')) {
+                if (newL[k].read === oldChar) newL[k].read = newChar;
+                if (newL[k].write === oldChar) newL[k].write = newChar;
+              }
+            });
+          } else {
+            if (newL.read === oldChar) newL.read = newChar;
+            if (newL.write === oldChar) newL.write = newChar;
+          }
+          return newL;
+        })
+      }
+    })));
+  }, [engine, setEdges]);
+
   return (
     <ReactFlowProvider>
       <div className="visualiser">
@@ -123,6 +162,8 @@ export default function Visualiser({ engine, selectedExample, showTable, setShow
             manualSymbols={manualSymbols}       
             setManualSymbols={setManualSymbols}
             onClose={() => setShowTable(false)} 
+            onDeleteSymbol={handleSymbolScrub}
+            onReplaceSymbol={handleSymbolReplace}
           />
         )}
 

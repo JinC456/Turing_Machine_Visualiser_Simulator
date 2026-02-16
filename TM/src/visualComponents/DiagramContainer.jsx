@@ -491,6 +491,48 @@ export default function DiagramContainer({
     };
   });
 
+  const handleSymbolScrub = useCallback((targetChar) => {
+    pushToHistory(`Deleted Symbol: ${targetChar}`);
+    setEdges(prev => prev.map(edge => ({
+      ...edge,
+      data: {
+        ...edge.data,
+        labels: edge.data.labels.filter(l => {
+          // Multi-tape check
+          if (engine === "MultiTape") {
+            return !Object.keys(l).some(k => k.startsWith('tape') && l[k].read === targetChar);
+          }
+          return l.read !== targetChar;
+        })
+      }
+    })).filter(edge => edge.data.labels.length > 0)); // Remove edges with no rules left
+  }, [engine, setEdges, pushToHistory]);
+
+  const handleSymbolReplace = useCallback((oldChar, newChar) => {
+    pushToHistory(`Replaced ${oldChar} with ${newChar}`);
+    setEdges(prev => prev.map(edge => ({
+      ...edge,
+      data: {
+        ...edge.data,
+        labels: edge.data.labels.map(l => {
+          const newL = { ...l };
+          if (engine === "MultiTape") {
+            Object.keys(newL).forEach(k => {
+              if (k.startsWith('tape')) {
+                if (newL[k].read === oldChar) newL[k].read = newChar;
+                if (newL[k].write === oldChar) newL[k].write = newChar;
+              }
+            });
+          } else {
+            if (newL.read === oldChar) newL.read = newChar;
+            if (newL.write === oldChar) newL.write = newChar;
+          }
+          return newL;
+        })
+      }
+    })));
+  }, [engine, setEdges, pushToHistory]);
+
   return (
     <HistoryContext.Provider value={pushToHistory}>
       <div className="diagram-container">
