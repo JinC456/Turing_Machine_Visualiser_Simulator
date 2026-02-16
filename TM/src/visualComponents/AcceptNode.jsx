@@ -14,7 +14,7 @@ export default function AcceptNode({ data = {} }) {
   if (data.isActive) {
       if (colors.length === 0) {
           // DTM / MultiTape -> Yellow
-          nodeStyle = { borderColor: '#cde81a', borderWidth: '3px' };
+          nodeStyle = { borderColor: '#e8d71a', borderWidth: '3px' };
       } else if (colors.length === 1) {
           // NTM Single -> Thread Color
           nodeStyle = { borderColor: colors[0], borderWidth: '3px' };

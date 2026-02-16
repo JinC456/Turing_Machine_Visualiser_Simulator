@@ -235,8 +235,8 @@ export default function DraggableEdge({
 
         if (dir === 'top')    ly = py - 15 - (index * labelSpacing); 
         else if (dir === 'bottom') ly = py + 25 + (index * labelSpacing);
-        else if (dir === 'left') { lx = px - 55; ly = centeredY; }
-        else if (dir === 'right') { lx = px + 55; ly = centeredY; }
+        else if (dir === 'left') { lx = px - 25; ly = centeredY; }
+        else if (dir === 'right') { lx = px + 25; ly = centeredY; }
         else ly = py - 15 - (index * labelSpacing);
 
         const textWidth = labelText.length * 7; 
@@ -254,7 +254,7 @@ export default function DraggableEdge({
               x={lx} 
               y={ly} 
               textAnchor="middle" 
-              fill={(isRuleActive && badgeColors.length === 0) ? "#cde81a" : "black"} 
+              fill={(isRuleActive && badgeColors.length === 0) ? "#e8d71a" : "black"} 
               fontSize={12} 
               fontWeight={isRuleActive ? "bold" : "normal"}
             >

@@ -16,7 +16,7 @@ import DraggableEdge, { HistoryContext } from "./DraggableEdge";
 import NodeEditMenu from "./NodeEditMenu";
 import EdgeMenu from "./EdgeMenu";
 import SingleTapeModal from "../simulatorComponents/singleTapeModal";
-
+import CustomConnectionLine from "./ConnectionLine";
 
 const nodeTypes = {
   start: StartNode,
@@ -478,7 +478,7 @@ export default function DiagramContainer({
         // NTM: Use top thread color. DTM: Use Yellow (active) or Grey (inactive)
         color: activeThreadColors.length > 0 
             ? activeThreadColors[activeThreadColors.length - 1] 
-            : (isActive ? "#cde81a" : "#333"), 
+            : (isActive ? "#e8d71a" : "#333"), 
       },
       data: {
         ...edge.data,
@@ -493,7 +493,7 @@ export default function DiagramContainer({
 
   return (
     <HistoryContext.Provider value={pushToHistory}>
-      <div className="diagram-container flex">
+      <div className="diagram-container">
         <NodeMenu />
 
         <div className={`reactflow-wrapper ${isLocked ? "locked" : ""}`}>
@@ -502,6 +502,7 @@ export default function DiagramContainer({
             edges={decoratedEdges}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
+            connectionLineComponent={CustomConnectionLine}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onNodeDoubleClick={onNodeDoubleClick}

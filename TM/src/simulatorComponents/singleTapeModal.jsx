@@ -14,8 +14,8 @@ export default function SingleTapeModal({ nodes, edges, initialInput, onClose })
     const [head, setHead] = useState(0);
     const [phase, setPhase] = useState("IDLE"); 
     const [activeNodeId, setActiveNodeId] = useState(null);
-    const [stepCount, setStepCount] = useState(0);      // MACRO Steps (Logical)
-    const [microStep, setMicroStep] = useState(0);      // MICRO Steps (Physical) - NEW
+    const [stepCount, setStepCount] = useState(0);      
+    const [microStep, setMicroStep] = useState(0);     
     const [scannedSymbols, setScannedSymbols] = useState([]); 
     const [markerPositions, setMarkerPositions] = useState([]); 
     const [pendingAction, setPendingAction] = useState(null); 
@@ -71,8 +71,8 @@ export default function SingleTapeModal({ nodes, edges, initialInput, onClose })
         setTape(newTape);
         setHead(PADDING);
         setActiveNodeId(startNode.id);
-        setStepCount(0);
-        setMicroStep(0); // Reset physical counter
+        setStepCount(1);
+        setMicroStep(0); 
         setPhase("IDLE");
         setScannedSymbols([]);
         setMarkerPositions([]);
@@ -104,6 +104,10 @@ export default function SingleTapeModal({ nodes, edges, initialInput, onClose })
         setTapeOffset(lastState.tapeOffset);
         setHistory(prev => prev.slice(0, -1));
     }, [history]);
+
+    const handleClear = useCallback(() => {
+        setLocalInput(""); 
+    }, []);
 
     const step = useCallback(() => {
         // Save History
@@ -282,7 +286,7 @@ export default function SingleTapeModal({ nodes, edges, initialInput, onClose })
             }}>
                 {/* --- FIXED SECTION START --- */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #eee', paddingBottom: '10px', flexShrink: 0 }}>
-                    <h2 style={{ margin: 0 }}>Sipser Single Tape Emulator</h2>
+                    <h2 style={{ margin: 0 }}>Sipser Single Tape Conversion</h2>
                     <button onClick={onClose} style={{ border: 'none', background: 'none', fontSize: '24px', cursor: 'pointer' }}>×</button>
                 </div>
 
@@ -335,7 +339,7 @@ export default function SingleTapeModal({ nodes, edges, initialInput, onClose })
                         onStart={() => setIsRunning(true)}
                         onStop={() => setIsRunning(false)}
                         onReset={initialize}
-                        onClear={initialize}
+                        onClear={handleClear}
                         onStepBack={undo}
                         isRunning={isRunning}
                         isFinished={["HALTED", "ACCEPTED"].includes(phase)}
@@ -344,7 +348,7 @@ export default function SingleTapeModal({ nodes, edges, initialInput, onClose })
 
                     <div className="speed-control" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <label>Speed: {speed}x</label>
-                        <input type="range" min="0.25" max="2" step="0.25" value={speed} onChange={(e) => setSpeed(Number(e.target.value))} />
+                        <input type="range" min="0.25" max="3" step="0.25" value={speed} onChange={(e) => setSpeed(Number(e.target.value))} />
                     </div>
                 </div>
                 {/* --- FIXED SECTION END --- */}
@@ -371,6 +375,7 @@ export default function SingleTapeModal({ nodes, edges, initialInput, onClose })
                         <br/>• <b>Micro-Step:</b> One physical movement of the single head (left or right) on the combined tape to reach and update a virtual head.
                         <br/><br/>
                         <b>The Cycle: </b>
+                        <br/><br/>
                         To perform <b>1 Macro-Step</b>, the single head must perform multiple Micro-Steps:
                         <br/>1. <b>Scan:</b> Sweep the entire tape to read the symbols under all virtual heads (marked with ^). For 2 tapes, the pointer reads both '^a' and '^b'.
                         <br/>2. <b>Rewind:</b> Return to the first delimiter to reset the pointer for the updates.

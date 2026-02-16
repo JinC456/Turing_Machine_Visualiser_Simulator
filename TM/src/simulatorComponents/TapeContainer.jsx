@@ -224,7 +224,7 @@ export default function TapeContainer({
                         <div className="thread-header">
                             <div className="thread-id-info">
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <div style={{ width: '14px', height: '14px', borderRadius: '3px', backgroundColor: '#cde81a', border: '1px solid rgba(0,0,0,0.1)' }} />
+                                    <div style={{ width: '14px', height: '14px', borderRadius: '3px', backgroundColor: '#e8d71a', border: '1px solid rgba(0,0,0,0.1)' }} />
                                     <span className="thread-name">Tape {index + 1}</span>
                                 </div>
                                 <span className="thread-meta">(Step {tmStepCount})</span>
@@ -247,7 +247,7 @@ export default function TapeContainer({
                         <div className="thread-header">
                             <div className="thread-id-info">
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <div style={{ width: '14px', height: '14px', borderRadius: '3px', backgroundColor: '#cde81a', border: '1px solid rgba(0,0,0,0.1)' }} />
+                                    <div style={{ width: '14px', height: '14px', borderRadius: '3px', backgroundColor: '#e8d71a', border: '1px solid rgba(0,0,0,0.1)' }} />
                                     <span className="thread-name">Tape</span>
                                 </div>
                                 <span className="thread-meta">(Step {tmStepCount})</span>

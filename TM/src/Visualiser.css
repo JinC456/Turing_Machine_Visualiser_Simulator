@@ -42,11 +42,13 @@
 }
 
 .diagram-container {
-  display: flex;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: 150px 1fr 150px; 
+  gap: 20px;
   align-items: flex-start;
   user-select: none;
-  width: 85vw;
+  width: 90vw; 
+  margin: 0 auto;
 }
 
 /* ===========================
@@ -56,7 +58,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 25px; 
+  padding-top: 10px;
 }
 
 .node-container {
@@ -173,7 +176,7 @@
 
 /* DTM / MultiTape Active Edge */
 .edge-path.active {
-  stroke: #cde81a;
+  stroke: #e8d71a;
   /* Animation defined in keyframes above */
   animation: edge-pulse 0.4s ease-out;
   transition: stroke 0.2s ease;
@@ -185,7 +188,7 @@
   animation: thread-pulse 0.5s ease-out;
 }
 
-.edge-path.active ~ marker { fill: #cde81a; stroke: #cde81a; }
+.edge-path.active ~ marker { fill: #e8d71a; stroke: #e8d71a; }
 
 .edge-hitbox { stroke: transparent; stroke-width: 20; fill: none; pointer-events: stroke; }
 
@@ -204,10 +207,9 @@
 .diagram-controls {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: center; /* Centers children horizontally */
   gap: 12px;
-  max-height: 300px;
-  overflow: auto;
+  width: 100%; /* Fill the 160px grid column */
 }
 
 .diagram-controls button:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -215,7 +217,8 @@
 .history-controls { display: flex; flex-direction: row; gap: 12px; }
 
 .reactflow-wrapper {
-  flex-grow: 1;
+  grid-column: 2;
+  width: 100%;
   height: 65vh; 
   border: 3px solid transparent; 
   border-radius: 8px;

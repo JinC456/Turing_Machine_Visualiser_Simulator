@@ -28,7 +28,7 @@ const exampleMap = {
   busy_beaver: busyBeaverData,
   
   // Multi-Tape
-  palindromeMulti: palindromeMultiData,
+  palindrome_multi: palindromeMultiData,
   is_equal_multi: isEqualMultiData, 
   binary_addition: binaryAdditionData,
 
