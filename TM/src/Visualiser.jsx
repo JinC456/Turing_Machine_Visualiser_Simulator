@@ -113,19 +113,29 @@ export default function Visualiser({ engine, selectedExample, showTable, setShow
   }, [edges, manualSymbols]);
 
   const handleSymbolScrub = useCallback((targetChar) => {
-    setEdges(prev => prev.map(edge => ({
-      ...edge,
-      data: {
-        ...edge.data,
-        labels: edge.data.labels.filter(l => {
-          if (engine === "MultiTape") {
-            return !Object.keys(l).some(k => k.startsWith('tape') && l[k].read === targetChar);
-          }
-          return l.read !== targetChar;
-        })
-      }
-    })).filter(edge => edge.data.labels.length > 0));
-  }, [engine, setEdges]);
+  setManualSymbols(prev => prev.filter(s => s !== targetChar));
+
+  setEdges(prev => prev.map(edge => ({
+    ...edge,
+    data: {
+      ...edge.data,
+      labels: (edge.data.labels || []).filter(l => {
+        if (engine === "MultiTape") {
+          return !Object.keys(l).some(k => {
+            if (k.startsWith('tape')) {
+              return l[k].read === targetChar || l[k].write === targetChar;
+            }
+            return false;
+          });
+        }
+        return l.read !== targetChar && l.write !== targetChar;
+      })
+    }
+  })).filter(edge => edge.data.labels && edge.data.labels.length > 0)); 
+
+  setActiveEdgeId(null);
+  setCurrentSymbol("");
+}, [engine, setEdges, setManualSymbols, setActiveEdgeId, setCurrentSymbol]);
 
   const handleSymbolReplace = useCallback((oldChar, newChar) => {
     setEdges(prev => prev.map(edge => ({
