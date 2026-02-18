@@ -368,9 +368,9 @@ export default function SingleTapeModal({ nodes, edges, initialInput, onClose })
                     flex: 1,           // Takes remaining height
                     minHeight: 0       // Allows shrinking if needed
                 }}>
-                    <h3>Emulation Logic</h3>
+                    <h3>Conversion Logic</h3>
                     <p style={{ lineHeight: '1.6', color: '#444', fontSize: '0.9em' }}>
-                        This emulation demonstrates that a <b>Single-Tape Machine</b> can simulate a <b>Multi-Tape Machine</b> (Sipser, Theorem 3.13).
+                        This demonstrates that a <b>Single-Tape Machine</b> can simulate a <b>Multi-Tape Machine</b> (Sipser, Theorem 3.13).
                         <br/><br/>
                         <b>Definitions:</b>
                         <br/>• <b>The Pointer (▼):</b> Represents the <i>single physical head</i> of this machine. Its position shows where the head currently is, and the label it carries indicates the <b>current state of the original Multi-Tape machine</b> corresponding to the macro-step being executed.

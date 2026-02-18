@@ -1,3 +1,4 @@
+/* src/simulatorComponents/EdgeMenu.jsx */
 import React, { useState } from "react";
 import "../Visualiser.css";
 
@@ -13,10 +14,9 @@ export default function EdgeMenu({
   const savedLabels = edge?.data?.labels || [];
 
   // Track pending operations to replay globally on save
-  // items: { type: 'ADD' } or { type: 'DELETE', index: number }
   const [pendingOps, setPendingOps] = useState([]);
 
-  // Determine local tape count from existing data or global default
+  // Determine local tape count
   const getInitialTapeCount = () => {
     if (savedLabels.length > 0) {
       let max = 2;
@@ -59,11 +59,8 @@ export default function EdgeMenu({
     const newCount = tapeCount + 1;
     setTapeCount(newCount);
     const newKey = `tape${newCount}`;
-    
-    // Queue Operation
     setPendingOps(prev => [...prev, { type: 'ADD' }]);
 
-    // Update Local UI: Add default rules (*, *, N)
     setLabels(prev => prev.map(lbl => ({
         ...lbl,
         [newKey]: { read: "␣", write: "␣", direction: "N" }
@@ -72,30 +69,20 @@ export default function EdgeMenu({
 
   const handleDeleteTape = (tapeNumToDelete) => {
     if (tapeCount <= 2) return; 
-    
-    // Queue Operation: Delete at current index
     setPendingOps(prev => [...prev, { type: 'DELETE', index: tapeNumToDelete }]);
-
     setTapeCount(prev => prev - 1);
     
-    // Update Local UI: Shift tapes down
     setLabels(prev => prev.map(lbl => {
         const newLbl = {};
-        
-        // Copy non-tape keys
         Object.keys(lbl).forEach(k => {
             if (!k.startsWith('tape')) newLbl[k] = lbl[k];
         });
 
         let newIndex = 1;
-        // Re-index remaining tapes
         for (let i = 1; i <= tapeCount; i++) {
-            if (i === tapeNumToDelete) continue; // Skip deleted
-            
+            if (i === tapeNumToDelete) continue; 
             const oldKey = `tape${i}`;
             const newKey = `tape${newIndex}`;
-            
-            // Copy data if exists, else init blank
             if (lbl[oldKey]) {
                 newLbl[newKey] = lbl[oldKey];
             } else {
@@ -131,13 +118,12 @@ export default function EdgeMenu({
   };
 
   const toggleBlank = (index, field, currentVal, tapeKey = null) => {
-  // If current value is blank, clear it; otherwise set to "␣"
-  const newVal = currentVal === "␣" ? "" : "␣";
-  if (tapeKey) {
-    updateMultiLabel(index, tapeKey, field, newVal);
-  } else {
-    updateLabel(index, field, newVal);
-  }
+    const newVal = currentVal === "␣" ? "" : "␣";
+    if (tapeKey) {
+      updateMultiLabel(index, tapeKey, field, newVal);
+    } else {
+      updateLabel(index, field, newVal);
+    }
   };
 
   const addLabel = () => {
@@ -158,13 +144,11 @@ export default function EdgeMenu({
   };
 
   // --- VALIDATION ---
-  // All boxes must have content to save
   const hasValidRule = labels.every((lbl) => {
     if (isMultiTape) {
       for (let i = 1; i <= tapeCount; i++) {
           const t = lbl[`tape${i}`];
           if (!t) return false;
-          // Check that Read, Write, and Direction are NOT empty strings
           if (t.read === "" || t.write === "" || t.direction === "") return false;
       }
       return true;
@@ -179,7 +163,6 @@ export default function EdgeMenu({
 
   const handleSave = () => {
     if (!hasValidRule) return;
-    // Pass pending operations to parent for global sync
     onSave(edge.id, labels, pendingOps);
     onClose();
   };
@@ -213,6 +196,7 @@ export default function EdgeMenu({
         {labels.map((label, index) => (
           <div key={index} className="label-row" style={{ borderBottom: "2px solid #ccc", paddingBottom: "15px", marginBottom: "15px" }}>
             
+            {/* SINGLE TAPE SECTION (DTM & NTM) */}
             {!isMultiTape && (
               <>
                 <label>
@@ -234,21 +218,24 @@ export default function EdgeMenu({
                   /> 
                 </label>
                 <div className="direction-buttons">
-                  <DirectionButton selected={label.direction === "L"} onClick={() => updateLabel(index, "direction", "L")} text="L" />
-                  <DirectionButton selected={label.direction === "N"} onClick={() => updateLabel(index, "direction", "N")} text="None" />
-                  <DirectionButton selected={label.direction === "R"} onClick={() => updateLabel(index, "direction", "R")} text="R" />
+                  <DirectionButton selected={label.direction === "L"} onClick={() => updateLabel(index, "direction", "L")} text="Left" />
+                  
+                  {engine !== "Deterministic" && (
+                    <DirectionButton selected={label.direction === "N"} onClick={() => updateLabel(index, "direction", "N")} text="None" />
+                  )}
+                  
+                  <DirectionButton selected={label.direction === "R"} onClick={() => updateLabel(index, "direction", "R")} text="Right" />
                 </div>
               </>
             )}
 
+            {/* MULTI TAPE SECTION */}
             {isMultiTape && (
               <div style={{ display: 'flex', gap: '15px', overflowX: 'auto', paddingBottom: '10px' }}>
                 {Array.from({ length: tapeCount }).map((_, i) => {
                     const tapeNum = i + 1;
                     const key = `tape${tapeNum}`;
                     const tapeData = label[key] || { read: "", write: "", direction: "" };
-                    
-                    // Show delete 'X' ONLY if more than 2 tapes
                     const showDelete = tapeCount > 2;
 
                     return (
