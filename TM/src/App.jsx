@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import Visualiser from "./Visualiser";
+import HelpModal from "./visualComponents/HelpMenu";
 import "./App.css";
+
 
 const EXAMPLES = {
   Deterministic: [
@@ -25,7 +27,8 @@ function App() {
   const [engine, setEngine] = useState("Deterministic");
   const [example, setExample] = useState("");
   const [showTable, setShowTable] = useState(false);
-
+  const [showHelp, setShowHelp] = useState(false);
+  
   // Reset example when engine changes to avoid invalid states
   useEffect(() => {
     setExample("");
@@ -79,6 +82,13 @@ function App() {
         <div className="header-right">
           <button 
             className="header-button" 
+            onClick={() => setShowHelp(true)}
+          >
+            ? Help
+          </button>
+
+          <button 
+            className="header-button" 
             onClick={() => setShowTable(true)}
           >
             Transition Table
@@ -92,6 +102,7 @@ function App() {
         showTable={showTable} 
         setShowTable={setShowTable} 
       />
+      {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
     </div>
   );
 }
