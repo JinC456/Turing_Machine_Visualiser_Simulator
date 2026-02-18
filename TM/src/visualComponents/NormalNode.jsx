@@ -15,7 +15,7 @@ export default function NormalNode({ data = {} }) {
   if (data.isActive) {
       if (colors.length === 0) {
           // DTM / MultiTape Active -> Default Yellow Border
-          nodeStyle = { borderColor: '#cde81a', borderWidth: '3px' };
+          nodeStyle = { borderColor: '#e8d71a', borderWidth: '3px' };
       } else if (colors.length === 1) {
           // NTM Single Thread -> Thread Color Border
           nodeStyle = { borderColor: colors[0], borderWidth: '3px' };

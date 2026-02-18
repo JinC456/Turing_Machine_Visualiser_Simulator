@@ -28,7 +28,7 @@ const exampleMap = {
   busy_beaver: busyBeaverData,
   
   // Multi-Tape
-  palindromeMulti: palindromeMultiData,
+  palindrome_multi: palindromeMultiData,
   is_equal_multi: isEqualMultiData, 
   binary_addition: binaryAdditionData,
 
@@ -130,6 +130,7 @@ export default function Visualiser({ engine, selectedExample, showTable, setShow
           <TapeContainer 
             nodes={nodes}
             edges={edges}
+            setNodes={setNodes}
             activeNodeId={activeNodeId}
             setActiveNodeId={setActiveNodeId}
             setActiveEdgeId={setActiveEdgeId}
@@ -138,7 +139,6 @@ export default function Visualiser({ engine, selectedExample, showTable, setShow
             loadedInput={loadedInput}
             validAlphabet={validAlphabet}
             engine={engine}
-            // Pass lifted state down
             isRunning={isRunning}
             setIsRunning={setIsRunning}
           />

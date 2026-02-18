@@ -336,7 +336,14 @@ export const useNonDeterministicTM = (initialCells = 13) => {
     const startNode = nodes.find(n => n.type === "start") || null;
 
     if (stepCount === 0 && threads.length > 0 && threads[0].currentNodeId === null) {
-       if (!startNode) return; 
+       if (!startNode) {
+        setThreads(prev => prev.map(t => ({ 
+            ...t, 
+            status: 'rejected',
+            reason: "No Start Node" // Adding a custom reason for the alert
+        })));
+        return; 
+       }
        currentThreads = [{
            ...threads[0],
            currentNodeId: startNode.id
