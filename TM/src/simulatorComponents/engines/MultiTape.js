@@ -51,8 +51,7 @@ export function findTransition(currentNodeId, readSymbols, edges) {
 
 export function stepMultiTM({ currentNodeId, tapes, heads, nodes, edges, stepCount = 0 }) {
   // Read current symbols from all tapes
-  const reads = heads.map((h, i) => tapes[i][h] || "");
-
+  const reads = heads.map((h, i) => tapes[i][h] || "␣");
   const transition = findTransition(currentNodeId, reads, edges);
 
   if (!transition) {

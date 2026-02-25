@@ -15,8 +15,8 @@ import AcceptNode from "./AcceptNode";
 import DraggableEdge, { HistoryContext } from "./DraggableEdge";
 import NodeEditMenu from "./NodeEditMenu";
 import EdgeMenu from "./EdgeMenu";
-import SingleTapeModal from "../simulatorComponents/singleTapeModal";
 import CustomConnectionLine from "./ConnectionLine";
+import ConvertedDiagramModal from './ConvertedDiagramModal';
 
 const nodeTypes = {
   start: StartNode,
@@ -43,7 +43,9 @@ export default function DiagramContainer({
   onClear,
   isLocked
 }) {
-  const [showSingleTapeModal, setShowSingleTapeModal] = useState(false);
+
+  const [showConvertedDiagram, setShowConvertedDiagram] = useState(false);
+  
   const { project, fitView } = useReactFlow();
 
   const globalTapeCount = useMemo(() => {
@@ -579,19 +581,20 @@ export default function DiagramContainer({
           canRedo={!isLocked && future.length > 0}
           isLocked={isLocked} 
           engine={engine}
-          onConvert={() => {
-              if (engine === "MultiTape") {
-                  setShowSingleTapeModal(true);
-              }
+          onConvert={(mode) => {
+            if (engine === "MultiTape") {
+                if (mode === "combined") setShowConvertedDiagram(true);
+            }
           }}
         />
 
-        {showSingleTapeModal && (
-          <SingleTapeModal 
-            nodes={nodes} 
+      
+
+        {showConvertedDiagram && (
+          <ConvertedDiagramModal
+            nodes={nodes}
             edges={edges}
-            initialInput={nodes.find(n => n.type === 'start')?.data?.input || ""}
-            onClose={() => setShowSingleTapeModal(false)} 
+            onClose={() => setShowConvertedDiagram(false)}
           />
         )}
 

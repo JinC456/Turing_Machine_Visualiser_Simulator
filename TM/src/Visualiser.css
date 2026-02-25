@@ -19,6 +19,12 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* FIX: Added missing @keyframes that was referenced by .popup-menu but never defined */
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
 /* ===========================
    GENERAL
    =========================== */
@@ -84,7 +90,6 @@
 }
 
 .node.active {
-  /* Toned down scaling from 1.1 to 1.05 */
   transform: scale(1.05);
   z-index: 10;
 }
@@ -104,9 +109,10 @@
   padding: 2px;
 }
 
+/* FIX: .start and .normal were both just `background-color: white` — combined into one rule.
+   The base .node already sets white, so this is only needed for .accept which differs. */
 .accept { background-color: #6ad66a; }
-.start { background-color: white; }
-.normal { background-color: white; }
+.start, .normal { background-color: white; }
 
 .arrow {
   position: absolute;
@@ -130,7 +136,6 @@
   pointer-events: none;
   transition: all 0.2s ease;
   z-index: -1; 
-  /* Add subtle pulse to rings when they appear */
   animation: thread-pulse 0.4s ease-out;
 }
 
@@ -147,7 +152,7 @@
 }
 
 /* ===========================
-  HANDLE
+   HANDLE
    =========================== */
 .react-flow__handle {
   opacity: 0;
@@ -175,14 +180,12 @@
 /* DTM / MultiTape Active Edge */
 .edge-path.active {
   stroke: #e8d71a;
-  /* Animation defined in keyframes above */
   animation: edge-pulse 0.4s ease-out;
   transition: stroke 0.2s ease;
 }
 
 /* NTM Active Thread Edge */
 .edge-path.active-thread {
-  /* Uses brightness pulse to avoid messing up width stacking */
   animation: thread-pulse 0.5s ease-out;
 }
 
@@ -205,9 +208,9 @@
 .diagram-controls {
   display: flex;
   flex-direction: column;
-  align-items: center; /* Centers children horizontally */
+  align-items: center;
   gap: 12px;
-  width: 100%; /* Fill the 160px grid column */
+  width: 100%;
 }
 
 .diagram-controls button:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -308,7 +311,7 @@
 .tape-display-wrapper { 
   position: relative; 
   width: 100%;
-  overflow: hidden !important; /* Clips the horizontal tape movement */
+  overflow: hidden !important;
   border: 2px solid #d2e3fc;
   border-radius: 6px;
   background-color: #f8f8f8;
@@ -317,7 +320,7 @@
   align-items: center;
 }
 
-.singletape-wrapper { position: relative; overflow: visible; }
+/* FIX: Removed .singletape-wrapper — not referenced in any JSX component */
 
 /* Tape Wrapper */
 .tape-wrapper {
@@ -329,7 +332,7 @@
 
 .tape-header {
   position: absolute;
-  top: -48px; /* Pulled up above the clipped display wrapper */
+  top: -48px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 100;
@@ -403,9 +406,8 @@
 .tape-input:focus { border-color: #1a73e8; }
 .tape-input.error { border-color: #d9534f; background-color: #fdf7f7; }
 
+/* FIX: Removed `position: relative; bottom: auto;` — bottom has no effect on relative positioning */
 .playback-controls {
-  position: relative;
-  bottom: auto;
   display: flex;
   gap: 5px;
 }
@@ -549,7 +551,6 @@
   justify-content: center;
 }
 
-
 .direction-buttons {
   display: flex;
   align-items: center;
@@ -563,7 +564,7 @@
   padding: 6px 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
-  width:100%;
+  width: 100%;
   background-color: #eee;
   cursor: pointer;
   transition: background-color 0.2s, color 0.2s;
@@ -1010,20 +1011,23 @@
   position: relative;
   width: 100%;
   overflow: visible !important; 
-  margin-top: 45px; /* Added space so the label doesn't hit the header text */
+  margin-top: 45px;
 }
-
 
 .thread-card > div {
   min-width: 0;
   max-width: 100%;
 }
 
+/* FIX: Merged the two duplicate .thread-card .tape-wrapper rules into one */
 .thread-card .tape-wrapper {
   min-width: 0;
   width: 100% !important; 
   max-width: 100%;
   box-sizing: border-box;
+  background: #fff;
+  border: 1px solid #ddd;
+  height: 40px;
 }
 
 /* Active State */
@@ -1102,13 +1106,6 @@
 .thread-status-badge.rejected { color: #c62828; background: #ffcdd2; border: 1px solid #ef9a9a; }
 .thread-status-badge.frozen { color: #555; background: #e0e0e0; border: 1px solid #ccc; }
 
-/* Tape Adjustments for Tree Cards */
-.thread-card .tape-wrapper {
-  background: #fff;
-  border: 1px solid #ddd;
-  height: 40px;
-}
-
 .thread-card .cell {
   height: 38px;
   font-size: 16px;
@@ -1120,8 +1117,7 @@
   overflow: visible;
 }
 
-/*single tape modal markers*/
-
+/* Single tape modal markers */
 .cell-content-wrapper {
   position: relative;
   display: flex;
@@ -1149,19 +1145,19 @@
   height: 75vh;
   background: white;
   border-radius: 8px;
-  display: flex; /* Critical for header/body/footer stack */
+  display: flex;
   flex-direction: column;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.5); /* Deep shadow for popout effect */
-  overflow: hidden; /* Keeps corners rounded */
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  overflow: hidden;
   animation: slideDown 0.2s ease-out;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Matches site font */
-  text-align: left; /* Overrides any centered text from parent */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  text-align: left;
 }
 
 /* 2. Header */
 .help-modal-header {
   padding: 15px 25px;
-  background-color: #f1f3f4; /* Light grey header like typical Google apps */
+  background-color: #f1f3f4;
   border-bottom: 1px solid #ddd;
   display: flex;
   justify-content: space-between;
@@ -1191,26 +1187,26 @@
 
 /* 3. The Body (Split View) */
 .help-modal-body {
-  display: flex;         /* Critical: Makes sidebar and content sit side-by-side */
-  flex-direction: row;   /* Ensure row direction */
-  flex: 1;               /* Takes up remaining height */
-  overflow: hidden;      /* Prevents double scrollbars */
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  overflow: hidden;
   height: 100%;
 }
 
 /* --- Left Sidebar --- */
 .help-sidebar {
   width: 280px;
-  background-color: #f8f9fa; /* Very light grey */
+  background-color: #f8f9fa;
   border-right: 1px solid #dadce0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   padding-top: 10px;
-  flex-shrink: 0; /* Prevents sidebar from squishing */
+  flex-shrink: 0;
 }
 
-/* Category Headers (e.g., "Turing Machines") */
+/* Category Headers */
 .help-category-header {
   padding: 12px 20px;
   font-size: 0.95rem;
@@ -1229,7 +1225,7 @@
 }
 
 .help-category-header.active {
-  color: #1a73e8; /* Matches your site's blue accent */
+  color: #1a73e8;
 }
 
 /* Dropdown Links */
@@ -1239,11 +1235,11 @@
 }
 
 .help-item-row {
-  padding: 10px 20px 10px 35px; /* Indent */
+  padding: 10px 20px 10px 35px;
   font-size: 0.9rem;
   color: #3c4043;
   cursor: pointer;
-  border-left: 4px solid transparent; /* Placeholder for active strip */
+  border-left: 4px solid transparent;
   transition: all 0.2s;
 }
 
@@ -1253,9 +1249,9 @@
 
 /* Selected Link State */
 .help-item-row.selected {
-  background-color: #e8f0fe; /* Light blue background */
-  color: #1967d2; /* Darker blue text */
-  border-left: 4px solid #1967d2; /* Blue accent bar */
+  background-color: #e8f0fe;
+  color: #1967d2;
+  border-left: 4px solid #1967d2;
   font-weight: 600;
 }
 
@@ -1295,7 +1291,7 @@
   width: 100%;
   max-width: 100%;
   aspect-ratio: 16 / 9;
-  background-color: #202124; /* Dark background like a turned-off screen */
+  background-color: #202124;
   border-radius: 8px;
   display: flex;
   flex-direction: column;

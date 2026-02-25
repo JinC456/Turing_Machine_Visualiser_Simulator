@@ -8,7 +8,7 @@ import { stepNonDeterministicTM, generateThreadColor } from './engines/NonDeterm
 export const useTuringMachine = (initialCells = 13) => {
   const initialHead = Math.floor(initialCells / 2);
 
-  const [tape, setTape] = useState(Array(initialCells).fill(""));
+  const [tape, setTape] = useState(Array(initialCells).fill("␣"));
   const [head, setHead] = useState(initialHead);
 
   const [activeNodeId, setActiveNodeId] = useState(null);
@@ -24,7 +24,7 @@ export const useTuringMachine = (initialCells = 13) => {
 
   // --- RESET ---
   const reset = useCallback(() => {
-    setTape(Array(initialCells).fill(""));
+    setTape(Array(initialCells).fill("␣"));
     setHead(initialHead);
     setActiveNodeId(null);
     setActiveEdgeId(null);
@@ -113,7 +113,7 @@ export const useTuringMachine = (initialCells = 13) => {
     ]);
 
     let newTape = [...tape];
-    newTape[head] = result.write === "␣" ? "" : result.write;
+    newTape[head] = result.write;
 
     let newHead = head;
     if (result.direction === "R") newHead++;
@@ -123,11 +123,11 @@ export const useTuringMachine = (initialCells = 13) => {
     const expansionSize = 25;
 
     if (newHead < edgeThreshold) {
-      const expansion = Array(expansionSize).fill("");
+      const expansion = Array(expansionSize).fill("␣");
       newTape = [...expansion, ...newTape];
       newHead += expansionSize;
     } else if (newHead >= newTape.length - edgeThreshold) {
-      const expansion = Array(expansionSize).fill("");
+      const expansion = Array(expansionSize).fill("␣");
       newTape = [...newTape, ...expansion];
     }
 
@@ -155,7 +155,7 @@ export const useMultiTapeTuringMachine = (initialCells = 13, numTapes = 2) => {
   const initialHead = Math.floor(initialCells / 2);
 
   const [tapes, setTapes] = useState(
-    Array.from({ length: numTapes }, () => Array(initialCells).fill(""))
+    Array.from({ length: numTapes }, () => Array(initialCells).fill("␣"))
   );
   const [heads, setHeads] = useState(Array(numTapes).fill(initialHead));
 
@@ -171,7 +171,7 @@ export const useMultiTapeTuringMachine = (initialCells = 13, numTapes = 2) => {
 
   // --- RESET ---
   const reset = useCallback(() => {
-    setTapes(Array.from({ length: numTapes }, () => Array(initialCells).fill("")));
+    setTapes(Array.from({ length: numTapes }, () => Array(initialCells).fill("␣")));
     setHeads(Array(numTapes).fill(initialHead));
     setActiveNodeId(null);
     setActiveEdgeId(null);
@@ -264,7 +264,7 @@ export const useMultiTapeTuringMachine = (initialCells = 13, numTapes = 2) => {
     
     for(let i = 0; i < numTapes; i++) {
         const w = result.writes[i];
-        newTapes[i][newHeads[i]] = w === "␣" ? "" : w;
+        newTapes[i][newHeads[i]] = w;
 
         const dir = result.directions[i];
         if (dir === "R") newHeads[i]++;
@@ -274,11 +274,11 @@ export const useMultiTapeTuringMachine = (initialCells = 13, numTapes = 2) => {
         const expansionSize = 6;
         
         if (newHeads[i] < edgeThreshold) {
-            const expansion = Array(expansionSize).fill("");
+            const expansion = Array(expansionSize).fill("␣");
             newTapes[i] = [...expansion, ...newTapes[i]];
             newHeads[i] += expansionSize;
         } else if (newHeads[i] >= newTapes[i].length - edgeThreshold) {
-            const expansion = Array(expansionSize).fill("");
+            const expansion = Array(expansionSize).fill("␣");
             newTapes[i] = [...newTapes[i], ...expansion];
         }
     }

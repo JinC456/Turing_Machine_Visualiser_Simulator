@@ -72,8 +72,8 @@ export default function DiagramControls({
       />
 
       {engine === "MultiTape" && (
-        <button onClick={onConvert} className="Convert-btn">
-          Simulate on Single Tape
+        <button onClick={() => onConvert("combined")} className="Convert-btn">
+          Single-Tape View
         </button>
       )}
     </div>

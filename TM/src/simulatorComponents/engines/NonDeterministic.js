@@ -84,7 +84,7 @@ export function stepNonDeterministicTM({ threads, nodes, edges }) {
       return;
     }
 
-    const read = thread.tape[thread.head] || "";
+    const read = thread.tape[thread.head] || "␣";
     const transitions = findAllTransitions(thread.currentNodeId, read, edges);
 
     if (transitions.length === 0) {
@@ -101,8 +101,8 @@ export function stepNonDeterministicTM({ threads, nodes, edges }) {
       if (isAccept) globalAccept = true;
 
       let newTape = [...thread.tape];
-      const valToWrite = trans.rule.write === "␣" ? "" : trans.rule.write;
-      newTape[thread.head] = valToWrite;
+      const valToWrite = trans.rule.write;
+      newTape[thread.head] = valToWrite;    
 
       let newHead = thread.head;
       if (trans.rule.direction === "R") newHead++;
@@ -111,11 +111,11 @@ export function stepNonDeterministicTM({ threads, nodes, edges }) {
       const edgeThreshold = 15;
       const expansionSize = 20;
       if (newHead < edgeThreshold) {
-        const expansion = Array(expansionSize).fill("");
+        const expansion = Array(expansionSize).fill("␣");
         newTape = [...expansion, ...newTape];
         newHead += expansionSize;
       } else if (newHead >= newTape.length - edgeThreshold) {
-        const expansion = Array(expansionSize).fill("");
+        const expansion = Array(expansionSize).fill("␣");
         newTape = [...newTape, ...expansion];
       }
 
@@ -154,11 +154,11 @@ export function stepNonDeterministicTM({ threads, nodes, edges }) {
         const edgeThreshold = 15;
         const expansionSize = 25;
         if (newHead < edgeThreshold) {
-          const expansion = Array(expansionSize).fill("");
+          const expansion = Array(expansionSize).fill("␣");
           newTape = [...expansion, ...newTape];
           newHead += expansionSize;
         } else if (newHead >= newTape.length - edgeThreshold) {
-          const expansion = Array(expansionSize).fill("");
+          const expansion = Array(expansionSize).fill("␣");
           newTape = [...newTape, ...expansion];
         }
 

@@ -42,6 +42,7 @@ export default function TapeDisplay({ tape, head, activeLabel, cellSize = 40, wi
           {tape.map((symbol, index) => {
             const hasMarker = typeof symbol === 'string' && symbol.includes('^');
             const cleanSymbol = hasMarker ? symbol.replace('^', '') : symbol;
+            const displaySymbol = cleanSymbol === '␣' ? " " : cleanSymbol;
 
             return (
               <div
@@ -55,7 +56,7 @@ export default function TapeDisplay({ tape, head, activeLabel, cellSize = 40, wi
               >
                 <div className="cell-content-wrapper">
                   {hasMarker && <span className="diacritic-marker">^</span>}
-                  {cleanSymbol || ""}
+                  {displaySymbol || ""}
                 </div>
               </div>
             );

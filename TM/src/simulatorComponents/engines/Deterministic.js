@@ -42,7 +42,7 @@ export function isHalt(transition) {
 }
 
 export function stepTM({ currentNodeId, tape, head, nodes, edges, stepCount = 0 }) {
-  const read = tape[head] || "";
+  const read = tape[head] || "␣";
 
   const transition = findTransition(currentNodeId, read, edges);
 

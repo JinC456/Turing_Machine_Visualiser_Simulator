@@ -120,13 +120,17 @@ export default function TapeContainer({
     const startPos = Math.floor(defaultSize / 2);
     const chars = inputValue.split("");
     const requiredSize = Math.max(defaultSize, startPos + chars.length);
-    const tape1 = Array(requiredSize).fill("");
-    chars.forEach((char, i) => { tape1[startPos + i] = char === "␣" ? "" : char; });
+    
+    // USE ␣ INSTEAD OF ""
+    const tape1 = Array(requiredSize).fill("␣");
+    // DO NOT STRIP ␣ OUT ANYMORE
+    chars.forEach((char, i) => { tape1[startPos + i] = char; });
 
     if (isNonDeterministic) setThreadNonDet(tape1, startPos); 
     else if (isMultiTape) {
         const newTapes = [tape1];
-        for(let i=1; i<numTapes; i++) newTapes.push(Array(requiredSize).fill(""));
+        // USE ␣ INSTEAD OF ""
+        for(let i=1; i<numTapes; i++) newTapes.push(Array(requiredSize).fill("␣"));
         setTapesMulti(newTapes);
         setHeadsMulti(Array(numTapes).fill(startPos));
     } else {
@@ -134,7 +138,7 @@ export default function TapeContainer({
         setHeadSingle(startPos);
     }
   }, [inputValue, inputError, isMultiTape, isNonDeterministic, numTapes, setThreadNonDet, setTapesMulti, setHeadsMulti, setTapeSingle, setHeadSingle]);
-
+  
   // --- REAL-TIME SYNC ---
   useEffect(() => {
     if (!canUndo && tmStepCount === 0) {
@@ -179,7 +183,7 @@ export default function TapeContainer({
     setIsTimeout(false);
     setInputValue(""); 
     reset(); 
-    const emptyTape = Array(50).fill("");
+    const emptyTape = Array(50).fill("␣");
     const startPos = 25;
     if (isNonDeterministic) setThreadNonDet(emptyTape, startPos);
     else if (isMultiTape) {
@@ -198,7 +202,7 @@ export default function TapeContainer({
     else alert("Rejected: Machine halted in a non-accepting state.");
   };
 
-  const alphabetString = validAlphabet.size > 0 ? [...validAlphabet].sort().join(", ") : "∅";
+  const alphabetString = validAlphabet.size > 0 ? [...validAlphabet].sort().join(", ") : "";
 
   // --- DETERMINISTIC / MULTI-TAPE CARD RENDER ---
   const renderStandardCard = () => {
