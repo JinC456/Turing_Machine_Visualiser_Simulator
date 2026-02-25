@@ -1,24 +1,38 @@
-import React, { useLayoutEffect } from "react";
+
+import React, { useEffect } from "react";
 import { Handle, Position } from "reactflow";
 
-// --- Shared Hook for Node Font Sizing ---
+// --- Shared Hook for Node Font Sizing (Optimized) ---
 export function useAutoFontSize(labelRef, label) {
-  useLayoutEffect(() => {
+  useEffect(() => {
     const element = labelRef.current;
     const parent = element?.parentElement;
-
     if (!element || !parent) return;
 
-    let currentFontSize = 16;
-    element.style.fontSize = `${currentFontSize}px`;
+    const MIN = 8;
+    const MAX = 16;
 
-    while (
-      (element.scrollWidth > parent.clientWidth || element.scrollHeight > parent.clientHeight) &&
-      currentFontSize > 8
-    ) {
-      currentFontSize -= 0.5;
-      element.style.fontSize = `${currentFontSize}px`;
+    let min = MIN;
+    let max = MAX;
+    let best = MIN;
+
+    // Binary search instead of 0.5px loop
+    while (min <= max) {
+      const mid = (min + max) / 2;
+      element.style.fontSize = `${mid}px`;
+
+      if (
+        element.scrollWidth <= parent.clientWidth &&
+        element.scrollHeight <= parent.clientHeight
+      ) {
+        best = mid;
+        min = mid + 0.5;
+      } else {
+        max = mid - 0.5;
+      }
     }
+
+    element.style.fontSize = `${best}px`;
   }, [label]);
 }
 
