@@ -45,9 +45,12 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
   useEffect(() => {
     const handleMouseMove = (e) => {
       if (isDragging) {
+        const HEADER_H = 42; // minimum visible strip to grab (px)
+        const rawX = e.clientX - dragOffset.current.x;
+        const rawY = e.clientY - dragOffset.current.y;
         setPosition({
-          x: e.clientX - dragOffset.current.x,
-          y: e.clientY - dragOffset.current.y
+          x: Math.min(Math.max(rawX, -(size.width  - 120)), window.innerWidth  - 120),
+          y: Math.min(Math.max(rawY,  0),                   window.innerHeight - HEADER_H),
         });
       }
 
@@ -76,7 +79,7 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isDragging, isResizing]);
+  }, [isDragging, isResizing, size]);
 
   // --- DATA PROCESSING ---
   const { 

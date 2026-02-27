@@ -234,6 +234,11 @@ function simReducer(state, action) {
       return { ...state, ...prev, history: state.history.slice(0, -1) };
     }
 
+    case 'FLUSH':
+      // Replace entire state with the synchronously-computed final snapshot.
+      // history is cleared since skip-to-end is not undoable step-by-step.
+      return { ...action.payload, history: [] };
+
     default: return state;
   }
 }
@@ -320,6 +325,77 @@ function useDTMSimulation(rawNodes, rawEdges, mtEdges, initialInput) {
     return () => clearInterval(interval);
   }, [isRunning, step, speed, sim.status]);
 
+  const runToEnd = useCallback(() => {
+    if (sim.status === 'ACCEPTED' || sim.status === 'REJECTED') return;
+    setIsRunning(false);
+
+    // Run the full simulation synchronously using local mutable copies.
+    // We mirror exactly what the reducer does so we don't need to call dispatch
+    // in a loop (which would cause hundreds of re-renders).
+    let curTape = [...sim.tape];
+    let curHead = sim.head;
+    let curNodeId = sim.currentNodeId;
+    let curEdgeId = sim.activeEdgeId;
+    let curRead = sim.activeRead;
+    let curStep = sim.stepCount;
+    let finalStatus = 'RUNNING';
+    let finalMessage = sim.statusMessage;
+
+    while (finalStatus === 'RUNNING') {
+      const outgoing = edgeIndex[curNodeId] || [];
+      const read = curTape[curHead] || '\u2423';
+
+      let matched = null;
+      for (const edge of outgoing) {
+        const rule = (edge.data?.labels || []).find(
+          l => l.read === read || (l.read === '\u2423' && read === '')
+        );
+        if (rule) { matched = { edge, rule }; break; }
+      }
+
+      if (!matched) {
+        finalStatus = 'REJECTED';
+        finalMessage = 'Halted: No transition defined';
+        curEdgeId = null;
+        break;
+      }
+
+      const { edge, rule } = matched;
+      curTape[curHead] = rule.write;
+      let newHead = curHead;
+      if (rule.direction === 'R') newHead++;
+      if (rule.direction === 'L') newHead--;
+      if (newHead < 0) { curTape.unshift(...Array(PADDING).fill('\u2423')); newHead += PADDING; }
+      while (newHead >= curTape.length) curTape.push('\u2423');
+
+      curHead = newHead;
+      curRead = read;
+      curEdgeId = edge.id;
+      curNodeId = edge.target;
+      curStep++;
+
+      if (edge._targetIsAccept) {
+        finalStatus = 'ACCEPTED';
+        finalMessage = 'ACCEPTED!';
+        break;
+      }
+    }
+
+    dispatch({
+      type: 'FLUSH',
+      payload: {
+        tape: curTape,
+        head: curHead,
+        currentNodeId: curNodeId,
+        activeEdgeId: curEdgeId,
+        activeRead: curRead,
+        stepCount: curStep,
+        status: finalStatus,
+        statusMessage: finalMessage,
+      },
+    });
+  }, [sim, edgeIndex]);
+
   return {
     localInput, setLocalInput,
     tape: sim.tape, head: sim.head,
@@ -331,6 +407,7 @@ function useDTMSimulation(rawNodes, rawEdges, mtEdges, initialInput) {
     initialize,
     undo: () => { dispatch({ type: 'UNDO' }); setIsRunning(false); },
     step,
+    runToEnd,
     handleClear: () => setLocalInput(''),
   };
 }
@@ -485,7 +562,8 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
               onStepForward={sim.step}
               onStart={() => sim.setIsRunning(true)}
               onStop={() => sim.setIsRunning(false)}
-              onReset={sim.initialize}
+              onSkipToStart={sim.initialize}
+              onSkipToEnd={sim.runToEnd}
               onClear={sim.handleClear}
               onStepBack={sim.undo}
               isRunning={sim.isRunning}

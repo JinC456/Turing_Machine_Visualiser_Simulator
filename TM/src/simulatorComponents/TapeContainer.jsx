@@ -2,7 +2,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import PlaybackControls from "./PlaybackControls";
 import TapeDisplay from "./TapeDisplay";
-import { useTuringMachine, useMultiTapeTuringMachine, useNonDeterministicTM } from "./TuringMachineLogic";
+import {
+  useTuringMachine, useMultiTapeTuringMachine, useNonDeterministicTM,
+  computeRunToEnd, computeMultiRunToEnd, computeNonDetRunToEnd
+} from "./TuringMachineLogic";
 import { getNodeLabel } from "./engines/Deterministic";
 import "../Visualiser.css"; 
 
@@ -58,7 +61,7 @@ export default function TapeContainer({
   else tm = singleTM;
   
   const { 
-    error, success, stepForward, stepBack, reset, canUndo, stepCount: tmStepCount 
+    error, success, stepForward, stepBack, reset, flushRunToEnd, canUndo, stepCount: tmStepCount 
   } = tm;
 
   const { setTape: setTapeSingle, setHead: setHeadSingle } = singleTM;
@@ -178,6 +181,65 @@ export default function TapeContainer({
     setTimeout(initializeTape, 0); 
   };
 
+  const STEP_LIMIT = 200;
+
+  const handleSkipToEnd = useCallback(() => {
+    setIsRunning(false);
+    setIsTimeout(false);
+
+    const doSkip = (currentTm) => {
+      if (isNonDeterministic) {
+        const result = computeNonDetRunToEnd({
+          threads: currentTm.threads,
+          stepCount: currentTm.stepCount,
+          nodes,
+          edges,
+        });
+        flushRunToEnd(result);
+        // Check if any active threads remain (means we hit the step limit)
+        const timedOut = result.threads
+          ? result.threads.some(t => t.status === 'active') && result.stepCount >= STEP_LIMIT
+          : result.stepCount >= STEP_LIMIT;
+        if (timedOut) setIsTimeout(true);
+      } else if (isMultiTape) {
+        const result = computeMultiRunToEnd({
+          tapes: currentTm.tapes,
+          heads: currentTm.heads,
+          activeNodeId: currentTm.activeNodeId,
+          activeEdgeId: currentTm.activeEdgeId,
+          lastRead: currentTm.lastRead,
+          stepCount: currentTm.stepCount,
+          numTapes,
+          nodes,
+          edges,
+        });
+        flushRunToEnd(result);
+        if (result.stepCount >= STEP_LIMIT && !result.halted && !result.isAccept) setIsTimeout(true);
+      } else {
+        const result = computeRunToEnd({
+          tape: currentTm.tape,
+          head: currentTm.head,
+          activeNodeId: currentTm.activeNodeId,
+          activeEdgeId: currentTm.activeEdgeId,
+          lastRead: currentTm.lastRead,
+          stepCount: currentTm.stepCount,
+          nodes,
+          edges,
+        });
+        flushRunToEnd(result);
+        if (result.stepCount >= STEP_LIMIT && !result.halted && !result.isAccept) setIsTimeout(true);
+      }
+    };
+
+    // If tape hasn't been initialised yet, initialise first then skip
+    if (tmStepCount === 0 && !canUndo) {
+      initializeTape();
+      setTimeout(() => doSkip(tm), 0);
+    } else {
+      doSkip(tm);
+    }
+  }, [tm, isNonDeterministic, isMultiTape, numTapes, nodes, edges, flushRunToEnd, tmStepCount, canUndo, initializeTape, setIsRunning]);
+
   const handleClear = () => {
     setIsRunning(false);
     setIsTimeout(false);
@@ -214,7 +276,7 @@ export default function TapeContainer({
         statusBadgeText = '✔ Accepted';
     } else if (error || isTimeout) {
         cardStatusClass = 'rejected';
-        statusBadgeText = '✖ Rejected';
+        statusBadgeText = '✖ Rejected 🛈';
     } else if (isRunning) {
         cardStatusClass = 'active';
         statusBadgeText = '● Running';
@@ -374,7 +436,8 @@ export default function TapeContainer({
             onStepBack={() => { setIsRunning(false); setIsTimeout(false); stepBack(); }}
             onStart={() => { if (!isFinished && !inputError) setIsRunning(true); }}
             onStop={() => setIsRunning(false)}
-            onReset={handleRestart}
+            onSkipToStart={handleRestart}
+            onSkipToEnd={handleSkipToEnd}
             onClear={handleClear} 
             isRunning={isRunning} isFinished={isFinished || !!inputError} canUndo={canUndo}
         />

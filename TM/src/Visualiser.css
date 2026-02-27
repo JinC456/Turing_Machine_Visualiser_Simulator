@@ -1,4 +1,19 @@
 /* ===========================
+   GLOBAL — disable text selection
+   =========================== */
+
+* {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Re-enable selection only where the user needs to type or copy */
+input, textarea, [contenteditable] {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* ===========================
    ANIMATIONS
    =========================== */
 

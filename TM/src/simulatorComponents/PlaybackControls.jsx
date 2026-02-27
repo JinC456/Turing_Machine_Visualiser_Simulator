@@ -5,35 +5,40 @@ export default function PlaybackControls({
   onStepForward,
   onStart,
   onStop,
-  onReset,
+  onSkipToStart,
+  onSkipToEnd,
   onClear,
   isRunning,
-  isFinished, 
+  isFinished,
   canUndo
 }) {
   return (
     <div className="playback-controls">
-      <button onClick={onStepBack} disabled={isRunning || !canUndo}>
+      <button onClick={onSkipToStart} disabled={isRunning} title="Skip to Start">
+        ◀◀
+      </button>
+
+      <button onClick={onStepBack} disabled={isRunning || !canUndo} title="Step Back">
         ◀
       </button>
 
-      <button onClick={onStepForward} disabled={isRunning || isFinished}>
+      <button onClick={onStepForward} disabled={isRunning || isFinished} title="Step Forward">
         ▶
       </button>
 
-      <button onClick={onStart} disabled={isRunning || isFinished}>
+      <button onClick={onSkipToEnd} disabled={isRunning || isFinished} title="Skip to End">
+        ▶▶
+      </button>
+
+      <button onClick={onStart} disabled={isRunning || isFinished} title="Auto Run">
         Start
       </button>
 
-      <button onClick={onStop} disabled={!isRunning}>
+      <button onClick={onStop} disabled={!isRunning} title="Stop">
         Stop
       </button>
 
-      <button onClick={onReset}>
-        Restart
-      </button>
-
-      <button onClick={onClear}>
+      <button onClick={onClear} title="Clear">
         Clear
       </button>
     </div>
