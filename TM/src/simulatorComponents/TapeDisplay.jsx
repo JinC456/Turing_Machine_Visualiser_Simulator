@@ -2,7 +2,7 @@
 import React, { useRef, useEffect } from "react";
 import "../Visualiser.css";
 
-export default function TapeDisplay({ tape, head, activeLabel, cellSize = 40, width = "80vw" }) {
+export default function TapeDisplay({ tape, head, activeLabel, cellSize = 40, width = "80vw", instantScroll = false }) {
   const prevHead = useRef(head);
   const wrapperRef = useRef(null); // 1. Create a ref for the wrapper
   const isJump = Math.abs(head - prevHead.current) > 1;
@@ -35,7 +35,7 @@ export default function TapeDisplay({ tape, head, activeLabel, cellSize = 40, wi
           style={{ 
             left: `calc(50% - ${cellSize / 2}px)`,
             transform: `translateX(${-head * cellSize}px)`,
-            transition: isJump ? "none" : "transform 0.3s ease-in-out",
+            transition: instantScroll || isJump ? "none" : "transform 0.3s ease-in-out",
             height: `${cellSize}px` 
           }}
         >

@@ -1,38 +1,43 @@
-
 import React, { useEffect } from "react";
 import { Handle, Position } from "reactflow";
 
-// --- Shared Hook for Node Font Sizing (Optimized) ---
 export function useAutoFontSize(labelRef, label) {
   useEffect(() => {
-    const element = labelRef.current;
-    const parent = element?.parentElement;
-    if (!element || !parent) return;
+    // Defer to after layout so clientWidth/scrollWidth are real values.
+    // This also batches the reflow cost across frames when many nodes mount at once.
+    const raf = requestAnimationFrame(() => {
+      const element = labelRef.current;
+      const parent = element?.parentElement;
+      if (!element || !parent) return;
+      // Skip if parent has no size yet (off-screen or unmeasured)
+      if (parent.clientWidth === 0 || parent.clientHeight === 0) return;
 
-    const MIN = 8;
-    const MAX = 16;
+      const MIN = 8;
+      const MAX = 16;
 
-    let min = MIN;
-    let max = MAX;
-    let best = MIN;
+      let min = MIN;
+      let max = MAX;
+      let best = MIN;
 
-    // Binary search instead of 0.5px loop
-    while (min <= max) {
-      const mid = (min + max) / 2;
-      element.style.fontSize = `${mid}px`;
+      while (min <= max) {
+        const mid = (min + max) / 2;
+        element.style.fontSize = `${mid}px`;
 
-      if (
-        element.scrollWidth <= parent.clientWidth &&
-        element.scrollHeight <= parent.clientHeight
-      ) {
-        best = mid;
-        min = mid + 0.5;
-      } else {
-        max = mid - 0.5;
+        if (
+          element.scrollWidth <= parent.clientWidth &&
+          element.scrollHeight <= parent.clientHeight
+        ) {
+          best = mid;
+          min = mid + 0.5;
+        } else {
+          max = mid - 0.5;
+        }
       }
-    }
 
-    element.style.fontSize = `${best}px`;
+      element.style.fontSize = `${best}px`;
+    });
+
+    return () => cancelAnimationFrame(raf);
   }, [label]);
 }
 

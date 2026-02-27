@@ -3,7 +3,6 @@ import React, { useState, useEffect, useCallback, useMemo, useRef, useReducer } 
 import ReactFlow, {
   Background,
   Controls,
-  MiniMap,
   useNodesState,
   useEdgesState,
   ReactFlowProvider,
@@ -48,136 +47,132 @@ function buildInitialTape(inputStr, mtEdges) {
     tape.push('^' + firstChar);
     tape.push(...inputChars.slice(1).map(c => c === ' ' ? '␣' : c));
   } else {
-    tape.push('^␣');   
+    tape.push('^␣');
   }
 
   for (let i = 1; i < numTapes; i++) {
     tape.push('|');
-    tape.push('^␣');   
+    tape.push('^␣');
   }
   tape.push('|');
   tape.push(...blanks);
 
-  return { tape, head: PADDING }; // head starts on the first |
+  return { tape, head: PADDING };
 }
 
 // ── Auto-pan ───────────────────────────────────────────────────────────────
-function useAutoPan(activeNodeId, isRunning) {
+// Always instant (duration:0). Runs on every stepCount change so self-loops
+// also trigger a pan even when activeNodeId doesn't change.
+function useAutoPan(activeNodeId, stepCount) {
   const { setCenter, getNodes } = useReactFlow();
-  const prevId = useRef(null);
-  const timerRef = useRef(null);
 
   useEffect(() => {
-    if (!activeNodeId || activeNodeId === prevId.current) return;
-    prevId.current = activeNodeId;
-
-    const delay = isRunning ? 300 : 50;
-
-    clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => {
-      const target = getNodes().find(n => n.id === activeNodeId);
-      if (!target) return;
-      const { x, y } = target.position;
-      const w = target.width  ?? 150;
-      const h = target.height ?? 50;
-      setCenter(x + w / 2, y + h / 2, { duration: isRunning ? 0 : 250, zoom: 1 });
-    }, delay);
-
-    return () => clearTimeout(timerRef.current);
-  }, [activeNodeId, isRunning, setCenter, getNodes]);
+    if (!activeNodeId) return;
+    const target = getNodes().find(n => n.id === activeNodeId);
+    if (!target) return;
+    const { x, y } = target.position;
+    const w = target.width  ?? 150;
+    const h = target.height ?? 50;
+    setCenter(x + w / 2, y + h / 2, { duration: 0, zoom: 1 });
+  }, [activeNodeId, stepCount, setCenter, getNodes]);
 }
 
 // ── Live diagram (inside ReactFlowProvider) ────────────────────────────────
-function LiveDiagram({ rawNodes, rawEdges, activeNodeId, activeEdgeId, activeSymbol, isRunning }) {
-  
-  const initialNodes = useMemo(() => rawNodes.map(n => ({
-    ...n, 
-    style: { ...(n.style || {}), border: '2px solid #aaa', borderRadius: 8 }
+const BATCH_SIZE = 50; // nodes added per frame during initial load
+
+function LiveDiagram({ rawNodes, rawEdges, activeNodeId, activeEdgeId, activeSymbol, stepCount, onReady }) {
+
+  const styledNodes = useMemo(() => rawNodes.map(n => ({
+    ...n,
+    style: { ...(n.style || {}), border: 'none', boxShadow: 'none', background: 'transparent', transition: 'none' },
   })), [rawNodes]);
 
-  const initialEdges = useMemo(() => rawEdges.map(e => ({
-    ...e, 
-    markerEnd: { ...e.markerEnd, color: '#333' }
+  const styledEdges = useMemo(() => rawEdges.map(e => ({
+    ...e,
+    markerEnd: { ...e.markerEnd, color: '#333' },
+    data: { ...e.data, isActive: false, activeSymbol: null },
   })), [rawEdges]);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-
-  // Hook handles auto-panning directly
-  useAutoPan(activeNodeId, isRunning);
+  // Progressive loading: start empty, add BATCH_SIZE nodes per rAF frame
+  const [visibleCount, setVisibleCount] = useState(0);
+  const isLoaded = visibleCount >= styledNodes.length;
 
   useEffect(() => {
-    // 1. UPDATE NODES (Self-healing & High-performance)
+    setVisibleCount(0); // reset on new graph
+  }, [styledNodes]);
+
+  useEffect(() => {
+    if (isLoaded) { onReady?.(); return; }
+    const raf = requestAnimationFrame(() => {
+      setVisibleCount(c => Math.min(c + BATCH_SIZE, styledNodes.length));
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [visibleCount, isLoaded, styledNodes.length, onReady]);
+
+  const visibleNodes = useMemo(() => styledNodes.slice(0, visibleCount), [styledNodes, visibleCount]);
+  // Only show edges once all nodes are loaded (edges reference node positions)
+  const visibleEdges = isLoaded ? styledEdges : [];
+
+  const [nodes, setNodes, onNodesChange] = useNodesState(visibleNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(visibleEdges);
+
+  // Sync as batches arrive and when fully loaded
+  useEffect(() => { setNodes(visibleNodes); }, [visibleNodes, setNodes]);
+  useEffect(() => { if (isLoaded) setEdges(styledEdges); }, [isLoaded, styledEdges, setEdges]);
+
+  // Refs tracking what's currently highlighted so we know what to deactivate
+  const prevNodeId = useRef(null);
+  const prevEdgeId = useRef(null);
+  const prevSymbol = useRef(null);
+
+  // Node highlight: surgical O(1) patch
+  useEffect(() => {
+    if (!isLoaded) return;
+    const prev = prevNodeId.current;
+    prevNodeId.current = activeNodeId;
     setNodes(nds => nds.map(n => {
-      const isTarget = n.id === activeNodeId;
-      const isCurrentlyActive = !!n.data?.isActive;
-
-      // Case A: This is the active node, but it's not yellow yet.
-      if (isTarget && !isCurrentlyActive) {
-        return { 
-          ...n, 
-          data: { ...n.data, isActive: true }, 
-          style: { ...n.style, border: '3px solid #e8d71a', boxShadow: '0 0 12px 3px rgba(232,215,26,0.6)' } 
-        };
-      }
-      
-      // Case B: This node IS yellow, but it shouldn't be (Cleans up ALL ghosts instantly)
-      if (!isTarget && isCurrentlyActive) {
-        return { 
-          ...n, 
-          data: { ...n.data, isActive: false }, 
-          style: { ...n.style, border: '2px solid #aaa', boxShadow: 'none' } 
-        };
-      }
-      
-      // Case C: Node is fine. Return EXACT reference to prevent React re-renders.
-      return n; 
+      if (n.id === prev && n.id !== activeNodeId)
+        return { ...n, data: { ...n.data, isActive: false }, style: { ...n.style, border: 'none', boxShadow: 'none', background: 'transparent' } };
+      if (n.id === activeNodeId)
+        return { ...n, data: { ...n.data, isActive: true }, style: { ...n.style, border: 'none', boxShadow: 'none', background: 'transparent' } };
+      return n;
     }));
+  }, [activeNodeId, isLoaded, setNodes]);
 
-    // 2. UPDATE EDGES
+  // Edge highlight: surgical O(1) patch
+  useEffect(() => {
+    if (!isLoaded) return;
+    const prev = prevEdgeId.current;
+    const edgeChanged = prev !== activeEdgeId;
+    prevEdgeId.current = activeEdgeId;
+    prevSymbol.current = activeSymbol;
     setEdges(eds => eds.map(e => {
-      const isTarget = e.id === activeEdgeId;
-      const isCurrentlyActive = !!e.data?.isActive;
-      const symbolChanged = e.data?.activeSymbol !== activeSymbol;
-
-      // Update if it's the target and needs highlighting, OR if the active symbol changed (e.g., self-loops)
-      if (isTarget && (!isCurrentlyActive || symbolChanged)) {
-        return { 
-          ...e, 
-          markerEnd: { ...e.markerEnd, color: '#e8d71a' }, 
-          data: { ...e.data, isActive: true, activeSymbol } 
-        };
-      }
-
-      // Cleanup ghosts
-      if (!isTarget && isCurrentlyActive) {
-        return { 
-          ...e, 
-          markerEnd: { ...e.markerEnd, color: '#333' }, 
-          data: { ...e.data, isActive: false, activeSymbol: null } 
-        };
-      }
-
+      if (edgeChanged && e.id === prev && e.id !== activeEdgeId)
+        return { ...e, markerEnd: { ...e.markerEnd, color: '#333' }, data: { ...e.data, isActive: false, activeSymbol: null } };
+      if (e.id === activeEdgeId)
+        return { ...e, markerEnd: { ...e.markerEnd, color: '#e8d71a' }, data: { ...e.data, isActive: true, activeSymbol } };
       return e;
     }));
+  }, [activeEdgeId, activeSymbol, stepCount, isLoaded, setEdges]);
 
-  }, [activeNodeId, activeEdgeId, activeSymbol, setNodes, setEdges]);
+  // Auto-pan: only once loaded, instant, fires on every step including self-loops
+  useAutoPan(isLoaded ? activeNodeId : null, stepCount);
 
   return (
     <ReactFlow
       nodes={nodes} edges={edges}
       nodeTypes={nodeTypes} edgeTypes={edgeTypes}
       onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
-      fitView fitViewOptions={{ padding: 0.3 }}
+      fitView fitViewOptions={{ padding: 1.2 }}
+      minZoom={0.05}
     >
       <Background />
       <Controls />
-      <MiniMap />
     </ReactFlow>
   );
 }
 
-// ── Single-tape DTM simulation hook ─────────────────────────────────────────
+// ── Single-tape DTM simulation ─────────────────────────────────────────────
 function simInit(rawNodes, mtEdges, localInput) {
   const startNode = getStartNode(rawNodes);
   if (!startNode) return null;
@@ -205,8 +200,13 @@ function simReducer(state, action) {
         stepCount: state.stepCount, status: state.status, statusMessage: state.statusMessage,
       };
       if (result.halted) {
-        return { ...state, status: 'REJECTED', statusMessage: `Halted: ${result.reason}`,
-          activeEdgeId: null, history: [...state.history, snapshot] };
+        return {
+          ...state, status: 'REJECTED',
+          statusMessage: `Halted: ${result.reason}`,
+          activeEdgeId: null,
+          activeRead: null,
+          history: [...state.history, snapshot],
+        };
       }
       const newTape = [...state.tape];
       newTape[state.head] = result.write;
@@ -220,6 +220,7 @@ function simReducer(state, action) {
         tape: newTape, head: newHead,
         currentNodeId: result.toNodeId,
         activeEdgeId: result.edgeId,
+        activeRead: result.read,
         stepCount: result.stepCount,
         status: result.isAccept ? 'ACCEPTED' : 'RUNNING',
         statusMessage: result.isAccept ? 'ACCEPTED!' : state.statusMessage,
@@ -247,14 +248,13 @@ function useDTMSimulation(rawNodes, rawEdges, mtEdges, initialInput) {
     stepCount: 0, status: 'IDLE', statusMessage: 'Ready.', history: [],
   }));
 
+  // Build edge index from rawEdges so the sim always uses the same IDs
+  // that LiveDiagram's useEdgesState was initialised with.
   const edgeIndex = useMemo(() => {
     const nodeMap = Object.fromEntries(rawNodes.map(n => [n.id, n]));
     const idx = {};
     for (const e of rawEdges) {
-      const enriched = {
-        ...e,
-        _targetIsAccept: nodeMap[e.target]?.type === 'accept',
-      };
+      const enriched = { ...e, _targetIsAccept: nodeMap[e.target]?.type === 'accept' };
       (idx[e.source] ||= []).push(enriched);
     }
     return idx;
@@ -283,21 +283,32 @@ function useDTMSimulation(rawNodes, rawEdges, mtEdges, initialInput) {
     }
 
     if (!matched) {
-      dispatch({ type: 'STEP', result: { halted: true, reason: 'No transition defined', read, fromNodeId: sim.currentNodeId, stepCount: sim.stepCount }, PAD: PADDING });
+      dispatch({
+        type: 'STEP',
+        result: {
+          halted: true, reason: 'No transition defined',
+          read, fromNodeId: sim.currentNodeId, stepCount: sim.stepCount,
+        },
+        PAD: PADDING,
+      });
       return;
     }
 
     const { edge, rule } = matched;
-    dispatch({ type: 'STEP', result: {
-      halted: false,
-      read, write: rule.write, direction: rule.direction,
-      fromNodeId: sim.currentNodeId,
-      toNodeId: edge.target,
-      edgeId: edge.id,
-      isAccept: edge._targetIsAccept,
-      rule,
-      stepCount: sim.stepCount + 1,
-    }, PAD: PADDING });
+    dispatch({
+      type: 'STEP',
+      result: {
+        halted: false,
+        read, write: rule.write, direction: rule.direction,
+        fromNodeId: sim.currentNodeId,
+        toNodeId: edge.target,
+        edgeId: edge.id,
+        isAccept: edge._targetIsAccept,
+        rule,
+        stepCount: sim.stepCount + 1,
+      },
+      PAD: PADDING,
+    });
   }, [sim, edgeIndex]);
 
   useEffect(() => {
@@ -312,7 +323,7 @@ function useDTMSimulation(rawNodes, rawEdges, mtEdges, initialInput) {
   return {
     localInput, setLocalInput,
     tape: sim.tape, head: sim.head,
-    currentNodeId: sim.currentNodeId, activeEdgeId: sim.activeEdgeId,
+    currentNodeId: sim.currentNodeId, activeEdgeId: sim.activeEdgeId, activeRead: sim.activeRead,
     stepCount: sim.stepCount, status: sim.status, statusMessage: sim.statusMessage,
     isRunning, setIsRunning,
     speed, setSpeed,
@@ -328,27 +339,38 @@ function useDTMSimulation(rawNodes, rawEdges, mtEdges, initialInput) {
 export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, onClose }) {
   const defaultInput = mtNodes.find(n => n.type === 'start')?.data?.input || '';
 
-  const { nodes: rawNodes, edges: rawEdges } = useMemo(
-    () => convertMultiToSingle(mtNodes, mtEdges),
-    [mtNodes, mtEdges]
-  );
+  const [converted, setConverted] = useState(null);
+  const [isRendering, setIsRendering] = useState(false);
+
+  useEffect(() => {
+    setConverted(null);
+    setIsRendering(false);
+    const timer = setTimeout(() => {
+      const result = convertMultiToSingle(mtNodes, mtEdges);
+      setConverted(result);
+      setIsRendering(true); // graph data ready, now rendering starts
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [mtNodes, mtEdges]);
+
+  const rawNodes = converted?.nodes ?? [];
+  const rawEdges = converted?.edges ?? [];
+  const isLoading = converted === null || isRendering;
 
   const sim = useDTMSimulation(rawNodes, rawEdges, mtEdges, defaultInput);
 
-  const activeSymbol = useMemo(() => {
-    return sim.tape[sim.head] ?? '␣';
-  }, [sim.tape, sim.head]);
+  // activeRead is the symbol read BEFORE the write — needed to match label.read in DraggableEdge
+  const activeSymbol = sim.activeRead ?? null;
 
   const activeNodeLabel = useMemo(() => {
     const n = rawNodes.find(n => n.id === sim.currentNodeId);
     return n?.data?.label || sim.currentNodeId || '';
   }, [rawNodes, sim.currentNodeId]);
 
-
   const isAccepted = sim.status === 'ACCEPTED';
   const isRejected = sim.status === 'REJECTED';
   const isFinished = isAccepted || isRejected;
-  const cardStatus = isAccepted ? 'accepted' : isRejected ? 'rejected' : sim.status === 'RUNNING' ? 'active' : 'active';
+  const cardStatus = isAccepted ? 'accepted' : isRejected ? 'rejected' : 'active';
   const badgeLabel = isAccepted ? '✔ ACCEPTED' : isRejected ? '✖ REJECTED' : sim.isRunning ? '● RUNNING' : 'READY';
 
   return (
@@ -367,18 +389,45 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
         boxShadow: '0 8px 40px rgba(0,0,0,0.45)',
       }}>
 
+        {/* Loading overlay — shown while converting and rendering */}
+        {isLoading && (
+          <div style={{
+            position: 'absolute', inset: 0, zIndex: 10,
+            background: 'rgba(249,249,249,0.97)',
+            display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
+            gap: 14, borderRadius: 10,
+            fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+          }}>
+            <style>{`@keyframes cdm-spin { to { transform: rotate(360deg); } }`}</style>
+            <button onClick={onClose} style={{
+              position: 'absolute', top: 10, right: 12,
+              padding: '6px 13px', borderRadius: 6, cursor: 'pointer',
+              background: 'transparent', border: '1px solid #ccc',
+              fontSize: 20, lineHeight: 1, color: '#555',
+            }}>×</button>
+            <div style={{
+              width: 44, height: 44, borderRadius: '50%',
+              border: '4px solid #eee', borderTopColor: '#e8d71a',
+              animation: 'cdm-spin 0.8s linear infinite',
+            }} />
+            <div style={{ fontSize: 14, fontWeight: 500, color: '#555' }}>
+              {converted === null ? 'Converting…' : 'Rendering…'}
+            </div>
+          </div>
+        )}
+
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           padding: '10px 18px', borderBottom: '1px solid #e0e0e0',
           background: '#fafafa', flexShrink: 0,
         }}>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={onClose} style={{
-              padding: '6px 13px', borderRadius: 6, cursor: 'pointer',
-              background: 'transparent', border: '1px solid #ccc',
-              fontSize: 20, lineHeight: 1, color: '#555',
-            }}>×</button>
-          </div>
+          <span style={{ fontWeight: 600, fontSize: 14, color: '#333' }}></span>
+          <button onClick={onClose} style={{
+            padding: '6px 13px', borderRadius: 6, cursor: 'pointer',
+            background: 'transparent', border: '1px solid #ccc',
+            fontSize: 20, lineHeight: 1, color: '#555',
+          }}>×</button>
         </div>
 
         <div style={{
@@ -393,9 +442,7 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
                   <div style={{ width: 14, height: 14, borderRadius: 3, backgroundColor: '#333', border: '1px solid rgba(0,0,0,0.1)' }} />
                   <span className="thread-name">Sipser Single-Tape Equivalent</span>
                 </div>
-                <span className="thread-meta">
-                  Step: {sim.stepCount}
-                </span>
+                <span className="thread-meta">Step: {sim.stepCount}</span>
               </div>
               <span
                 className={`thread-status-badge ${cardStatus}`}
@@ -412,6 +459,7 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
               activeLabel={activeNodeLabel}
               cellSize={CELL_SIZE}
               width="100%"
+              instantScroll={true} 
             />
           </div>
 
@@ -468,16 +516,34 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
           </div>
 
           <div style={{ flex: 1, minHeight: 0 }}>
-            <ReactFlowProvider>
-              <LiveDiagram
-                rawNodes={rawNodes}
-                rawEdges={rawEdges}
-                activeNodeId={sim.currentNodeId}
-                activeEdgeId={sim.activeEdgeId}
-                activeSymbol={activeSymbol}
-                isRunning={sim.isRunning}
-              />
-            </ReactFlowProvider>
+            {/* Strip transitions/animations — with 200+ states every border-color
+                and stroke animation fires simultaneously per step, causing severe lag */}
+            <style>{`
+              .cdm-no-transition .node,
+              .cdm-no-transition .node-ring,
+              .cdm-no-transition .edge-path,
+              .cdm-no-transition .react-flow__edge-path,
+              .cdm-no-transition .react-flow__node,
+              .cdm-no-transition .react-flow__handle,
+              .cdm-no-transition svg path,
+              .cdm-no-transition svg text {
+                transition: none !important;
+                animation: none !important;
+              }
+            `}</style>
+            <div className="cdm-no-transition" style={{ width: '100%', height: '100%' }}>
+              <ReactFlowProvider>
+                <LiveDiagram
+                  rawNodes={rawNodes}
+                  rawEdges={rawEdges}
+                  activeNodeId={sim.currentNodeId}
+                  activeEdgeId={sim.activeEdgeId}
+                  activeSymbol={activeSymbol}
+                  stepCount={sim.stepCount}
+                  onReady={() => setIsRendering(false)}
+                />
+              </ReactFlowProvider>
+            </div>
           </div>
         </div>
 
