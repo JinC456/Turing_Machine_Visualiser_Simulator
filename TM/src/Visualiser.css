@@ -1,48 +1,38 @@
-/* ===========================
-   GLOBAL — disable text selection
-   =========================== */
-
+/* global */
 * {
   user-select: none;
   -webkit-user-select: none;
 }
 
-/* Re-enable selection only where the user needs to type or copy */
-input, textarea, [contenteditable] {
+input,
+textarea,
+[contenteditable] {
   user-select: text;
   -webkit-user-select: text;
 }
 
-/* ===========================
-   ANIMATIONS
-   =========================== */
-
+/* animations */
 @keyframes edge-pulse {
-  0% { stroke-width: 3; filter: drop-shadow(0 0 3px rgba(205, 232, 26, 0.4)); }
-  50% { stroke-width: 5; filter: drop-shadow(0 0 8px rgba(205, 232, 26, 0.8)); }
-  100% { stroke-width: 3; filter: drop-shadow(0 0 3px rgba(205, 232, 26, 0.4)); }
+  0%, 100% { stroke-width: 3; filter: drop-shadow(0 0 3px rgba(205, 232, 26, 0.4)); }
+  50%       { stroke-width: 5; filter: drop-shadow(0 0 8px rgba(205, 232, 26, 0.8)); }
 }
 
 @keyframes thread-pulse {
-  0% { filter: brightness(1) drop-shadow(0 0 1px rgba(0,0,0,0.1)); }
-  50% { filter: brightness(1.4) drop-shadow(0 0 4px rgba(255,255,255,0.5)); }
-  100% { filter: brightness(1) drop-shadow(0 0 1px rgba(0,0,0,0.1)); }
+  0%, 100% { filter: brightness(1) drop-shadow(0 0 1px rgba(0, 0, 0, 0.1)); }
+  50%       { filter: brightness(1.4) drop-shadow(0 0 4px rgba(255, 255, 255, 0.5)); }
 }
 
 @keyframes slideDown {
   from { opacity: 0; transform: translateY(-5px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-/* FIX: Added missing @keyframes that was referenced by .popup-menu but never defined */
 @keyframes popIn {
   from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
-/* ===========================
-   GENERAL
-   =========================== */
+/* layout */
 .visualiser {
   display: flex;
   flex-direction: column;
@@ -55,30 +45,55 @@ input, textarea, [contenteditable] {
 .diagram-container-wrapper {
   display: flex;
   align-items: flex-start;
+  justify-content: center;
   gap: 20px;
   width: 100%;
-  justify-content: center;
 }
 
 .diagram-container {
   display: grid;
-  grid-template-columns: 150px 1fr 150px; 
+  grid-template-columns: 150px 1fr 150px;
   gap: 20px;
   align-items: flex-start;
-  user-select: none;
-  width: 90vw; 
+  width: 90vw;
   margin: 0 auto;
 }
 
-/* ===========================
-   NODE
-   =========================== */
+.reactflow-wrapper {
+  grid-column: 2;
+  width: 100%;
+  height: 65vh;
+  border: 3px solid transparent;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  box-sizing: border-box;
+  transition: border 0.3s ease;
+}
+
+.reactflow-wrapper.locked { border-color: #ec7505; }
+
+/* node */
 .node-menu {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 25px; 
+  gap: 16px;
   padding-top: 10px;
+}
+
+.node-menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.node-menu-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .node-container {
@@ -87,7 +102,10 @@ input, textarea, [contenteditable] {
   transition: transform 0.2s ease;
 }
 
-.node-container:active { cursor: grabbing; transform: scale(1.02); }
+.node-container:active {
+  cursor: grabbing;
+  transform: scale(1.02);
+}
 
 .node {
   width: 50px;
@@ -98,8 +116,8 @@ input, textarea, [contenteditable] {
   justify-content: center;
   align-items: center;
   padding: 2px;
-  background-color: white; 
-  position: relative; 
+  background-color: white;
+  position: relative;
   box-sizing: border-box;
   transition: transform 0.2s ease, border-color 0.2s ease;
 }
@@ -110,7 +128,19 @@ input, textarea, [contenteditable] {
 }
 
 .node.active .node-body {
-  box-shadow: 0 0 8px rgba(0,0,0,0.1);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+}
+
+.node-body {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
+  background-color: inherit;
+  box-sizing: border-box;
+  z-index: 2;
 }
 
 .inner-circle {
@@ -124,11 +154,8 @@ input, textarea, [contenteditable] {
   padding: 2px;
 }
 
-/* FIX: .start and .normal were both just `background-color: white` — combined into one rule.
-   The base .node already sets white, so this is only needed for .accept which differs. */
 .accept { background-color: #6ad66a; }
-.start, .normal { background-color: white; }
-
+/* .start and .normal inherit white from .node */
 .arrow {
   position: absolute;
   left: -20px;
@@ -136,39 +163,24 @@ input, textarea, [contenteditable] {
   transform: translateY(-50%);
   font-size: 20px;
   color: black;
-  user-select: none;
   pointer-events: none;
 }
 
-/* --- NODE RINGS (NTM) --- */
+/* node rings (ntm) */
 .node-ring {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%); 
+  transform: translate(-50%, -50%);
   border: 3px solid;
   border-radius: 50%;
   pointer-events: none;
   transition: all 0.2s ease;
-  z-index: -1; 
+  z-index: -1;
   animation: thread-pulse 0.4s ease-out;
 }
 
-.node-body {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border-radius: 50%;
-  background-color: inherit; 
-  box-sizing: border-box; 
-  z-index: 2; 
-}
-
-/* ===========================
-   HANDLE
-   =========================== */
+/* handle */
 .react-flow__handle {
   opacity: 0;
   transition: opacity 0.2s;
@@ -178,11 +190,9 @@ input, textarea, [contenteditable] {
 
 .node:hover .react-flow__handle { opacity: 1; }
 
-/* ===========================
-   EDGE
-   =========================== */
-.react-flow__edges { z-index: 10 !important; }  
-   
+/* edge */
+.react-flow__edges { z-index: 10 !important; }
+
 .edge-path {
   stroke: #333;
   stroke-width: 2;
@@ -192,21 +202,23 @@ input, textarea, [contenteditable] {
 
 .edge-path.selected { stroke: black; stroke-width: 3; }
 
-/* DTM / MultiTape Active Edge */
 .edge-path.active {
   stroke: #e8d71a;
   animation: edge-pulse 0.4s ease-out;
-  transition: stroke 0.2s ease;
 }
 
-/* NTM Active Thread Edge */
 .edge-path.active-thread {
   animation: thread-pulse 0.5s ease-out;
 }
 
 .edge-path.active ~ marker { fill: #e8d71a; stroke: #e8d71a; }
 
-.edge-hitbox { stroke: transparent; stroke-width: 20; fill: none; pointer-events: stroke; }
+.edge-hitbox {
+  stroke: transparent;
+  stroke-width: 20;
+  fill: none;
+  pointer-events: stroke;
+}
 
 .edge-handle {
   r: 8px;
@@ -217,187 +229,47 @@ input, textarea, [contenteditable] {
   pointer-events: all;
 }
 
-/* ===========================
-   DIAGRAM CONTROLS
-   =========================== */
+/* diagram controls */
 .diagram-controls {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 12px;
+  align-items: stretch;
+  gap: 4px;
+  width: 130px;
+}
+
+.diagram-controls button {
+  padding: 7px 10px;
+  font-size: 0.85rem;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-weight: 500;
+  color: #333;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  text-align: center;
   width: 100%;
+}
+
+.diagram-controls button:hover:not(:disabled) {
+  background-color: #f0f0f0;
+  border-color: #aaa;
 }
 
 .diagram-controls button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.history-controls { display: flex; flex-direction: row; gap: 12px; }
-
-.reactflow-wrapper {
-  grid-column: 2;
-  width: 100%;
-  height: 65vh; 
-  border: 3px solid transparent; 
-  border-radius: 8px;
-  background-color: #f9f9f9;
-  box-sizing: border-box; 
-  transition: border 0.3s ease;
-}
-
-.reactflow-wrapper.locked { border: 3px solid #ec7505; }
-
-/* ===========================
-   TAPE & STATUS
-   =========================== */
-.tape-container {
+.history-controls {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  position: relative;
-  padding: 10px 0 20px 0; 
-  width: 100%; 
+  gap: 4px;
 }
 
-.tape-top-bar {
-  width: 80vw; 
-  display: flex;
-  justify-content: flex-start; 
-  margin: 0 auto; 
-  padding-left: 2px;
-  z-index: 10;
-  margin-bottom: -40px; 
+.history-controls button {
+  flex: 1;
 }
 
-.step-counter-display {
-  display: flex;
-  align-items: center;
-  background-color: #ffffff;
-  overflow: hidden;
-  margin-bottom: 0px; 
-}
-
-.step-label {
-  color: #000000;
-  padding: 4px 8px;
-  font-size: 1rem;
-  font-weight: bold;
-  text-transform: uppercase;
-}
-
-.step-value {
-  font-size: 1rem;
-  font-weight: bold;
-  color: #000000;
-  min-width: 10px;
-  text-align: center;
-  background: white;
-  padding: 4px 0px; 
-}
-
-/* --- Multi-Tape Layout --- */
-.multitape-container {
-  display: flex;
-  flex-direction: column;
-  gap: 60px;
-  width: 100%;
-  align-items: center;
-  padding-top: 20px;
-}
-
-.multitape-row {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  width: 90%;
-}
-
-.multitape-label {
-  font-weight: 600;
-  font-size: 1.2rem;
-  color: #333;
-  width: 100px;
-  text-align: right;
-  margin-right: 25px;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.tape-display-wrapper { 
-  position: relative; 
-  width: 100%;
-  overflow: hidden !important;
-  border: 2px solid #d2e3fc;
-  border-radius: 6px;
-  background-color: #f8f8f8;
-  height: 50px;
-  display: flex;
-  align-items: center;
-}
-
-/* FIX: Removed .singletape-wrapper — not referenced in any JSX component */
-
-/* Tape Wrapper */
-.tape-wrapper {
-  width: 100%;
-  position: relative;
-  overflow: hidden !important; 
-  border-radius: 6px;         
-}
-
-.tape-header {
-  position: absolute;
-  top: -48px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 100;
-  pointer-events: none;
-}
-
-.tape-pointer { display: flex; flex-direction: column; align-items: center; }
-
-.tape-start-label {
-  font-size: 16px; 
-  font-weight: 800;
-  color: #555; 
-  white-space: nowrap;
-}
-
-.tape-arrow {
-  font-size: 32px; 
-  line-height: 0.6;
-  color: #777; 
-}
-
-.tape {
-  display: flex;
-  position: relative;
-  height: 40px;
-  left: calc(50% - 20px); 
-  transition: transform 0.2s ease-out;
-}
-
-.cell {
-  height: 40px;
-  width: 40px;
-  border: 1px solid #ddd;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  background-color: white;
-  flex-shrink: 0;
-  box-sizing: border-box;
-}
-
-.cell.active {
-  background-color: #d7e9ff;
-  border: 2px solid #1a73e8;
-}
-
-/* ===========================
-   CONTROLS ROW
-   =========================== */
+/* controls row */
 .controls-row {
   display: flex;
   align-items: center;
@@ -421,11 +293,7 @@ input, textarea, [contenteditable] {
 .tape-input:focus { border-color: #1a73e8; }
 .tape-input.error { border-color: #d9534f; background-color: #fdf7f7; }
 
-/* FIX: Removed `position: relative; bottom: auto;` — bottom has no effect on relative positioning */
-.playback-controls {
-  display: flex;
-  gap: 5px;
-}
+.playback-controls { display: flex; gap: 5px; }
 
 .playback-controls button {
   padding: 8px 12px;
@@ -452,15 +320,152 @@ input, textarea, [contenteditable] {
 
 .speed-control input[type="range"] { width: 100px; cursor: pointer; }
 
-/* ===========================
-   POPUP (GENERIC)
-   =========================== */
+/* tape & status */
+.tape-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  position: relative;
+  padding: 10px 0 20px;
+  width: 100%;
+}
+
+.tape-top-bar {
+  width: 80vw;
+  display: flex;
+  justify-content: flex-start;
+  margin: 0 auto -40px;
+  padding-left: 2px;
+  z-index: 10;
+}
+
+.step-counter-display {
+  display: flex;
+  align-items: center;
+  background-color: #fff;
+  overflow: hidden;
+}
+
+.step-label {
+  color: #000;
+  padding: 4px 8px;
+  font-size: 1rem;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.step-value {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #000;
+  min-width: 10px;
+  text-align: center;
+  background: white;
+  padding: 4px 0;
+}
+
+/* multi-tape layout */
+.multitape-container {
+  display: flex;
+  flex-direction: column;
+  gap: 60px;
+  width: 100%;
+  align-items: center;
+  padding-top: 20px;
+}
+
+.multitape-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 90%;
+}
+
+.multitape-label {
+  font-weight: 600;
+  font-size: 1.2rem;
+  color: #333;
+  width: 100px;
+  text-align: right;
+  margin-right: 25px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tape-display-wrapper {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border: 2px solid #d2e3fc;
+  border-radius: 6px;
+  background-color: #f8f8f8;
+  height: 50px;
+  display: flex;
+  align-items: center;
+}
+
+.tape-wrapper {
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  border-radius: 6px;
+}
+
+.tape-header {
+  position: absolute;
+  top: -48px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  pointer-events: none;
+}
+
+.tape-pointer { display: flex; flex-direction: column; align-items: center; }
+
+.tape-start-label {
+  font-size: 16px;
+  font-weight: 800;
+  color: #555;
+  white-space: nowrap;
+}
+
+.tape-arrow {
+  font-size: 32px;
+  line-height: 0.6;
+  color: #777;
+}
+
+.tape {
+  display: flex;
+  position: relative;
+  height: 40px;
+  left: calc(50% - 20px);
+  transition: transform 0.2s ease-out;
+}
+
+.cell {
+  height: 40px;
+  width: 40px;
+  border: 1px solid #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  background-color: white;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.cell.active {
+  background-color: #d7e9ff;
+  border: 2px solid #1a73e8;
+}
+
+/* popup (generic) */
 .popup-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
@@ -482,8 +487,7 @@ input, textarea, [contenteditable] {
 }
 
 .popup-menu h3 {
-  margin-top: 0;
-  margin-bottom: 20px;
+  margin: 0 0 20px;
   color: black;
   text-align: center;
 }
@@ -509,7 +513,7 @@ input, textarea, [contenteditable] {
   border-radius: 6px;
   font-size: 1rem;
   transition: border-color 0.2s;
-  width: 90%;       
+  width: 90%;
   margin: 0 auto;
 }
 
@@ -542,16 +546,15 @@ input, textarea, [contenteditable] {
 
 .label-row label {
   display: flex;
-  flex-direction: row;
   align-items: center;
-  justify-content: space-between; 
+  justify-content: space-between;
   gap: 10px;
   font-size: 0.9rem;
   width: 100%;
 }
 
 .label-row input[type="text"] {
-  flex: 1; 
+  flex: 1;
   margin-right: 5px;
 }
 
@@ -585,7 +588,7 @@ input, textarea, [contenteditable] {
   transition: background-color 0.2s, color 0.2s;
 }
 
-.direction-buttons button.selected { background-color: #84afdd; color: rgb(0, 0, 0); }
+.direction-buttons button.selected { background-color: #84afdd; color: #000; }
 
 .add-label-button {
   margin-top: 8px;
@@ -610,9 +613,7 @@ input, textarea, [contenteditable] {
 
 .remove-button:hover { background-color: #f5c2c7; }
 
-/* ===========================
-   TRANSITION TABLE POPUP
-   =========================== */
+/* transition table popup */
 .table-popup {
   min-width: 400px;
   width: auto;
@@ -620,7 +621,7 @@ input, textarea, [contenteditable] {
   padding: 25px;
   background: white;
   border-radius: 8px;
-  position: relative; 
+  position: relative;
 }
 
 .popup-header {
@@ -628,7 +629,7 @@ input, textarea, [contenteditable] {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  flex-shrink: 0; 
+  flex-shrink: 0;
 }
 
 .popup-header h3 { margin: 0; font-size: 1.5rem; }
@@ -643,7 +644,7 @@ input, textarea, [contenteditable] {
   font-size: 0.85rem;
   cursor: pointer;
   font-weight: 500;
-  transition: background 0.2s;
+  transition: background-color 0.2s;
 }
 
 .window-toggle-btn:hover { background-color: #e0e0e0; }
@@ -661,19 +662,18 @@ input, textarea, [contenteditable] {
 
 .table-wrapper {
   max-height: 60vh;
-  overflow-y: auto;
-  overflow-x: auto; 
+  overflow: auto;
   padding-right: 15px;
   width: 100%;
   box-sizing: border-box;
 }
 
-/* --- Modeless Window State --- */
+/* modeless window */
 .modeless-window {
   z-index: 2000;
   max-width: none;
   max-height: none;
-  background-color: rgba(255, 255, 255, 0.95); 
+  background-color: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(5px);
   border: 1px solid #999;
   display: flex;
@@ -681,10 +681,9 @@ input, textarea, [contenteditable] {
 }
 
 .modeless-window .popup-header:active { cursor: grabbing !important; }
-
 .modeless-window .table-wrapper { max-height: none; flex: 1; min-height: 0; }
 
-/* --- RESIZE HANDLE --- */
+/* resize handle */
 .resize-handle {
   position: absolute;
   bottom: 0;
@@ -699,7 +698,7 @@ input, textarea, [contenteditable] {
 
 .resize-handle:hover { background: linear-gradient(135deg, transparent 50%, #888 50%); }
 
-/* --- Academic Table Style --- */
+/* transition table */
 .transition-table {
   width: 100%;
   border-collapse: collapse;
@@ -711,7 +710,20 @@ input, textarea, [contenteditable] {
 
 .transition-table thead tr { border-bottom: 2px solid black; }
 
-/* --- DIAGONAL HEADER CELL --- */
+.transition-table th {
+  padding: 12px 25px;
+  text-align: center;
+  font-weight: bold;
+  vertical-align: bottom;
+}
+
+.transition-table td {
+  padding: 12px 25px;
+  text-align: center;
+  border-bottom: 1px solid #eee;
+}
+
+/* diagonal header cell */
 .diagonal-cell {
   position: relative;
   min-width: 100px;
@@ -737,21 +749,6 @@ input, textarea, [contenteditable] {
   font-size: 1rem;
 }
 
-/* Column Headers */
-.transition-table th {
-  padding: 12px 25px;
-  text-align: center;
-  font-weight: bold;
-  vertical-align: bottom;
-}
-
-.transition-table td {
-  padding: 12px 25px;
-  text-align: center;
-  border-bottom: 1px solid #eee;
-}
-
-/* First Column (States) */
 .row-header {
   font-weight: bold;
   font-style: italic;
@@ -767,9 +764,9 @@ input, textarea, [contenteditable] {
   line-height: 1.4;
 }
 
-.empty-cell { color: #ccc; font-weight: normal; font-style: italic; }
+.empty-cell { color: #ccc; font-style: italic; }
 
-/* --- Alphabet Controls --- */
+/* alphabet controls */
 .alphabet-controls {
   margin-bottom: 15px;
   display: flex;
@@ -779,18 +776,10 @@ input, textarea, [contenteditable] {
   padding: 8px 12px;
   border-radius: 6px;
   width: fit-content;
-  flex-shrink: 0; 
+  flex-shrink: 0;
 }
 
 .alphabet-controls label { font-weight: bold; color: #333; }
-
-.symbol-input {
-  width: 60px;
-  padding: 4px 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  text-align: center;
-}
 
 .alphabet-controls button {
   padding: 4px 10px;
@@ -801,6 +790,14 @@ input, textarea, [contenteditable] {
 }
 
 .alphabet-controls button:hover { background-color: #d0d0d0; }
+
+.symbol-input {
+  width: 60px;
+  padding: 4px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  text-align: center;
+}
 
 .symbol-header { position: relative; padding-right: 25px !important; }
 
@@ -828,7 +825,7 @@ input, textarea, [contenteditable] {
 .input-wrapper {
   position: relative;
   display: flex;
-  flex-direction: column; 
+  flex-direction: column;
 }
 
 .alphabet-label {
@@ -849,16 +846,15 @@ input, textarea, [contenteditable] {
   border-radius: 4px;
 }
 
-/* --- Multi-Tape Alphabet --- */
+/* multi-tape alphabet */
 .multitape-alphabet-display {
   margin-bottom: 20px;
   background-color: #fff;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   padding: 10px 15px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
   display: flex;
-  flex-direction: row; 
   align-items: center;
   gap: 15px;
 }
@@ -904,7 +900,7 @@ input, textarea, [contenteditable] {
   background-color: #f5e5e5;
   color: #a21f1f;
   border-color: #e7bebe;
-  padding-right: 8px; 
+  padding-right: 8px;
 }
 
 .symbol-input-inline {
@@ -957,13 +953,12 @@ input, textarea, [contenteditable] {
   font-size: 0.9rem;
 }
 
-/* --- TREE VIEW STYLES --- */
-
+/* ntm thread tree */
 .thread-list-container {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  width: 90%;       
+  width: 90%;
   max-width: 1200px;
   margin: 0 auto;
   max-height: 60vh;
@@ -974,8 +969,8 @@ input, textarea, [contenteditable] {
   border: 1px solid #ddd;
   border-radius: 8px;
   background-color: #fafafa;
-  box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
-  box-sizing: border-box; 
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+  box-sizing: border-box;
 }
 
 .empty-threads {
@@ -985,7 +980,6 @@ input, textarea, [contenteditable] {
   padding: 20px;
 }
 
-/* Tree Row Wrapper */
 .thread-tree-row {
   position: relative;
   display: flex;
@@ -994,20 +988,18 @@ input, textarea, [contenteditable] {
   max-width: 100%;
 }
 
-/* L-Shaped Connector */
 .tree-connector {
   position: absolute;
-  left: -22px;     
-  top: -18px;      
-  height: 48px;    
+  left: -22px;
+  top: -18px;
+  height: 48px;
   width: 22px;
-  border-left: 2px solid #bbb;   
-  border-bottom: 2px solid #bbb; 
+  border-left: 2px solid #bbb;
+  border-bottom: 2px solid #bbb;
   border-bottom-left-radius: 8px;
   z-index: 0;
 }
 
-/* Base Card Style */
 .thread-card {
   width: 100%;
   box-sizing: border-box;
@@ -1022,22 +1014,14 @@ input, textarea, [contenteditable] {
   z-index: 1;
 }
 
-.overflow-visible-pointer {
-  position: relative;
-  width: 100%;
-  overflow: visible !important; 
-  margin-top: 45px;
-}
-
 .thread-card > div {
   min-width: 0;
   max-width: 100%;
 }
 
-/* FIX: Merged the two duplicate .thread-card .tape-wrapper rules into one */
 .thread-card .tape-wrapper {
   min-width: 0;
-  width: 100% !important; 
+  width: 100% !important;
   max-width: 100%;
   box-sizing: border-box;
   background: #fff;
@@ -1045,55 +1029,60 @@ input, textarea, [contenteditable] {
   height: 40px;
 }
 
-/* Active State */
+.thread-card .tape-header { top: -45px; overflow: visible; }
+
+.thread-card .cell {
+  height: 38px;
+  font-size: 16px;
+  border-right: 1px solid #eee;
+}
+
+.overflow-visible-pointer {
+  position: relative;
+  width: 100%;
+  overflow: visible !important;
+  margin-top: 45px;
+}
+
+/* thread card states */
 .thread-card.active {
   border-left: 5px solid #1a73e8;
   border-color: #b3d7ff;
 }
 
-/* Accepted State */
 .thread-card.accepted {
-  border-color: #4caf50;
   background-color: #f1f8e9;
+  border: 1px solid #4caf50;
   border-left: 5px solid #4caf50;
   box-shadow: 0 0 8px rgba(76, 175, 80, 0.2);
 }
 
-/* Rejected State */
 .thread-card.rejected {
-  border-color: #d9534f;
   background-color: #fdf7f7;
+  border: 1px solid #d9534f;
   border-left: 5px solid #d9534f;
   opacity: 0.8;
 }
 
-/* Frozen State */
 .thread-card.frozen {
   background-color: #f4f4f4;
-  border-color: #ddd;
+  border: 1px solid #ddd;
   border-left: 5px solid #999;
-  color: #000000;
 }
 
-.thread-card.frozen .tape-wrapper {
-  opacity: 0.6;
-}
+.thread-card.frozen .tape-wrapper { opacity: 0.6; }
 
-/* Header & Text */
 .thread-header {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   width: 100%;
   margin-bottom: 8px;
   padding-bottom: 5px;
   border-bottom: 1px solid #eee;
-  align-items: center;
 }
 
-.thread-id-info {
-  display: flex;
-  flex-direction: column;
-}
+.thread-id-info { display: flex; flex-direction: column; }
 
 .thread-name {
   font-weight: bold;
@@ -1106,7 +1095,7 @@ input, textarea, [contenteditable] {
   color: #777;
 }
 
-/* Status Badges */
+/* thread status badges */
 .thread-status-badge {
   font-size: 0.75rem;
   font-weight: 600;
@@ -1116,23 +1105,12 @@ input, textarea, [contenteditable] {
   letter-spacing: 0.5px;
 }
 
-.thread-status-badge.active { color: #1557b0; background: #e8f0fe; border: 1px solid #d2e3fc; }
+.thread-status-badge.active   { color: #1557b0; background: #e8f0fe; border: 1px solid #d2e3fc; }
 .thread-status-badge.accepted { color: #2e7d32; background: #c8e6c9; border: 1px solid #a5d6a7; }
 .thread-status-badge.rejected { color: #c62828; background: #ffcdd2; border: 1px solid #ef9a9a; }
-.thread-status-badge.frozen { color: #555; background: #e0e0e0; border: 1px solid #ccc; }
+.thread-status-badge.frozen   { color: #555;    background: #e0e0e0; border: 1px solid #ccc; }
 
-.thread-card .cell {
-  height: 38px;
-  font-size: 16px;
-  border-right: 1px solid #eee;
-}
-
-.thread-card .tape-header {
-  top: -45px;
-  overflow: visible;
-}
-
-/* Single tape modal markers */
+/* cell content & diacritics */
 .cell-content-wrapper {
   position: relative;
   display: flex;
@@ -1150,11 +1128,7 @@ input, textarea, [contenteditable] {
   font-weight: bold;
 }
 
-/* ===========================
-   HELP MENU (Sidebar Layout)
-   =========================== */
-
-/* 1. Main Modal Box */
+/* help modal */
 .help-modal-container {
   width: 900px;
   height: 75vh;
@@ -1162,14 +1136,13 @@ input, textarea, [contenteditable] {
   border-radius: 8px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
   overflow: hidden;
   animation: slideDown 0.2s ease-out;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   text-align: left;
 }
 
-/* 2. Header */
 .help-modal-header {
   padding: 15px 25px;
   background-color: #f1f3f4;
@@ -1196,20 +1169,17 @@ input, textarea, [contenteditable] {
 }
 
 .help-close-btn:hover {
-  background-color: rgba(0,0,0,0.1);
+  background-color: rgba(0, 0, 0, 0.1);
   color: #000;
 }
 
-/* 3. The Body (Split View) */
 .help-modal-body {
   display: flex;
-  flex-direction: row;
   flex: 1;
   overflow: hidden;
-  height: 100%;
 }
 
-/* --- Left Sidebar --- */
+/* sidebar */
 .help-sidebar {
   width: 280px;
   background-color: #f8f9fa;
@@ -1221,7 +1191,6 @@ input, textarea, [contenteditable] {
   flex-shrink: 0;
 }
 
-/* Category Headers */
 .help-category-header {
   padding: 12px 20px;
   font-size: 0.95rem;
@@ -1231,19 +1200,11 @@ input, textarea, [contenteditable] {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  user-select: none;
 }
 
-.help-category-header:hover {
-  background-color: #e8eaed;
-  color: #202124;
-}
+.help-category-header:hover { background-color: #e8eaed; color: #202124; }
+.help-category-header.active { color: #1a73e8; }
 
-.help-category-header.active {
-  color: #1a73e8;
-}
-
-/* Dropdown Links */
 .help-subitems {
   background-color: white;
   border-bottom: 1px solid #f1f3f4;
@@ -1258,19 +1219,16 @@ input, textarea, [contenteditable] {
   transition: all 0.2s;
 }
 
-.help-item-row:hover {
-  background-color: #f1f3f4;
-}
+.help-item-row:hover { background-color: #f1f3f4; }
 
-/* Selected Link State */
 .help-item-row.selected {
   background-color: #e8f0fe;
   color: #1967d2;
-  border-left: 4px solid #1967d2;
+  border-left-color: #1967d2;
   font-weight: 600;
 }
 
-/* --- Right Content Area --- */
+/* content area */
 .help-content {
   flex: 1;
   padding: 40px;
@@ -1280,10 +1238,9 @@ input, textarea, [contenteditable] {
 }
 
 .help-title {
-  margin-top: 0;
+  margin: 0 0 15px;
   font-size: 1.8rem;
   color: #202124;
-  margin-bottom: 15px;
   padding-bottom: 10px;
   border-bottom: 2px solid #f1f3f4;
 }
@@ -1295,7 +1252,6 @@ input, textarea, [contenteditable] {
   max-width: 800px;
 }
 
-/* Video Placeholder Box */
 .video-placeholder-container {
   margin-top: 30px;
   display: flex;
@@ -1313,7 +1269,7 @@ input, textarea, [contenteditable] {
   align-items: center;
   justify-content: center;
   color: #9aa0a6;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .play-icon {
@@ -1329,7 +1285,7 @@ input, textarea, [contenteditable] {
   opacity: 1;
 }
 
-/* 4. Footer */
+/* footer */
 .help-modal-footer {
   padding: 15px 25px;
   border-top: 1px solid #ddd;
@@ -1354,7 +1310,7 @@ input, textarea, [contenteditable] {
 .nav-btn:hover:not(:disabled) {
   background-color: #f1f3f4;
   color: #202124;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .nav-btn:disabled {
@@ -1368,17 +1324,13 @@ input, textarea, [contenteditable] {
   color: #5f6368;
 }
 
-/* ===========================
-   STICKY NOTE
-   =========================== */
-
+/* sticky note */
 .notes-btn--active {
   background-color: #fef08a;
   color: #555;
   border-color: #d4c800;
 }
 
-/* Floating panel */
 .sticky-note {
   position: fixed;
   z-index: 1000;
@@ -1388,12 +1340,10 @@ input, textarea, [contenteditable] {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   background: #fefce8;
   border: 1px solid #e9e07a;
-  user-select: none;
   overflow: hidden;
 }
 
-/* Drag handle / title bar */
-.sticky-note__header {
+.sticky-note-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1402,7 +1352,7 @@ input, textarea, [contenteditable] {
   border-bottom: 1px solid #e9e07a;
 }
 
-.sticky-note__title {
+.sticky-note-title {
   font-weight: 600;
   font-size: 0.8rem;
   color: #555;
@@ -1410,7 +1360,7 @@ input, textarea, [contenteditable] {
   text-transform: uppercase;
 }
 
-.sticky-note__close {
+.sticky-note-close {
   background: none;
   border: none;
   cursor: pointer;
@@ -1420,9 +1370,8 @@ input, textarea, [contenteditable] {
   line-height: 1;
 }
 
-.sticky-note__close:hover { color: #c00; }
+.sticky-note-close:hover { color: #c00; }
 
-/* Formatting toolbar */
 .note-toolbar {
   display: flex;
   align-items: center;
@@ -1430,10 +1379,9 @@ input, textarea, [contenteditable] {
   padding: 3px 8px;
   background: #fefce8;
   border-bottom: 1px solid #e9e07a;
-  user-select: none;
 }
 
-.note-toolbar__btn {
+.note-toolbar-btn {
   background: none;
   border: 1px solid transparent;
   border-radius: 3px;
@@ -1445,26 +1393,25 @@ input, textarea, [contenteditable] {
   transition: background 0.12s, border-color 0.12s;
 }
 
-.note-toolbar__btn:hover {
+.note-toolbar-btn:hover {
   background: #fef08a;
   border-color: #d4c800;
   color: #333;
 }
 
-.note-toolbar__btn.active {
+.note-toolbar-btn.active {
   background: #fde047;
   border-color: #c8b800;
   color: #333;
 }
 
-.note-toolbar__sep {
+.note-toolbar-sep {
   width: 1px;
   height: 14px;
   background: #ddd;
   margin: 0 3px;
 }
 
-/* Rich-text editor area */
 .note-editor {
   flex: 1;
   min-height: 0;
@@ -1484,26 +1431,21 @@ input, textarea, [contenteditable] {
   text-align: left;
 }
 
-/* Placeholder */
 .note-editor:empty::before {
   content: attr(data-placeholder);
   color: #bbb;
   pointer-events: none;
 }
 
-/* Lists inside editor */
 .note-editor ul,
 .note-editor ol {
   margin: 4px 0;
   padding-left: 20px;
 }
 
-.note-editor li {
-  margin: 2px 0;
-}
+.note-editor li { margin: 2px 0; }
 
-/* Resize grip */
-.sticky-note__resize {
+.sticky-note-resize {
   position: absolute;
   bottom: 0;
   right: 0;
@@ -1512,4 +1454,52 @@ input, textarea, [contenteditable] {
   cursor: nwse-resize;
   opacity: 0.35;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Cpath d='M11 13 L13 11 M7 13 L13 7 M3 13 L13 3' stroke='%23555' stroke-width='1.5'/%3E%3C/svg%3E");
+}
+
+/* help menu */
+.help-category-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.help-item-bullet {
+  margin-right: 6px;
+  color: #9aa0ab;
+  font-size: 0.75rem;
+}
+
+.formal-def-box {
+  background-color: #f8f9fa;
+  border-left: 3px solid #1a73e8;
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin: 16px 0;
+}
+
+.formal-def-box h4 {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  color: #202124;
+}
+
+.math-block {
+  font-family: 'Courier New', Courier, monospace;
+  background-color: #f1f3f4;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin: 8px 0;
+  font-size: 0.95rem;
+  color: #1a1c1e;
+}
+
+
+.thread-card-tree {
+  margin-top: 0;
+}
+
+
+
+.window-toggle-btn-active {
+  background-color: #e3f2fd;
+  border-color: #90caf9;
 }

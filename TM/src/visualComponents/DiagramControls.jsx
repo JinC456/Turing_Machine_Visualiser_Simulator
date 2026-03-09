@@ -1,11 +1,11 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 
 export default function DiagramControls({ 
-  handleClearAll, 
-  Undo, 
-  Redo, 
-  handleExport,
-  handleImport,
+  onClearAll, 
+  onUndo, 
+  onRedo, 
+  onExport,
+  onImport,
   canUndo,
   canRedo,
   isLocked,
@@ -66,7 +66,6 @@ export default function DiagramControls({
     };
   }, [isDragging, isResizing]);
 
-  // Track active formats for toolbar button state
   const [activeFormats, setActiveFormats] = useState({ bold: false, italic: false, ul: false });
 
   const onImportClick = () => {
@@ -80,7 +79,7 @@ export default function DiagramControls({
     reader.onload = (event) => {
       try {
         const json = JSON.parse(event.target.result);
-        handleImport(json);
+        onImport(json);
       } catch (err) {
         alert("Failed to load file. Please ensure it is a valid JSON file.");
       }
@@ -89,7 +88,6 @@ export default function DiagramControls({
     e.target.value = "";
   };
 
-  // Sync external `note` (HTML string) into the editor when it changes from outside
   useEffect(() => {
     const el = editorRef.current;
     if (!el) return;
@@ -121,79 +119,109 @@ export default function DiagramControls({
   return (
     <>
       <div className="diagram-controls">
+
+        {/* Undo / Redo */}
         <div className="history-controls">
-          <button onClick={Undo} disabled={!canUndo || isLocked}>↶</button>
-          <button onClick={Redo} disabled={!canRedo || isLocked}>↷</button>
+          <button onClick={onUndo} disabled={!canUndo || isLocked} title="Undo">↶ Undo</button>
+          <button onClick={onRedo} disabled={!canRedo || isLocked} title="Redo">↷ Redo</button>
         </div>
 
-        <button onClick={handleClearAll} disabled={isLocked} style={isLocked ? { opacity: 0.5, cursor: 'not-allowed' } : {}}>
-          Clear All
-        </button>
+        <div className="diagram-controls-divider" />
 
-        <button onClick={handleExport} disabled={isLocked}>Export JSON</button>
+        {/* File actions */}
+        <button onClick={onExport} disabled={isLocked}>Export JSON</button>
         <button onClick={onImportClick} disabled={isLocked}>Import JSON</button>
-
         <input type="file" accept=".json" ref={fileInputRef} style={{ display: "none" }} onChange={onFileChange} />
 
+        <div className="diagram-controls-divider" />
+
+        {/* Tools */}
         <button
           onClick={() => setShowNote((v) => !v)}
-          className={`notes-btn${showNote ? " notes-btn--active" : ""}`}
+          className={showNote ? "notes-btn--active" : ""}
           title="Toggle machine notes"
         >
           Notes
         </button>
 
         {engine === "MultiTape" && (
-          <button onClick={() => onConvert("combined")} className="Convert-btn">
-            Single-Tape View
-          </button>
+          <button onClick={() => onConvert("combined")}>⇄ Single-Tape</button>
         )}
+
+        <div className="diagram-controls-divider" />
+
+        {/* Danger */}
+        <button
+          onClick={onClearAll}
+          disabled={isLocked}
+          className="diagram-controls-clear"
+        >
+          Clear All
+        </button>
+
       </div>
 
-      {/* --- Sticky Note Panel --- */}
+      {/* Sticky Note Panel */}
       {showNote && (
         <div
           className="sticky-note"
           style={{ left: position.x, top: position.y, width: size.width, height: size.height }}
         >
-          {/* Drag handle */}
-          <div className="sticky-note__header" onMouseDown={onHeaderMouseDown} style={{ cursor: "grab" }}>
-            <span className="sticky-note__title">Notes</span>
-            <button className="sticky-note__close" onClick={() => setShowNote(false)} title="Close notes">✕</button>
+          <div
+            className="sticky-note-header"
+            onMouseDown={onHeaderMouseDown}
+            style={{ cursor: isDragging ? "grabbing" : "grab" }}
+          >
+            <span className="sticky-note-title">Notes</span>
+            <button
+              className="sticky-note-close"
+              onClick={() => setShowNote(false)}
+              title="Close notes"
+            >
+              ✕
+            </button>
           </div>
 
-          {/* Formatting toolbar */}
           <div className="note-toolbar">
             <button
-              className={`note-toolbar__btn${activeFormats.bold ? " active" : ""}`}
+              className={`note-toolbar-btn${activeFormats.bold ? " active" : ""}`}
               onMouseDown={(e) => { e.preventDefault(); execFormat("bold"); }}
               title="Bold (Ctrl+B)"
-            ><b>B</b></button>
+            >
+              <b>B</b>
+            </button>
             <button
-              className={`note-toolbar__btn${activeFormats.italic ? " active" : ""}`}
+              className={`note-toolbar-btn${activeFormats.italic ? " active" : ""}`}
               onMouseDown={(e) => { e.preventDefault(); execFormat("italic"); }}
               title="Italic (Ctrl+I)"
-            ><i>I</i></button>
-            <div className="note-toolbar__sep" />
+            >
+              <i>I</i>
+            </button>
+            <div className="note-toolbar-sep" />
             <button
-              className={`note-toolbar__btn${activeFormats.ul ? " active" : ""}`}
+              className={`note-toolbar-btn${activeFormats.ul ? " active" : ""}`}
               onMouseDown={(e) => { e.preventDefault(); execFormat("insertUnorderedList"); }}
               title="Bullet list"
-            >• List</button>
+            >
+              • List
+            </button>
             <button
-              className="note-toolbar__btn"
+              className="note-toolbar-btn"
               onMouseDown={(e) => { e.preventDefault(); execFormat("insertOrderedList"); }}
               title="Numbered list"
-            >1. List</button>
-            <div className="note-toolbar__sep" />
+            >
+              1. List
+            </button>
+            <div className="note-toolbar-sep" />
             <button
-              className="note-toolbar__btn"
+              className="note-toolbar-btn"
               onMouseDown={(e) => { e.preventDefault(); execFormat("removeFormat"); }}
               title="Clear formatting"
-            >✕ fmt</button>
+            >
+              ✕ fmt
+            </button>
           </div>
 
-          {/* Rich-text editor — always editable, never locked */}
           <div
             ref={editorRef}
             className="note-editor"
@@ -202,12 +230,11 @@ export default function DiagramControls({
             onInput={handleInput}
             onKeyUp={updateActiveFormats}
             onMouseUp={updateActiveFormats}
-            data-placeholder="Write your notes here… Bold, italic, and lists are supported. Notes are saved with your diagram on export."
+            data-placeholder="Write your notes here… Notes are saved with your diagram on export."
             spellCheck
           />
 
-          {/* Resize handle — bottom-right corner */}
-          <div className="sticky-note__resize" onMouseDown={onResizeMouseDown} />
+          <div className="sticky-note-resize" onMouseDown={onResizeMouseDown} />
         </div>
       )}
     </>
