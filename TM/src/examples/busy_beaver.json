@@ -1,4 +1,5 @@
 {
+  "note": "<div style=\"text-align:left\"><b>Busy Beaver (3-state)</b> - starts on a blank tape and writes as many <i>1</i>s as possible before halting.<br><br>\n<b>How it works:</b> There is no real input to process. The machine just goes between states following the rules, putting <i>1</i>s onto the tape. This machine writes <b>6 ones</b> in just 14 steps before finally stopping.<br><br>\n<b>States:</b>\n<ul>\n  <li><b>S0</b>  : On a blank: writes <i>1</i>, moves right → S1. On a <i>1</i>: keeps it, moves left → S2.</li>\n  <li><b>S1</b>  : On a <i>1</i>: keeps it, moves right (stays in S1). On a blank: writes <i>1</i>, moves left → S0.</li>\n  <li><b>S2</b>  : On a blank: writes <i>1</i>, moves left → S1. On a <i>1</i>: keeps it, moves right → S3 (halt).</li>\n  <li><b>S3</b>  : Accept. The tape now contains six consecutive <i>1</i>s.</li>\n</ul></div>",
   "defaultInput": "",
   "nodes": [
     {

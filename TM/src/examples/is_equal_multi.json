@@ -1,4 +1,5 @@
 {
+  "note": "<div style=\"text-align:left\"><b>Is Equal? (Multi-tape)</b> - checks if the string before <i>#</i> is identical to the string after it (e.g. <i>aabb#aabb</i>).<br><br>\n<b>How it works:</b> The first half is copied to Tape 2. Then both tapes are read forward together to check character by character that they match.<br><br>\n<b>States:</b>\n<ul>\n  <li><b>S0</b>  : Reads the first half of Tape 1, copying each character (<i>a</i>, <i>b</i>) onto Tape 2 at the same time. Both heads move right. When the <i>#</i> is found on Tape 1, moves to S1.</li>\n  <li><b>S1</b>  : Rewinds the Tape 2 head back to the start of the copied string (moves left until blank). Tape 1 stays still. Moves to S2 when Tape 2 is rewound.</li>\n  <li><b>S2</b>  : The comparison loop. Both tape heads move right together, reading one character at a time. If they match, keeps going. If they both hit a blank at the same time, moves to S3.</li>\n  <li><b>S3</b>  : Accept. Both strings are identical.</li>\n</ul></div>",
   "defaultInput": "aabb#aabb",
   "nodes": [
     {

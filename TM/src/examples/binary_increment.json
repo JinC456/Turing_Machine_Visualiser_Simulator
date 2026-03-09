@@ -1,4 +1,5 @@
 {
+  "note": "<div style=\"text-align:left\"><b>Binary Increment</b> , adds 1 to a binary number (e.g. <i>1011</i> → <i>1100</i>).<br><br>\n<b>How it works:</b> It first goes to the end of the number, then works backwards flipping <i>1</i>s to <i>0</i>s (the carry) until it hits a <i>0</i> or a blank, which it flips to <i>1</i> and stops.<br><br>\n<b>States:</b>\n<ul>\n  <li><b>S0</b>  : Scans right over all <i>0</i>s and <i>1</i>s without changing anything. When it hits a blank (end of number), moves to S1.</li>\n  <li><b>S1</b>  : The carry loop. Moving left, changes every <i>1</i> it sees to a <i>0</i>. The moment it finds a <i>0</i> or a blank (meaning no more carrying needed), it writes a <i>1</i> and moves to S2.</li>\n  <li><b>S2</b>  : Accept. The incremented number is on the tape.</li>\n</ul></div>",
   "defaultInput": "1011",
   "nodes": [
     {

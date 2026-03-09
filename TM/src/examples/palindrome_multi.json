@@ -1,4 +1,5 @@
 {
+  "note": "<div style=\"text-align:left\"><b>Palindrome (Multi-tape)</b> - checks if a word is a palindrome (e.g. <i>aabbaa</i>) using two tapes for efficiency.<br><br>\n<b>How it works:</b> The word is copied to Tape 2. Tape 1's head then moves backwards (right to left) while Tape 2's head moves forwards (left to right). If both tapes are equal the word is a palindrome , and there is no need to ping-pong back and forth.<br><br>\n<b>States:</b>\n<ul>\n  <li><b>S0</b>  : Copies the word from Tape 1 onto Tape 2, character by character, both heads moving right. When Tape 1 hits a blank (end of word), moves to S1.</li>\n  <li><b>S1</b>  : Rewinds the Tape 2 head backwards to the end of the copied word (moves left until blank). Tape 1 stays still. Moves to S2 when ready.</li>\n  <li><b>S2</b>  : The comparison loop. Tape 1 moves left (backwards through the original) while Tape 2 moves right (forwards through the copy). If both characters always match, eventually both hit a blank and move to S3.</li>\n  <li><b>S3</b>  : Accept. The word reads the same forwards and backwards.</li>\n</ul></div>",
   "defaultInput": "aabbaa",
   "nodes": [
     {

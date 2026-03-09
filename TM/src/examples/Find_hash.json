@@ -1,4 +1,5 @@
 {
+  "note": "<div style=\"text-align:left\"><b>Find Hash (NTM)</b> , searches a tape of blanks for a <i>#</i> symbol, using non-determinism to search in both directions simultaneously.<br><br>\n<b>How it works:</b> From the start, the machine splits into two parallel threads , one searches left, one searches right. Whichever thread finds <i>#</i> first causes the machine to accept.<br><br>\n<b>States:</b>\n<ul>\n  <li><b>S0</b>  : The starting fork. Non-deterministically goes to S1 (search left) <i>or</i> S2 (search right) at the same time, marking the current cell with <i>V</i>.</li>\n  <li><b>S1</b>  : Searches left, marking each blank as <i>V</i> as it goes (staying in S1). The moment it reads <i>#</i>, moves to S3.</li>\n  <li><b>S2</b>  : Searches right, marking each blank as <i>V</i> as it goes (staying in S2). The moment it reads <i>#</i>, moves to S3.</li>\n  <li><b>S3</b>  : Accept. The <i>#</i> symbol has been found.</li>\n</ul></div>",
   "defaultInput": "␣␣␣␣␣#",
   "nodes": [
     {

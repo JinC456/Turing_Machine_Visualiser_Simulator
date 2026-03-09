@@ -48,6 +48,7 @@ export default function Visualiser({ engine, selectedExample, showTable, setShow
 
   const [loadedInput, setLoadedInput] = useState("");
   const [manualSymbols, setManualSymbols] = useState([]);
+  const [note, setNote] = useState("");
 
   // --- LIFTED STATE: Simulation Running Status ---
   const [isRunning, setIsRunning] = useState(false);
@@ -62,15 +63,17 @@ export default function Visualiser({ engine, selectedExample, showTable, setShow
     setCurrentSymbol("");
     setActiveNodeId(null);
     setActiveEdgeId(null);
+    setNote("");
     setIsRunning(false); // Ensure simulation stops on engine switch
   }, [engine, setNodes, setEdges]);
 
   useEffect(() => {
     if (selectedExample && exampleMap[selectedExample]) {
-      const { nodes: newNodes, edges: newEdges, defaultInput } = exampleMap[selectedExample];
+      const { nodes: newNodes, edges: newEdges, defaultInput, note: exampleNote } = exampleMap[selectedExample];
       setNodes(newNodes);
       setEdges(newEdges);
       setLoadedInput(defaultInput || "");
+      setNote(exampleNote || "");
       setActiveNodeId(null);
       setActiveEdgeId(null);
       setStepCount(0);
@@ -89,6 +92,7 @@ export default function Visualiser({ engine, selectedExample, showTable, setShow
     setCurrentSymbol("");
     setActiveNodeId(null);
     setActiveEdgeId(null);
+    setNote("");
     setIsRunning(false);
   }, [setNodes, setEdges]);
 
@@ -212,6 +216,8 @@ export default function Visualiser({ engine, selectedExample, showTable, setShow
             onClear={handleClear}
             // Pass lock status
             isLocked={isRunning}
+            note={note}
+            onNoteChange={setNote}
           />
         </div>
 

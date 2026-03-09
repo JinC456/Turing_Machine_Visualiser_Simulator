@@ -41,7 +41,9 @@ export default function DiagramContainer({
   stepCount,
   engine,
   onClear,
-  isLocked
+  isLocked,
+  note,
+  onNoteChange
 }) {
 
   const [showConvertedDiagram, setShowConvertedDiagram] = useState(false);
@@ -402,7 +404,7 @@ export default function DiagramContainer({
     if (filename.trim() === "") filename = "turing_machine_diagram";
     if (!filename.toLowerCase().endsWith(".json")) filename += ".json";
 
-    const exportData = { nodes: nodes, edges: edges };
+    const exportData = { nodes: nodes, edges: edges, note: note };
     const jsonString = JSON.stringify(exportData, null, 2);
     const blob = new Blob([jsonString], { type: 'application/json' });
     const href = URL.createObjectURL(blob);
@@ -431,9 +433,10 @@ export default function DiagramContainer({
     pushToHistory("Imported Diagram");
     setNodes(importedData.nodes);
     setEdges(importedData.edges);
+    onNoteChange(importedData.note ?? "");
     setSelectedNode(null);
     setSelectedEdge(null);
-  }, [pushToHistory, setNodes, setEdges, isLocked]);
+  }, [pushToHistory, setNodes, setEdges, onNoteChange, isLocked]);
 
   // --- RENDER PREP ---
 
@@ -586,6 +589,8 @@ export default function DiagramContainer({
                 if (mode === "combined") setShowConvertedDiagram(true);
             }
           }}
+          note={note}
+          onNoteChange={onNoteChange}
         />
 
       
