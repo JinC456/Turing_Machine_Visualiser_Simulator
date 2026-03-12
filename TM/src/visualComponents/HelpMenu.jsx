@@ -432,10 +432,10 @@ export default function HelpMenu({ onClose }) {
                 <h4>Step Forward ( &gt; )</h4>
                 <p>Advances the simulation one step at a time. Useful for following the machine's logic closely.</p>
 
-                <h4>Skip to Start ( &gt;&gt;)</h4>
+                <h4>Skip to Start ( &lt;&lt; )</h4>
                 <p>Jumps back to the very beginning of the simulation, resetting the tape to the original input.</p>
 
-                <h4>Skip to End ( &lt;&lt; )</h4>
+                <h4>Skip to End ( &gt;&gt;)</h4>
                 <p>Runs the simulation all the way to its final result in one go, without animating each step.</p>
 
                 <h4>Clear</h4>
