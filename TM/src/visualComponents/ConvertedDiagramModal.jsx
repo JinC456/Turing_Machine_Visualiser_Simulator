@@ -474,7 +474,7 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
             display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center',
             gap: 14, borderRadius: 10,
-            fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+            fontFamily: "Verdana",
           }}>
             <style>{`@keyframes cdm-spin { to { transform: rotate(360deg); } }`}</style>
             <button onClick={onClose} style={{

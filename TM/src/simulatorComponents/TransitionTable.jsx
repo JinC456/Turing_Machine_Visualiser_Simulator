@@ -140,13 +140,13 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
           rules.push({
             start: sourceLabel,
             startId: edge.source,
-            read: reads.join(","), 
+            read: reads.join(" : "), 
             write: writes.join(", "),
             direction: dirs.join(", "),
             end: targetLabel,
             rawWrites: writes,
             rawDirs: dirs,
-            sortKey: `${sourceLabel}-${reads.join(',')}`
+            sortKey: `${sourceLabel}-${reads.join(' : ')}`
           });
         });
       });
@@ -301,7 +301,7 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
                     {multiTapeRules.map((rule, idx) => (
                       <tr key={idx}>
                         <td style={{ textAlign: 'left', fontWeight: 'bold' }}>{rule.start}</td>
-                        <td>{rule.read.replace(/,/g, ", ")}</td>
+                        <td>{rule.read}</td>
                         <td>{rule.write}</td>
                         <td>{rule.direction}</td>
                         <td style={{ fontStyle: 'italic' }}>{rule.end}</td>
@@ -317,7 +317,6 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
                         {multiTapeColumns.map((tuple) => (
                           <th key={tuple} className="symbol-header">
                             {tuple}
-                            {/* No X in headers for Multi-tape per previous request */}
                           </th>
                         ))}
                       </tr>
@@ -346,7 +345,6 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
                     <th className="diagonal-cell"><span className="diagonal-top">Σ</span><span className="diagonal-bottom">Q</span></th>
                     {symbols.map((symbol) => (
                       <th key={symbol} className="symbol-header" style={{ position: 'relative' }}>
-                        {/* Colored text for DTM/NTM headers: Blue for derived, Red for manual */}
                         <span style={{ color: derivedSymbols.has(symbol) ? '#1565c0' : '#a21f1f' }}>
                             {symbol}
                         </span>

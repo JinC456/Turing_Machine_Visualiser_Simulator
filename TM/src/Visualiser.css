@@ -37,7 +37,7 @@ textarea,
   display: flex;
   flex-direction: column;
   align-items: center;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: Verdana;
   gap: 20px;
   width: 100%;
 }
@@ -241,7 +241,7 @@ textarea,
 .diagram-controls button {
   padding: 7px 10px;
   font-size: 0.85rem;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: Verdana;
   font-weight: 500;
   color: #333;
   background: #fff;
@@ -480,7 +480,7 @@ textarea,
   border-radius: 12px;
   width: 100%;
   min-width: 330px;
-  font-family: sans-serif;
+  font-family: Verdana;
   animation: popIn 0.2s ease-out;
   display: flex;
   flex-direction: column;
@@ -1139,7 +1139,7 @@ textarea,
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
   overflow: hidden;
   animation: slideDown 0.2s ease-out;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: Verdana;
   text-align: left;
 }
 
@@ -1418,7 +1418,7 @@ textarea,
   padding: 10px 12px;
   outline: none;
   background: transparent;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: Verdana;
   font-size: 0.85rem;
   line-height: 1.6;
   color: #444;
@@ -1483,7 +1483,7 @@ textarea,
 }
 
 .math-block {
-  font-family: 'Courier New', Courier, monospace;
+  font-family: 'Courier New';
   background-color: #f1f3f4;
   border-radius: 4px;
   padding: 8px 12px;

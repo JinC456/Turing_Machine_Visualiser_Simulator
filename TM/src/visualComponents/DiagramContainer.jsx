@@ -575,11 +575,11 @@ export default function DiagramContainer({
         </div>
 
         <DiagramControls
-          handleClearAll={handleClearAll}
-          Undo={handleUndo}
-          Redo={handleRedo}
-          handleExport={handleExport}
-          handleImport={handleImport} 
+          onClearAll={handleClearAll}  
+          onUndo={handleUndo}         
+          onRedo={handleRedo}
+          onExport={handleExport}
+          onImport={handleImport}
           canUndo={!isLocked && history.length > 0}
           canRedo={!isLocked && future.length > 0}
           isLocked={isLocked} 
