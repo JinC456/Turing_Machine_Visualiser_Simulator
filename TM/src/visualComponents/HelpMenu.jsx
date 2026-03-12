@@ -59,7 +59,7 @@ export default function HelpMenu({ onClose }) {
               </p>
 
               <div style={{ textAlign: 'center', margin: '10px 0' }}>
-                <img src="src/assets/start.png" alt="Start State image" />
+                <img src="./start.png" alt="Start State image" />
               </div>
 
               <h4>Normal State</h4>
@@ -71,7 +71,7 @@ export default function HelpMenu({ onClose }) {
               </p>
 
               <div style={{ textAlign: 'center', margin: '10px 0' }}>
-                <img src="src/assets/state.png" alt="Normal State image" />
+                <img src="./state.png" alt="Normal State image" />
               </div>
 
               <h4>Accept State</h4>
@@ -86,7 +86,7 @@ export default function HelpMenu({ onClose }) {
               </p>
 
               <div style={{ textAlign: 'center', margin: '10px 0' }}>
-                <img src="src/assets/accept.png" alt="Accept State image" />
+                <img src="./accept.png" alt="Accept State image" />
               </div>
             </>
           )
@@ -224,7 +224,7 @@ export default function HelpMenu({ onClose }) {
           content: (
             <>
               <p>To create a new state in the diagram drag any node from the left-hand toolbar and drop it onto the canvas.</p>
-              <video src="src/assets/DragNode.mp4" controls width="100%" style={{ marginTop: '10px' }} />
+              <video src="./DragNode.mp4" controls width="100%" style={{ marginTop: '10px' }} />
             </>
           )
         },
@@ -239,7 +239,7 @@ export default function HelpMenu({ onClose }) {
                 Right-click the state you want to rename. A pop-up will appear. 
                 Type your new name and press <strong>Save Changes</strong> to confirm.
                 </p>
-                <video src="src/assets/ReNameNode.mp4" controls width="100%" style={{ marginTop: '10px' }} />
+                <video src="./ReNameNode.mp4" controls width="100%" style={{ marginTop: '10px' }} />
             </>
           )
         },
@@ -250,7 +250,7 @@ export default function HelpMenu({ onClose }) {
           content: (
             <>
               <p>Double-click on a state to toggle it between a Normal state and an Accept state.</p>
-              <video src="src/assets/acceptToggle.mp4" controls width="100%" style={{ marginTop: '10px' }} />
+              <video src="./acceptToggle.mp4" controls width="100%" style={{ marginTop: '10px' }} />
             </>
           )
         }
@@ -279,7 +279,7 @@ export default function HelpMenu({ onClose }) {
                    <li><strong>Direction:</strong> L (Left), R (Right), or N (None).</li>
                  </ul>
               </div>
-              <video src="src/assets/addTransition.mp4" controls width="100%" style={{ marginTop: '10px' }} />
+              <video src="./addTransition.mp4" controls width="100%" style={{ marginTop: '10px' }} />
             </>
           )
         },
@@ -300,7 +300,7 @@ export default function HelpMenu({ onClose }) {
                    <li><strong>Direction:</strong> L (Left), R (Right), or N (None).</li>
                  </ul>
               </div>
-              <video src="src/assets/editRule.mp4" controls width="100%" style={{ marginTop: '10px' }} />
+              <video src="./editRule.mp4" controls width="100%" style={{ marginTop: '10px' }} />
             </>
           )
         },
@@ -322,7 +322,7 @@ export default function HelpMenu({ onClose }) {
                 This lets you select multiple states and edges at once.
                 Once selected, you can move them as a group or delete them together.
               </p>
-              <video src="src/assets/Select.mp4" controls width="100%" style={{ marginTop: '10px' }} />
+              <video src="./Select.mp4" controls width="100%" style={{ marginTop: '10px' }} />
             </>
           )
         },
@@ -335,7 +335,7 @@ export default function HelpMenu({ onClose }) {
               <p>
                 Use the <strong>+</strong> and <strong>−</strong> buttons on the toolbar to zoom in and out, or scroll the mouse wheel while the cursor is inside the editor.
               </p>
-              <video src="src/assets/Zoom.mp4" controls width="100%" style={{ marginTop: '10px' }} />
+              <video src="./Zoom.mp4" controls width="100%" style={{ marginTop: '10px' }} />
             </>
           )
         },
@@ -350,7 +350,7 @@ export default function HelpMenu({ onClose }) {
                 <br/><br/>
                 <em>Note:</em> Deleting a state will also delete all transition edges connected to it.
               </p>
-              <video src="src/assets/deleteItems.mp4" controls width="100%" style={{ marginTop: '10px' }} />
+              <video src="./deleteItems.mp4" controls width="100%" style={{ marginTop: '10px' }} />
             </>
           )
         },
@@ -365,7 +365,7 @@ export default function HelpMenu({ onClose }) {
                 <br/><br/>
                 Click the <strong>Import</strong> button to open a file picker and select a previously exported <code>.json</code> file. The diagram will be loaded directly into the visualiser.
               </p>
-              <video src="src/assets/ImportExport.mp4" controls width="100%" style={{ marginTop: '10px' }} />
+              <video src="./ImportExport.mp4" controls width="100%" style={{ marginTop: '10px' }} />
             </>
           )
         },
@@ -379,7 +379,7 @@ export default function HelpMenu({ onClose }) {
               <p>
                 Click the note button on the toolbar to create a new note on the canvas. Notes are free-form text boxes you can use to jot down thoughts, explain what the machine does, or describe how it works for anyone viewing the diagram. Notes are saved with the diagram when exported.
               </p>
-              <video src="src/assets/Notes.mp4" controls width="100%" style={{ marginTop: '10px' }} />
+              <video src="./Notes.mp4" controls width="100%" style={{ marginTop: '10px' }} />
             </>
           )
         },
@@ -393,7 +393,7 @@ export default function HelpMenu({ onClose }) {
               <p>
                 The Clear All button on the toolbar allows you to quickly reset the canvas by deleting all states, transitions, and notes. This is useful when you want to start fresh without having to manually delete each item.
               </p>
-              <video src="src/assets/ClearAll.mp4" controls width="100%" style={{ marginTop: '10px' }} />
+              <video src="./ClearAll.mp4" controls width="100%" style={{ marginTop: '10px' }} />
             </>
           )
         },
@@ -414,7 +414,7 @@ export default function HelpMenu({ onClose }) {
                 The simulation controls sit at the bottom of the tape. Enter your input string into the input box on the left, then use the buttons to run and step through the machine.
               </p>
 
-              <img src="src/assets/TapeControls.png" alt="Tape simulation controls" style={{ width: '100%', marginTop: '10px', marginBottom: '14px', borderRadius: '6px' }} />
+              <img src="./TapeControls.png" alt="Tape simulation controls" style={{ width: '100%', marginTop: '10px', marginBottom: '14px', borderRadius: '6px' }} />
 
               <div className="formal-def-box">
                 <h4>Input</h4>
@@ -459,7 +459,7 @@ export default function HelpMenu({ onClose }) {
               <p>
                 This is useful for debugging your machine. For example, it will tell you if the machine rejected because there was no valid transition for the current symbol and state, or because it timed out.
               </p>
-              <video src="src/assets/RejectBadge.mp4" controls width="100%" style={{ marginTop: '10px' }} />
+              <video src="./RejectBadge.mp4" controls width="100%" style={{ marginTop: '10px' }} />
             </>
           )
         }
@@ -498,7 +498,7 @@ export default function HelpMenu({ onClose }) {
                 </p>
               </div>
 
-              <img src="src/assets/TableDTM.png" alt="DTM transition table" style={{ width: '100%', marginTop: '10px', borderRadius: '6px' }} />
+              <img src="./TableDTM.png" alt="DTM transition table" style={{ width: '100%', marginTop: '10px', borderRadius: '6px' }} />
             </>
           )
         },
@@ -527,7 +527,7 @@ export default function HelpMenu({ onClose }) {
                 </p>
               </div>
 
-              <img src="src/assets/TableNTM.png" alt="NTM transition table" style={{ width: '100%', marginTop: '10px', borderRadius: '6px' }} />
+              <img src="./TableNTM.png" alt="NTM transition table" style={{ width: '100%', marginTop: '10px', borderRadius: '6px' }} />
             </>
           )
         },
@@ -562,7 +562,7 @@ export default function HelpMenu({ onClose }) {
                 </p>
               </div>
 
-              <img src="src/assets/TableMultiMatrix.png" alt="Multi-tape transition table matrix view" style={{ width: '100%', marginTop: '10px', borderRadius: '6px' }} />
+              <img src="./TableMultiMatrix.png" alt="Multi-tape transition table matrix view" style={{ width: '100%', marginTop: '10px', borderRadius: '6px' }} />
 
               <div className="formal-def-box" style={{ marginTop: '14px' }}>
                 <h4>List View</h4>
@@ -572,7 +572,7 @@ export default function HelpMenu({ onClose }) {
                 </p>
               </div>
 
-              <img src="src/assets/TableMultiList.png" alt="Multi-tape transition table list view" style={{ width: '100%', marginTop: '10px', borderRadius: '6px' }} />
+              <img src="./TableMultiList.png" alt="Multi-tape transition table list view" style={{ width: '100%', marginTop: '10px', borderRadius: '6px' }} />
             </>
           )
         },
@@ -607,10 +607,10 @@ export default function HelpMenu({ onClose }) {
               </div>
 
               <p><strong>In NTM mode</strong> — the alphabet appears as column headers in the transition table:</p>
-              <video src="src/assets/AddAlphaGen.mp4" controls width="100%" style={{ marginTop: '8px' }} />
+              <video src="./AddAlphaGen.mp4" controls width="100%" style={{ marginTop: '8px' }} />
 
               <p style={{ marginTop: '14px' }}><strong>In Multi-Tape mode</strong> — the alphabet appears as Σ pills above the table:</p>
-              <video src="src/assets/AddAlphaMulti.mp4" controls width="100%" style={{ marginTop: '8px' }} />
+              <video src="./AddAlphaMulti.mp4" controls width="100%" style={{ marginTop: '8px' }} />
             </>
           )
         },
@@ -642,7 +642,7 @@ export default function HelpMenu({ onClose }) {
                 </ul>
               </div>
 
-              <video src="src/assets/DeleteAlpha.mp4" controls width="100%" style={{ marginTop: '10px' }} />
+              <video src="./DeleteAlpha.mp4" controls width="100%" style={{ marginTop: '10px' }} />
             </>
           )
         },
@@ -716,7 +716,7 @@ export default function HelpMenu({ onClose }) {
                 </p>
               </div>
 
-              <video src="src/assets/NTMsim.mp4" controls width="100%" style={{ marginTop: '10px' }} />
+              <video src="./NTMsim.mp4" controls width="100%" style={{ marginTop: '10px' }} />
             </>
           )
         },
@@ -753,7 +753,7 @@ export default function HelpMenu({ onClose }) {
                 </p>
               </div>
 
-               <img src="src/assets/NTMnodeEdgeRule.png" alt="NTM diagram with multiple thread colours on node, edge and rule." style={{ width: '100%', marginTop: '10px', borderRadius: '6px' }} />
+               <img src="./NTMnodeEdgeRule.png" alt="NTM diagram with multiple thread colours on node, edge and rule." style={{ width: '100%', marginTop: '10px', borderRadius: '6px' }} />
 
               
             </>
@@ -796,7 +796,7 @@ export default function HelpMenu({ onClose }) {
 
               </div>
 
-              <video src="src/assets/NTMtoggle.mp4" controls width="100%" style={{ marginTop: '10px' }} />
+              <video src="./NTMtoggle.mp4" controls width="100%" style={{ marginTop: '10px' }} />
             </>
           )
         }
@@ -819,7 +819,7 @@ export default function HelpMenu({ onClose }) {
                 Each tape has its own independent read/write head. Rules are defined per-tape within each transition, so adding a tape means every transition needs a corresponding rule for the new tape.
               </p>
 
-              <video src="src/assets/addTape.mp4" controls width="100%" style={{ marginTop: '10px' }} />
+              <video src="./addTape.mp4" controls width="100%" style={{ marginTop: '10px' }} />
             </>
           )
         },
@@ -839,7 +839,7 @@ export default function HelpMenu({ onClose }) {
                   The contents of all <em>k</em> tapes are encoded onto one tape by concatenating them and separating each tape's zone with a <strong>delimiter symbol ( | )</strong>. The tape looks like:
                 </p>
                 <div className="math-block">Zone₁ | Zone₂ | ... | Zoneₖ</div>
-                <img src="src/assets/ConversionTape.png" alt="Tape zones separated by pipe delimiters" style={{ width: '100%', marginTop: '10px', marginBottom: '10px', borderRadius: '6px' }} />
+                <img src="./ConversionTape.png" alt="Tape zones separated by pipe delimiters" style={{ width: '100%', marginTop: '10px', marginBottom: '10px', borderRadius: '6px' }} />
                 <p>
                   Within each zone, the position of that tape's virtual read/write head is tracked by marking the symbol under it with a <strong>caret ( ^ )</strong>. Unmarked cells hold the tape contents as normal.
                 </p>
@@ -883,7 +883,7 @@ export default function HelpMenu({ onClose }) {
                 </p>
               </div>
 
-              <video src="src/assets/ConvertSim.mp4" controls width="100%" style={{ marginTop: '10px' }} />
+              <video src="./ConvertSim.mp4" controls width="100%" style={{ marginTop: '10px' }} />
             </>
           )
         }
