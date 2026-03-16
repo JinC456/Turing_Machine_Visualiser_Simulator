@@ -1,0 +1,858 @@
+{
+  "nodes": [
+    {
+      "id": "1773655677629",
+      "type": "start",
+      "position": {
+        "x": -271.4521513846492,
+        "y": -5.866179494646019
+      },
+      "data": {
+        "label": "S0",
+        "input": "bbaaa"
+      },
+      "width": 50,
+      "height": 50,
+      "selected": false,
+      "positionAbsolute": {
+        "x": -271.4521513846492,
+        "y": -5.866179494646019
+      },
+      "dragging": false
+    },
+    {
+      "id": "1773655678516",
+      "type": "normal",
+      "position": {
+        "x": -131.45958363765186,
+        "y": -7.180528230692289
+      },
+      "data": {
+        "label": "S1"
+      },
+      "width": 50,
+      "height": 50,
+      "selected": false,
+      "positionAbsolute": {
+        "x": -131.45958363765186,
+        "y": -7.180528230692289
+      },
+      "dragging": false
+    },
+    {
+      "id": "1773655679377",
+      "type": "normal",
+      "position": {
+        "x": -4.776681242137272,
+        "y": -6.534429007595975
+      },
+      "data": {
+        "label": "S2"
+      },
+      "width": 50,
+      "height": 50,
+      "selected": false,
+      "positionAbsolute": {
+        "x": -4.776681242137272,
+        "y": -6.534429007595975
+      },
+      "dragging": false
+    },
+    {
+      "id": "1773655680257",
+      "type": "normal",
+      "position": {
+        "x": 126.85128848805863,
+        "y": -6.2682147962282215
+      },
+      "data": {
+        "label": "S3"
+      },
+      "width": 50,
+      "height": 50,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 126.85128848805863,
+        "y": -6.2682147962282215
+      },
+      "dragging": false
+    },
+    {
+      "id": "1773655681199",
+      "type": "normal",
+      "position": {
+        "x": 127.87480514345856,
+        "y": 110.50497177978082
+      },
+      "data": {
+        "label": "S4"
+      },
+      "width": 50,
+      "height": 50,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 127.87480514345856,
+        "y": 110.50497177978082
+      },
+      "dragging": false
+    },
+    {
+      "id": "1773655682137",
+      "type": "normal",
+      "position": {
+        "x": 59.99084897988206,
+        "y": 246.71462369993327
+      },
+      "data": {
+        "label": "S5"
+      },
+      "width": 50,
+      "height": 50,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 59.99084897988206,
+        "y": 246.71462369993327
+      },
+      "dragging": false
+    },
+    {
+      "id": "1773655683282",
+      "type": "normal",
+      "position": {
+        "x": 188.81010226768052,
+        "y": 249.09602274482938
+      },
+      "data": {
+        "label": "S6"
+      },
+      "width": 50,
+      "height": 50,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 188.81010226768052,
+        "y": 249.09602274482938
+      },
+      "dragging": false
+    },
+    {
+      "id": "1773655684545",
+      "type": "normal",
+      "position": {
+        "x": 59.51104796911528,
+        "y": 373.2564488403234
+      },
+      "data": {
+        "label": "S7"
+      },
+      "width": 50,
+      "height": 50,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 59.51104796911528,
+        "y": 373.2564488403234
+      },
+      "dragging": false
+    },
+    {
+      "id": "1773655685581",
+      "type": "normal",
+      "position": {
+        "x": 189.39600608417874,
+        "y": 370.3473261059748
+      },
+      "data": {
+        "label": "S8"
+      },
+      "width": 50,
+      "height": 50,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 189.39600608417874,
+        "y": 370.3473261059748
+      },
+      "dragging": false
+    },
+    {
+      "id": "1773655687061",
+      "type": "normal",
+      "position": {
+        "x": 139.46136486920375,
+        "y": 494.2089408267958
+      },
+      "data": {
+        "label": "S9"
+      },
+      "width": 50,
+      "height": 50,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 139.46136486920375,
+        "y": 494.2089408267958
+      },
+      "dragging": false
+    },
+    {
+      "id": "1773655688493",
+      "type": "accept",
+      "position": {
+        "x": -2.590362448658823,
+        "y": 108.65032047383556
+      },
+      "data": {
+        "label": "S10"
+      },
+      "width": 50,
+      "height": 50,
+      "selected": false,
+      "positionAbsolute": {
+        "x": -2.590362448658823,
+        "y": 108.65032047383556
+      },
+      "dragging": false
+    }
+  ],
+  "edges": [
+    {
+      "source": "1773655677629",
+      "sourceHandle": "R",
+      "target": "1773655678516",
+      "targetHandle": "L",
+      "id": "edge-1773655783227",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "t": 0.5,
+        "labels": [
+          {
+            "read": "a",
+            "write": "a",
+            "direction": "L"
+          },
+          {
+            "read": "b",
+            "write": "b",
+            "direction": "L"
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null,
+        "threadColors": [],
+        "activeThreads": []
+      }
+    },
+    {
+      "source": "1773655680257",
+      "sourceHandle": "TR",
+      "target": "1773655680257",
+      "targetHandle": "R",
+      "id": "edge-1773655874798",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "px": 202.39858249659505,
+        "py": 96.74616845122625,
+        "t": 0.5,
+        "sourceX": 189.89858249659505,
+        "sourceY": 196.74616845122625,
+        "targetX": 214.89858249659505,
+        "targetY": 196.74616845122625,
+        "labels": [
+          {
+            "read": "a",
+            "write": "a",
+            "direction": "L"
+          },
+          {
+            "read": "b",
+            "write": "b",
+            "direction": "L"
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null,
+        "threadColors": [],
+        "activeThreads": [],
+        "dxOffset": 45.13793122884877,
+        "dyOffset": 58.242484741177535
+      },
+      "selected": false
+    },
+    {
+      "source": "1773655682137",
+      "sourceHandle": "TL",
+      "target": "1773655682137",
+      "targetHandle": "TL",
+      "id": "edge-1773656079410",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "px": 11.40920209421563,
+        "py": 200.48464243622112,
+        "t": 0.5,
+        "sourceX": -1.0907979057843704,
+        "sourceY": 300.4846424362211,
+        "targetX": 23.90920209421563,
+        "targetY": 300.4846424362211,
+        "labels": [
+          {
+            "read": "\u2423",
+            "write": "\u2423",
+            "direction": "L"
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null,
+        "threadColors": [],
+        "activeThreads": [],
+        "dxOffset": -10.192418166397522,
+        "dyOffset": 27.665174697623147
+      },
+      "selected": false
+    },
+    {
+      "source": "1773655684545",
+      "sourceHandle": "TL",
+      "target": "1773655684545",
+      "targetHandle": "TL",
+      "id": "edge-1773656164205",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "px": -124.77297269785743,
+        "py": 196.12298990938598,
+        "t": 0.5,
+        "sourceX": -137.27297269785743,
+        "sourceY": 296.122989909386,
+        "targetX": -112.27297269785743,
+        "targetY": 296.122989909386,
+        "labels": [
+          {
+            "read": "a",
+            "write": "a",
+            "direction": "L"
+          },
+          {
+            "read": "b",
+            "write": "b",
+            "direction": "L"
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null,
+        "threadColors": [],
+        "activeThreads": [],
+        "dxOffset": -50.334100103106174,
+        "dyOffset": 39.73824291122424
+      },
+      "selected": false
+    },
+    {
+      "source": "1773655687061",
+      "sourceHandle": "TL",
+      "target": "1773655687061",
+      "targetHandle": "BL",
+      "id": "edge-1773656264011",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "px": -235.67737323226572,
+        "py": 234.7233912321458,
+        "t": 0.5,
+        "sourceX": -248.17737323226572,
+        "sourceY": 334.7233912321458,
+        "targetX": -223.17737323226572,
+        "targetY": 334.7233912321458,
+        "labels": [
+          {
+            "read": "a",
+            "write": "a",
+            "direction": "R"
+          },
+          {
+            "read": "b",
+            "write": "b",
+            "direction": "R"
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null,
+        "threadColors": [],
+        "activeThreads": [],
+        "dxOffset": -61.882640037501126,
+        "dyOffset": 79.35536879654585
+      },
+      "selected": false
+    },
+    {
+      "source": "1773655678516",
+      "sourceHandle": "R",
+      "target": "1773655679377",
+      "targetHandle": "L",
+      "id": "edge-1773656424959",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "t": 0.5,
+        "labels": [
+          {
+            "read": "\u2423",
+            "write": "#",
+            "direction": "R"
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null,
+        "threadColors": [],
+        "activeThreads": []
+      }
+    },
+    {
+      "source": "1773655679377",
+      "sourceHandle": "T",
+      "target": "1773655679377",
+      "targetHandle": "T",
+      "id": "edge-1773656435030",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "px": 116.92248990462815,
+        "py": -78.23786635486533,
+        "t": 0.5,
+        "sourceX": 104.42248990462815,
+        "sourceY": 21.762133645134668,
+        "targetX": 129.42248990462815,
+        "targetY": 21.762133645134668,
+        "labels": [
+          {
+            "read": "b",
+            "write": "b",
+            "direction": "R"
+          },
+          {
+            "read": "a",
+            "write": "a",
+            "direction": "R"
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null,
+        "threadColors": [],
+        "activeThreads": []
+      }
+    },
+    {
+      "source": "1773655679377",
+      "sourceHandle": "R",
+      "target": "1773655680257",
+      "targetHandle": "L",
+      "id": "edge-1773656459016",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "t": 0.5,
+        "labels": [
+          {
+            "read": "\u2423",
+            "write": "$",
+            "direction": "L"
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null,
+        "threadColors": [],
+        "activeThreads": []
+      }
+    },
+    {
+      "source": "1773655681199",
+      "sourceHandle": "L",
+      "target": "1773655688493",
+      "targetHandle": "R",
+      "id": "edge-1773656485342",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "t": 0.5,
+        "labels": [
+          {
+            "read": "$",
+            "write": "\u2423",
+            "direction": "L"
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null,
+        "threadColors": [],
+        "activeThreads": []
+      }
+    },
+    {
+      "source": "1773655680257",
+      "sourceHandle": "B",
+      "target": "1773655681199",
+      "targetHandle": "T",
+      "id": "edge-1773656498230",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "t": 0.5,
+        "labels": [
+          {
+            "read": "#",
+            "write": "#",
+            "direction": "R"
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null,
+        "threadColors": [],
+        "activeThreads": []
+      }
+    },
+    {
+      "source": "1773655681199",
+      "sourceHandle": "R",
+      "target": "1773655681199",
+      "targetHandle": "R",
+      "id": "edge-1773656512631",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "px": 152.87480514345856,
+        "py": 35.50497177978082,
+        "t": 0.5,
+        "sourceX": 140.37480514345856,
+        "sourceY": 135.50497177978082,
+        "targetX": 165.37480514345856,
+        "targetY": 135.50497177978082,
+        "labels": [
+          {
+            "read": "\u2423",
+            "write": "\u2423",
+            "direction": "R"
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null,
+        "threadColors": [],
+        "activeThreads": []
+      }
+    },
+    {
+      "source": "1773655681199",
+      "sourceHandle": "B",
+      "target": "1773655683282",
+      "targetHandle": "T",
+      "id": "edge-1773656535834",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "t": 0.5,
+        "labels": [
+          {
+            "read": "b",
+            "write": "\u2423",
+            "direction": "L"
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null,
+        "threadColors": [],
+        "activeThreads": []
+      }
+    },
+    {
+      "source": "1773655681199",
+      "sourceHandle": "B",
+      "target": "1773655682137",
+      "targetHandle": "T",
+      "id": "edge-1773656556932",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "t": 0.5,
+        "labels": [
+          {
+            "read": "a",
+            "write": "\u2423",
+            "direction": "L"
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null,
+        "threadColors": [],
+        "activeThreads": []
+      }
+    },
+    {
+      "source": "1773655683282",
+      "sourceHandle": "TR",
+      "target": "1773655683282",
+      "targetHandle": "R",
+      "id": "edge-1773656572347",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "px": 193.0555641304408,
+        "py": 174.09602274482938,
+        "t": 0.5,
+        "sourceX": 180.5555641304408,
+        "sourceY": 274.0960227448294,
+        "targetX": 205.5555641304408,
+        "targetY": 274.0960227448294,
+        "labels": [
+          {
+            "read": "\u2423",
+            "write": "\u2423",
+            "direction": "L"
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null,
+        "threadColors": [],
+        "activeThreads": [],
+        "dxOffset": 44.65393247400339,
+        "dyOffset": 49.95183219855621
+      },
+      "selected": false
+    },
+    {
+      "source": "1773655683282",
+      "sourceHandle": "B",
+      "target": "1773655685581",
+      "targetHandle": "T",
+      "id": "edge-1773656587412",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "t": 0.5,
+        "labels": [
+          {
+            "read": "#",
+            "write": "#",
+            "direction": "L"
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null,
+        "threadColors": [],
+        "activeThreads": []
+      },
+      "selected": false
+    },
+    {
+      "source": "1773655682137",
+      "sourceHandle": "B",
+      "target": "1773655684545",
+      "targetHandle": "T",
+      "id": "edge-1773656607996",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "t": 0.5,
+        "labels": [
+          {
+            "read": "#",
+            "write": "#",
+            "direction": "L"
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null,
+        "threadColors": [],
+        "activeThreads": []
+      }
+    },
+    {
+      "source": "1773655685581",
+      "sourceHandle": "TR",
+      "target": "1773655685581",
+      "targetHandle": "R",
+      "id": "edge-1773656624563",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "px": 192.15900093713623,
+        "py": 289.41745806676346,
+        "t": 0.5,
+        "sourceX": 179.65900093713623,
+        "sourceY": 389.41745806676346,
+        "targetX": 204.65900093713623,
+        "targetY": 389.41745806676346,
+        "labels": [
+          {
+            "read": "a",
+            "write": "a",
+            "direction": "L"
+          },
+          {
+            "read": "b",
+            "write": "b",
+            "direction": "L"
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null,
+        "threadColors": [],
+        "activeThreads": [],
+        "dxOffset": 42.38337102475144,
+        "dyOffset": 56.76345880353576
+      },
+      "selected": false
+    },
+    {
+      "source": "1773655684545",
+      "sourceHandle": "B",
+      "target": "1773655687061",
+      "targetHandle": "T",
+      "id": "edge-1773656657212",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "t": 0.5,
+        "labels": [
+          {
+            "read": "\u2423",
+            "write": "a",
+            "direction": "R"
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null,
+        "threadColors": [],
+        "activeThreads": []
+      }
+    },
+    {
+      "source": "1773655685581",
+      "sourceHandle": "B",
+      "target": "1773655687061",
+      "targetHandle": "T",
+      "id": "edge-1773656666468",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "t": 0.5,
+        "labels": [
+          {
+            "read": "\u2423",
+            "write": "b",
+            "direction": "R"
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null,
+        "threadColors": [],
+        "activeThreads": []
+      }
+    },
+    {
+      "source": "1773655687061",
+      "sourceHandle": "R",
+      "target": "1773655681199",
+      "targetHandle": "TR",
+      "id": "edge-1773656680432",
+      "type": "draggable",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "color": "#333"
+      },
+      "data": {
+        "t": 0.5,
+        "labels": [
+          {
+            "read": "#",
+            "write": "#",
+            "direction": "R"
+          }
+        ],
+        "isActive": false,
+        "activeSymbol": null,
+        "stepCount": null,
+        "threadColors": [],
+        "activeThreads": [],
+        "dxOffset": 240.75267858502266,
+        "dyOffset": -126.89918508738326
+      },
+      "selected": false
+    }
+  ],
+  "note": "<div style=\"text-align:left\"><b>Flip</b>, reverses a string of <i>a</i>s and <i>b</i>s (e.g. <i>bbaaa</i> → <i>aaabb</i>).<br><br>\n<b>How it works:</b> It places a <i>#</i> to mark the start and a <i>$</i> to mark the end of the string, then repeatedly takes the rightmost character, erases it, and writes it to the left of <i>#</i>.<br><br>\n<b>States:</b>\n<ul>\n  <li><b>S0</b>  : Reads the first <i>a</i> or <i>b</i> and moves left to S1.</li>\n  <li><b>S1</b>  : Reads the blank to the left of the string, writes <i>#</i> to mark the start, then moves right to S2.</li>\n  <li><b>S2</b>  :  Loops right over <i>a</i>s and <i>b</i>s; on reading a blank, writes <i>$</i> and moves left back onto the string, going to S3.</li>\n  <li><b>S3</b>  : Rewinds right-to-left to find the <i>#</i>, then moves to S4.</li>\n  <li><b>S4</b>  : Reads the next character right of <i>#</i>: if <i>a</i>, erases it and goes to S5; if <i>b</i>, erases it and goes to S6; if <i>$</i>, erases it and accepts (S10).</li>\n  <li><b>S5 / S6</b>  : Carrying a character leftward. S5 carries an <i>a</i>, S6 carries a <i>b</i>. Each moves left over blanks until hitting <i>#</i>, then continues to S7 or S8.</li>\n  <li><b>S7 / S8</b>  : Moves left over any <i>a</i>s and <i>b</i>s to find the leftmost blank, writes <i>a</i> (S7) or <i>b</i> (S8), then moves right back to S9.</li>\n  <li><b>S9</b>  : Moves right over <i>#</i> back to the dispatch position S4 to process the next character.</li>\n  <li><b>S10</b> : Accept. The reversed string is on the left of where <i>#</i> was.</li>\n</ul></div>",
+  "defaultInput": "bbaaa"
+}

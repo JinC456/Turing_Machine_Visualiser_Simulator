@@ -12,7 +12,8 @@ export default function DiagramControls({
   engine,
   onConvert,
   note,
-  onNoteChange
+  onNoteChange,
+  onToggleOneWay
 }) {
   const fileInputRef = useRef(null);
   const editorRef = useRef(null);
@@ -148,9 +149,12 @@ export default function DiagramControls({
           <button onClick={() => onConvert("combined")}>⇄ Single-Tape</button>
         )}
 
+        {engine === "Deterministic" && (
+          <button onClick={onToggleOneWay}>⇄ One-Way Tape</button>
+        )}
+
         <div className="diagram-controls-divider" />
 
-        {/* Danger */}
         <button
           onClick={onClearAll}
           disabled={isLocked}
@@ -161,7 +165,7 @@ export default function DiagramControls({
 
       </div>
 
-      {/* Sticky Note Panel */}
+      {/* Sticky Note*/}
       {showNote && (
         <div
           className="sticky-note"

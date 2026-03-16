@@ -11,9 +11,9 @@
  * | [tape 1 contents] | [tape 2 contents] | ... | [tape k contents] |
  *
  * The simulation proceeds in three phases per step:
- * 1. SCAN   — sweep right, recording the symbol under each virtual head
- * 2. DECIDE — look up the matching transition for the read tuple
- * 3. UPDATE — sweep through each tape section, writing and moving heads
+ * 1. SCAN   - sweep right, recording the symbol under each virtual head
+ * 2. DECIDE - look up the matching transition for the read tuple
+ * 3. UPDATE - sweep through each tape section, writing and moving heads
  *
  * When a head moves right into a '|' delimiter, we must right-shift all
  * subsequent tape content to make room for the new head cell. This is done
@@ -277,7 +277,7 @@ function buildScanPhase({
 
 /**
  * Finds the first transition out of origStateId whose per-tape read values
- * all match the given readTuple. Called at code-generation time — no runtime
+ * all match the given readTuple. Called at code-generation time - no runtime
  * decision state is needed since the match is baked into the generated graph.
  */
 function findMatchingTransition(origStateId, readTuple, origTransitions, numTapes) {
@@ -301,7 +301,7 @@ function buildRewindToTape1({
   lastScanId, origStateId, readTuple, upIds,
   numTapes, alphabet, hatSymbols, graph,
 }) {
-  // scanToEnd sweeps R to the closing DELIM — R rules only, never L.
+  // scanToEnd sweeps R to the closing DELIM - R rules only, never L.
   // lastScanId is a scan state so it also must never get L rules.
   const scanToEndId = keys.rewindDec(origStateId, readTuple, 'scanToEnd'); // readTuple added
   graph.addNode(scanToEndId, `scanToEnd\nt${numTapes}`);
@@ -310,7 +310,7 @@ function buildRewindToTape1({
     graph.addLoop(scanToEndId, sym, 'R');
   }
 
-  // Sweep left — rewindDec nodes get L rules only.
+  // Sweep left - rewindDec nodes get L rules only.
   // scanToEnd is R-only so it just feeds into the first rewind node via DELIM.
   // lastScanId feeds in too if it lands directly on the closing DELIM.
   let prev = scanToEndId;
@@ -334,7 +334,7 @@ function buildRewindToTape1({
 }
 
 /**
- * UPDATE PHASE — single tape
+ * UPDATE PHASE - single tape
  * Writes the new symbol and moves the virtual head for tape tapeIdx.
  *
  * For all but the last tape, after writing we insert a crossToNext bridge
@@ -399,13 +399,13 @@ function buildUpdatePhase({
  * startDelimIdx = tapeIdx+2 is the delimiter to the right of tape tapeIdx (0-based).
  *
  * Algorithm:
- * 1. shiftMark   — write ☒ over the DELIM (marks insertion point), move R
- * 2. shiftCarry  — carry each symbol one step right; when a DELIM is hit,
+ * 1. shiftMark   - write ☒ over the DELIM (marks insertion point), move R
+ * 2. shiftCarry  - carry each symbol one step right; when a DELIM is hit,
  * write the carried symbol and carry '|' into the next zone;
    * in the final zone write carried into blank, then write DELIM one cell right,
    * stepping L twice back into the tape content
- * 3. shiftReturn — sweep left back through each zone to find ☒
- * 4. shiftDone   — replace ☒ with '^␣', hand off to nextStateId
+ * 3. shiftReturn - sweep left back through each zone to find ☒
+ * 4. shiftDone   - replace ☒ with '^␣', hand off to nextStateId
  */
 function buildShiftSubroutine({
   placeHatId, nextStateId, tapeIdx, delimHit, dir,
@@ -427,10 +427,10 @@ function buildShiftSubroutine({
   const doneId   =              keys.shiftDone(ctx);
 
   // ── 1. shiftMark ──────────────────────────────────────────────────────────
-  // dir = R: head moved right into DELIM — overwrite it with ☒, move R.
+  // dir = R: head moved right into DELIM - overwrite it with ☒, move R.
   //   The carry phase restores the DELIM by writing it as the first carried value.
   //
-  // dir = L: head moved left into DELIM — keep the DELIM in place, move R,
+  // dir = L: head moved left into DELIM - keep the DELIM in place, move R,
   //   write ☒ in the next cell, move R again into the carry phase.
   //   An intermediate shiftMarkL state handles the extra step.
   graph.addNode(markId, `shiftMark\nt${tapeIdx + 1}`);
@@ -441,7 +441,7 @@ function buildShiftSubroutine({
     graph.addEdge(placeHatId, markId, [rule(DELIM, MARKER, 'R')]);
 
     if (startDelimIdx === finalDelimIdx) {
-      // At the final delimiter — cell to the right is blank.
+      // At the final delimiter - cell to the right is blank.
       // Write DELIM there (push final delimiter one cell right) and go left.
       graph.addNode(returnId(finalDelimIdx), `shiftReturn\nD${finalDelimIdx}`);
       graph.addEdge(markId, returnId(finalDelimIdx), [rule(BLANK, DELIM, 'L')]);
@@ -454,19 +454,19 @@ function buildShiftSubroutine({
     }
   } else {
     // Keep DELIM in place, step R, write ☒ over next cell, step R into carry.
-    // The | was NOT destroyed so there is nothing to restore — go directly to
+    // The | was NOT destroyed so there is nothing to restore - go directly to
     // carry states WITHOUT writing | first.
     const markLId = keys.shiftMarkL(ctx);
     graph.addNode(markLId, `shiftMarkL\nt${tapeIdx + 1}`);
     graph.addEdge(placeHatId, markLId, [rule(DELIM, DELIM, 'R')]);
 
     if (startDelimIdx === finalDelimIdx) {
-      // Already at the final delimiter zone — just write DELIM and go left.
+      // Already at the final delimiter zone - just write DELIM and go left.
       graph.addNode(returnId(finalDelimIdx), `shiftReturn\nD${finalDelimIdx}`);
       graph.addEdge(markLId, returnId(finalDelimIdx), [rule(BLANK, DELIM, 'L')]);
     } else {
       // Write ☒ over whatever is here, then go directly into the carry states
-      // (no | to restore — the | was kept in place by placeHat).
+      // (no | to restore - the | was kept in place by placeHat).
       for (const sym of allTapeSyms) {
         graph.addEdge(markLId, carryId(sym, startDelimIdx), [rule(sym, MARKER, 'R')]);
       }
@@ -509,7 +509,7 @@ function buildShiftSubroutine({
 
     if (isFinal) {
       // The carried DELIM is the final delimiter being pushed one cell right.
-      // Write it into the blank and immediately go left — no need for a second DELIM.
+      // Write it into the blank and immediately go left - no need for a second DELIM.
       graph.addNode(returnId(d), `shiftReturn\nD${d}`);
       graph.addEdge(cId, returnId(d), [rule(BLANK, DELIM, 'L')]);
     } else {
@@ -535,7 +535,7 @@ function buildShiftSubroutine({
     }
 
     // ── 4. shiftDone ─────────────────────────────────────────────────────────
-    // Found ☒ — write '^␣' (new head cell) and hand off to nextStateId.
+    // Found ☒ - write '^␣' (new head cell) and hand off to nextStateId.
     graph.addNode(doneId, `shiftDone\nt${tapeIdx + 1}`);
     graph.addEdge(rId, doneId, [rule(MARKER, '^' + BLANK, 'R')]);
   }
@@ -633,7 +633,7 @@ export function convertMultiToSingle(mtNodes, mtEdges) {
       });
 
     } else {
-      // ── All heads scanned — find matching transition and rewind to tape 1 ───
+      // ── All heads scanned - find matching transition and rewind to tape 1 ───
       const readTuple = scannedSoFar;
       const lastScanId = keys.scan(origStateId, readTuple);
       const match = findMatchingTransition(origStateId, readTuple, origTransitions, numTapes);
@@ -660,7 +660,7 @@ export function convertMultiToSingle(mtNodes, mtEdges) {
       });
 
       // The last scan state has finished collecting all head symbols and is
-      // sitting just before the closing DELIM — no R-loops needed.
+      // sitting just before the closing DELIM - no R-loops needed.
       // buildRewindToTape1 owns lastScanId entirely and gives it only L-rules.
       buildRewindToTape1({ lastScanId, origStateId, readTuple, upIds, numTapes, alphabet, hatSymbols, graph });
 
@@ -699,7 +699,7 @@ export function convertMultiToSingle(mtNodes, mtEdges) {
           queue.push({ origStateId: target, scannedSoFar: [] });
         }
       }
-      // If target is an accept state, rewindId is already typed 'accept' — it's the terminal.
+      // If target is an accept state, rewindId is already typed 'accept' - it's the terminal.
     }
   }
 

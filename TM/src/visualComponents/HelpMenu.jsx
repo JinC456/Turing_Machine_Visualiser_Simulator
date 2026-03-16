@@ -509,7 +509,7 @@ export default function HelpMenu({ onClose }) {
           content: (
             <>
               <p>
-                The NTM transition table follows the same structure as the DTM table, but a single cell can contain <strong>multiple rules</strong> — one for each possible non-deterministic branch.
+                The NTM transition table follows the same structure as the DTM table, but a single cell can contain <strong>multiple rules</strong> - one for each possible non-deterministic branch.
               </p>
 
               <div className="formal-def-box">
@@ -606,10 +606,10 @@ export default function HelpMenu({ onClose }) {
                 </p>
               </div>
 
-              <p><strong>In NTM mode</strong> — the alphabet appears as column headers in the transition table:</p>
+              <p><strong>In NTM mode</strong> - the alphabet appears as column headers in the transition table:</p>
               <video src="./AddAlphaGen.mp4" controls width="100%" style={{ marginTop: '8px' }} />
 
-              <p style={{ marginTop: '14px' }}><strong>In Multi-Tape mode</strong> — the alphabet appears as Σ pills above the table:</p>
+              <p style={{ marginTop: '14px' }}><strong>In Multi-Tape mode</strong> - the alphabet appears as Σ pills above the table:</p>
               <video src="./AddAlphaMulti.mp4" controls width="100%" style={{ marginTop: '8px' }} />
             </>
           )
@@ -637,8 +637,8 @@ export default function HelpMenu({ onClose }) {
                   If you attempt to delete a <strong style={{ color: '#4a90d9' }}>blue (derived) symbol</strong>, a prompt will appear with two options:
                 </p>
                 <ul>
-                  <li><strong>Delete all</strong> — removes every transition in the diagram that references this symbol.</li>
-                  <li><strong>Replace</strong> — substitutes the symbol with another symbol of your choice across all transitions in the diagram.</li>
+                  <li><strong>Delete all</strong> - removes every transition in the diagram that references this symbol.</li>
+                  <li><strong>Replace</strong> - substitutes the symbol with another symbol of your choice across all transitions in the diagram.</li>
                 </ul>
               </div>
 
@@ -711,7 +711,7 @@ export default function HelpMenu({ onClose }) {
                   <li><strong>Rejected</strong>: the thread has halted without accepting.</li>
                 </ul>
                 <p>
-                  If <em>any</em> thread reaches the Accepted state, the entire input is considered accepted — 
+                  If <em>any</em> thread reaches the Accepted state, the entire input is considered accepted - 
                   the other threads do not need to accept.
                 </p>
               </div>
@@ -736,7 +736,7 @@ export default function HelpMenu({ onClose }) {
                 <p>
                   When a thread is currently in a state, the corresponding node is outlined in that thread's colour. 
                   If <strong>multiple threads are in the same state</strong> at the same time, the node will show 
-                  multiple concentric coloured rings — one per thread.
+                  multiple concentric coloured rings - one per thread.
                 </p>
 
                 <h4>Edges</h4>
@@ -749,7 +749,7 @@ export default function HelpMenu({ onClose }) {
                 <h4>Rule Dots</h4>
                 <p>
                   Each transition rule on the diagram shows a small coloured dot indicating which thread is currently reading that rule. 
-                  If multiple threads are reading the same rule at the same step, multiple dots will appear — one per thread, each in its respective colour.
+                  If multiple threads are reading the same rule at the same step, multiple dots will appear - one per thread, each in its respective colour.
                 </p>
               </div>
 
@@ -773,7 +773,7 @@ export default function HelpMenu({ onClose }) {
               <div className="formal-def-box">
                 <h4>Frozen Threads (History)</h4>
                 <p>
-                  When a thread <strong>splits</strong>, the original thread is frozen at the point of branching — 
+                  When a thread <strong>splits</strong>, the original thread is frozen at the point of branching - 
                   it is preserved as a historical record of where the split occurred. 
                   Frozen threads are hidden by default but can be revealed by enabling the <strong>Show History (Frozen)</strong> toggle above the tape panel.
                 </p>
@@ -847,15 +847,15 @@ export default function HelpMenu({ onClose }) {
                 <h4>Step-by-Step Simulation</h4>
                 <p>Each simulated step of the Multi-Tape machine requires the single-tape machine to perform the following passes:</p>
                 <ul>
-                  <li><strong>Pass 1 — Scan for heads:</strong> The head sweeps right across the entire tape, reading the marked symbol ( ^ ) in each zone to find out what each virtual tape is currently reading.</li>
-                  <li><strong>Pass 2 — Rewind:</strong> The head moves back to the leftmost position of the tape, ready to begin the update pass.</li>
-                  <li><strong>Pass 3 — Update:</strong> The head sweeps right again through each zone. For each zone it finds the marked symbol and applies the corresponding rule: it writes the new symbol, then shifts the caret left, right, or leaves it in place (None) depending on the direction specified by the transition.</li>
+                  <li><strong>Pass 1 - Scan for heads:</strong> The head sweeps right across the entire tape, reading the marked symbol ( ^ ) in each zone to find out what each virtual tape is currently reading.</li>
+                  <li><strong>Pass 2 - Rewind:</strong> The head moves back to the leftmost position of the tape, ready to begin the update pass.</li>
+                  <li><strong>Pass 3 - Update:</strong> The head sweeps right again through each zone. For each zone it finds the marked symbol and applies the corresponding rule: it writes the new symbol, then shifts the caret left, right, or leaves it in place (None) depending on the direction specified by the transition.</li>
                 </ul>
                 <p>This three-pass process repeats for every step until an Accept or Reject state is reached.</p>
 
                 <h4>Tape Expansion</h4>
                 <p>
-                  Because all zones share a single tape, the zones are fixed in length until a virtual head needs to write a symbol where a <strong>zone delimiter ( | ) currently sits</strong> — meaning the zone needs to grow. When this happens, the machine must first <strong>shift every symbol to the right of that point one cell further right</strong> to make room for the new symbol. Only then can it write the new content and continue. This shifting is what makes the single-tape simulation significantly slower than the original Multi-Tape machine.
+                  Because all zones share a single tape, the zones are fixed in length until a virtual head needs to write a symbol where a <strong>zone delimiter ( | ) currently sits</strong> - meaning the zone needs to grow. When this happens, the machine must first <strong>shift every symbol to the right of that point one cell further right</strong> to make room for the new symbol. Only then can it write the new content and continue. This shifting is what makes the single-tape simulation significantly slower than the original Multi-Tape machine.
                 </p>
               </div>
             </>

@@ -47,6 +47,7 @@ export default function DiagramContainer({
 }) {
 
   const [showConvertedDiagram, setShowConvertedDiagram] = useState(false);
+  const [showOneWayDiagram, setShowOneWayDiagram] = useState(false);
   
   const { project, fitView } = useReactFlow();
 
@@ -589,6 +590,7 @@ export default function DiagramContainer({
                 if (mode === "combined") setShowConvertedDiagram(true);
             }
           }}
+          onToggleOneWay={() => setShowOneWayDiagram(true)}
           note={note}
           onNoteChange={onNoteChange}
         />
@@ -600,6 +602,16 @@ export default function DiagramContainer({
             nodes={nodes}
             edges={edges}
             onClose={() => setShowConvertedDiagram(false)}
+            mode="singleTape"
+          />
+        )}
+
+        {showOneWayDiagram && (
+          <ConvertedDiagramModal
+            nodes={nodes}
+            edges={edges}
+            onClose={() => setShowOneWayDiagram(false)}
+            mode="oneWay"
           />
         )}
 

@@ -8,11 +8,14 @@ const EXAMPLES = {
   Deterministic: [
     { value: "palindrome", label: "Palindrome Detector" },
     { value: "binary_increment", label: "Binary Increment" },
+    { value: "flip", label: "Flip" },
     { value: "busy_beaver", label: "Busy Beaver (3-state)" },
+
   ],
   MultiTape: [
     { value: "palindrome_multi", label: "Palindrome (2-Tape)" },
     { value: "is_equal_multi", label: "Is Equal (2-Tape)" },
+    { value: "copy", label: "Copy (2-Tape)" },
     { value: "binary_addition", label: "Binary Addition (3-Tape)" },
   ],
   NonDeterministic: [

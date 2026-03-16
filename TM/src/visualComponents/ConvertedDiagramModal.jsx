@@ -1,4 +1,3 @@
-/* src/visualComponents/ConvertedDiagramModal.jsx */
 import React, { useState, useEffect, useCallback, useMemo, useRef, useReducer } from 'react';
 import ReactFlow, {
   Background,
@@ -10,7 +9,8 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
-import { convertMultiToSingle } from '../simulatorComponents/engines/convertMultiToSingle';
+import { convertMultiToSingle } from '../simulatorComponents/engines/conversion/convertMultiToSingle';
+import { convertToOneWay, buildOneWayTape } from '../simulatorComponents/engines/conversion/convertToOneWay';
 import { getStartNode } from '../simulatorComponents/engines/Deterministic';
 import StartNode   from './StartNode';
 import NormalNode  from './NormalNode';
@@ -187,6 +187,20 @@ function simInit(rawNodes, mtEdges, localInput) {
   };
 }
 
+function simInitFromTape(rawNodes, tapeAndHead) {
+  const startNode = getStartNode(rawNodes);
+  if (!startNode) return null;
+  return {
+    tape: tapeAndHead.tape,
+    head: tapeAndHead.head,
+    currentNodeId: startNode.id,
+    activeEdgeId: null,
+    stepCount: 0,
+    status: 'IDLE',
+    statusMessage: 'Initialized. Press Start or Step.',
+  };
+}
+
 function simReducer(state, action) {
   switch (action.type) {
     case 'INIT':
@@ -243,7 +257,7 @@ function simReducer(state, action) {
   }
 }
 
-function useDTMSimulation(rawNodes, rawEdges, mtEdges, initialInput) {
+function useDTMSimulation(rawNodes, rawEdges, mtEdges, initialInput, tapeBuilder = null) {
   const [localInput, setLocalInput] = useState(initialInput || '');
   const [isRunning, setIsRunning]   = useState(false);
   const [speed, setSpeed]           = useState(1);
@@ -266,11 +280,13 @@ function useDTMSimulation(rawNodes, rawEdges, mtEdges, initialInput) {
   }, [rawNodes, rawEdges]);
 
   const initialize = useCallback(() => {
-    const payload = simInit(rawNodes, mtEdges, localInput);
+    const payload = tapeBuilder
+      ? simInitFromTape(rawNodes, tapeBuilder(localInput))
+      : simInit(rawNodes, mtEdges, localInput);
     if (!payload) return;
     dispatch({ type: 'INIT', payload });
     setIsRunning(false);
-  }, [rawNodes, mtEdges, localInput]);
+  }, [rawNodes, mtEdges, localInput, tapeBuilder]);
 
   useEffect(() => { initialize(); }, [initialize]);
 
@@ -413,7 +429,7 @@ function useDTMSimulation(rawNodes, rawEdges, mtEdges, initialInput) {
 }
 
 // ── Main modal ─────────────────────────────────────────────────────────────
-export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, onClose }) {
+export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, onClose, mode = 'singleTape' }) {
   const defaultInput = mtNodes.find(n => n.type === 'start')?.data?.input || '';
 
   const [converted, setConverted] = useState(null);
@@ -423,20 +439,27 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
     setConverted(null);
     setIsRendering(false);
     const timer = setTimeout(() => {
-      const result = convertMultiToSingle(mtNodes, mtEdges);
+      const result = mode === 'oneWay'
+        ? convertToOneWay(mtNodes, mtEdges)
+        : convertMultiToSingle(mtNodes, mtEdges);
       setConverted(result);
-      setIsRendering(true); // graph data ready, now rendering starts
+      setIsRendering(true);
     }, 0);
     return () => clearTimeout(timer);
-  }, [mtNodes, mtEdges]);
+  }, [mtNodes, mtEdges, mode]);
 
   const rawNodes = converted?.nodes ?? [];
   const rawEdges = converted?.edges ?? [];
   const isLoading = converted === null || isRendering;
 
-  const sim = useDTMSimulation(rawNodes, rawEdges, mtEdges, defaultInput);
+  const sim = useDTMSimulation(
+    rawNodes, rawEdges,
+    mode === 'oneWay' ? null : mtEdges,
+    defaultInput,
+    mode === 'oneWay' ? buildOneWayTape : null,
+  );
 
-  // activeRead is the symbol read BEFORE the write — needed to match label.read in DraggableEdge
+  // activeRead is the symbol read BEFORE the write - needed to match label.read in DraggableEdge
   const activeSymbol = sim.activeRead ?? null;
 
   const activeNodeLabel = useMemo(() => {
@@ -466,7 +489,7 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
         boxShadow: '0 8px 40px rgba(0,0,0,0.45)',
       }}>
 
-        {/* Loading overlay — shown while converting and rendering */}
+        {/* Loading overlay - shown while converting and rendering */}
         {isLoading && (
           <div style={{
             position: 'absolute', inset: 0, zIndex: 10,
@@ -517,19 +540,36 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
               <div className="thread-id-info">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div style={{ width: 14, height: 14, borderRadius: 3, backgroundColor: '#333', border: '1px solid rgba(0,0,0,0.1)' }} />
-                  <span className="thread-name">Sipser Single-Tape Equivalent</span>
+                  <span className="thread-name">{mode === 'oneWay' ? 'One-Way Tape Equivalent' : 'Sipser Single-Tape Equivalent'}</span>
                 </div>
                 <span className="thread-meta">Step: {sim.stepCount}</span>
               </div>
-              <span
-                className={`thread-status-badge ${cardStatus}`}
-                onClick={() => isRejected && alert(sim.statusMessage)}
-                title={isRejected ? 'Click to see reason' : ''}
-                style={{ cursor: isRejected ? 'pointer' : 'default' }}
-              >
-                {badgeLabel}
-              </span>
+
+              {/* Badge + legend inline */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {mode === 'oneWay' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.72rem', color: '#666' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <div style={{ width: 18, height: 12, borderRadius: 3, backgroundColor: 'rgba(166, 253, 147, 0.35)', border: '1px solid rgba(0,0,0,0.15)' }} />
+                      <span>Right</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <div style={{ width: 18, height: 12, borderRadius: 3, backgroundColor: 'rgba(249, 254, 180, 0.35)', border: '1px solid rgba(0,0,0,0.15)' }} />
+                      <span>Left</span>
+                    </div>
+                  </div>
+                )}
+                <span
+                  className={`thread-status-badge ${cardStatus}`}
+                  onClick={() => isRejected && alert(sim.statusMessage)}
+                  title={isRejected ? 'Click to see reason' : ''}
+                  style={{ cursor: isRejected ? 'pointer' : 'default' }}
+                >
+                  {badgeLabel}
+                </span>
+              </div>
             </div>
+
             <TapeDisplay
               tape={sim.tape}
               head={sim.head}
@@ -537,6 +577,7 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
               cellSize={CELL_SIZE}
               width="100%"
               instantScroll={true} 
+              oneWayColours={mode === 'oneWay'}
             />
           </div>
 
@@ -594,7 +635,7 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
           </div>
 
           <div style={{ flex: 1, minHeight: 0 }}>
-            {/* Strip transitions/animations — with 200+ states every border-color
+            {/* Strip transitions/animations - with 200+ states every border-color
                 and stroke animation fires simultaneously per step, causing severe lag */}
             <style>{`
               .cdm-no-transition .node,

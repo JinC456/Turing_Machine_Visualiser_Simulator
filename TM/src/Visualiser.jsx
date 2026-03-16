@@ -7,17 +7,16 @@ import DiagramContainer from './visualComponents/DiagramContainer';
 import TransitionTable from './simulatorComponents/TransitionTable';
 import './Visualiser.css';
 
-// Original Examples
 import palindromeData from './examples/palindrome.json'; 
 import binaryIncrementData from './examples/binary_increment.json';
+import flipData from './examples/flip.json'; 
 import busyBeaverData from './examples/busy_beaver.json';
 
-// New Multi-Tape Examples
 import palindromeMultiData from './examples/palindrome_multi.json';
 import isEqualMultiData from './examples/is_equal_multi.json';
+import copyData from './examples/copy.json'; 
 import binaryAdditionData from './examples/binary_addition.json';
 
-// New NTM Examples
 import isEqualNTMData from './examples/Is_equal_NTM.json';
 import FindHashData from './examples/Find_hash.json';
 
@@ -25,12 +24,15 @@ const exampleMap = {
   // Deterministic
   palindrome: palindromeData,
   binary_increment: binaryIncrementData,
+  flip : flipData,
   busy_beaver: busyBeaverData,
   
   // Multi-Tape
   palindrome_multi: palindromeMultiData,
   is_equal_multi: isEqualMultiData, 
+  copy: copyData,
   binary_addition: binaryAdditionData,
+
 
   // Non-Deterministic
   is_equal_NTM: isEqualNTMData, 

@@ -7,7 +7,7 @@ import { stepNonDeterministicTM, generateThreadColor } from './engines/NonDeterm
 export const MAX_RUN_STEPS = 200;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Pure "run to end" helpers — no hooks, just logic.
+// Pure "run to end" helpers - no hooks, just logic.
 // TapeContainer calls these and then uses flushRunToEnd() to update state.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -147,7 +147,7 @@ export function computeNonDetRunToEnd({ threads, stepCount, nodes, edges }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Hooks — IDENTICAL hook counts to the original. No new hooks added.
+// Hooks - IDENTICAL hook counts to the original. No new hooks added.
 // Each hook exposes flushRunToEnd() so TapeContainer can apply the pure
 // helper results above without touching the hook internals.
 // ─────────────────────────────────────────────────────────────────────────────
