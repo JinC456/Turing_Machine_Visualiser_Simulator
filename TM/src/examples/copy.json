@@ -1,4 +1,5 @@
-{
+{  "note": "<div style=\"text-align:left\"><b>Copy</b>, copies the contents of tape 1 onto tape 2 (e.g. tape 1: <i>1111111</i> \u2192 tape 2: <i>1111111</i>).<br><br>\n<b>How it works:</b> It scans right, and for every <i>1</i> it reads on tape 1 it writes a <i>1</i> on tape 2. When it hits a blank on tape 1, both tapes are left and it accepts.<br><br>\n<b>States:</b>\n<ul>\n  <li><b>S0</b>  : Reads tape 1. For every <i>1</i> it sees, it writes a <i>1</i> to tape 2 and advances both heads right, staying in S0. When it reads a blank on tape 1, it moves to S1.</li>\n  <li><b>S1</b>  : Accept. Tape 2 now holds an exact copy of the original tape 1.</li>\n</ul></div>",
+  "defaultInput": "1111",
   "nodes": [
     {
       "id": "1773666607149",
@@ -106,6 +107,6 @@
       },
       "selected": false
     }
-  ],
-  "note": "<div style=\"text-align:left\"><b>Copy</b>, copies the contents of tape 1 onto tape 2 (e.g. tape 1: <i>1111111</i> \u2192 tape 2: <i>1111111</i>).<br><br>\n<b>How it works:</b> It scans right, and for every <i>1</i> it reads on tape 1 it writes a <i>1</i> on tape 2. When it hits a blank on tape 1, both tapes are left and it accepts.<br><br>\n<b>States:</b>\n<ul>\n  <li><b>S0</b>  : Reads tape 1. For every <i>1</i> it sees, it writes a <i>1</i> to tape 2 and advances both heads right, staying in S0. When it reads a blank on tape 1, it moves to S1.</li>\n  <li><b>S1</b>  : Accept. Tape 2 now holds an exact copy of the original tape 1.</li>\n</ul></div>"
+  ]
+
 }
