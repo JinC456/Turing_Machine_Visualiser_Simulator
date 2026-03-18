@@ -206,7 +206,7 @@ export default function HelpMenu({ onClose }) {
               <p>
                 <strong>Note:</strong> It has been proven that a Single-Tape machine can simulate a Multi-Tape machine, 
                 but Multi-Tape machines are often more efficient. If you are interested in seeing how a single-tape machine can simulate a multitape machine
-                check out the 'Simulate on single tape' button in Multi-Tape mode.
+                check out the <em>Tape Conversions</em> section.
               </p>
             </>
           )
@@ -823,6 +823,12 @@ export default function HelpMenu({ onClose }) {
             </>
           )
         },
+      ]
+    },
+    {
+      category: "Tape Conversions",
+      id: "cat-tape-conversions",
+      items: [
         {
           id: "mt-sipser",
           title: "How Multi-Tape to Single-Tape Conversion Works",
@@ -886,6 +892,67 @@ export default function HelpMenu({ onClose }) {
               <video src="./ConvertSim.mp4" controls width="100%" style={{ marginTop: '10px' }} />
             </>
           )
+        },
+        {
+          id: "two-way-one-way",
+          title: "Two-Way to One-Way Tape Conversion",
+          hasVideo: false,
+          content: (
+            <>
+              <p>
+                A standard Turing Machine tape is infinite in both directions, but a one-way tape only extends to the right. 
+                To simulate a two-way tape, we mathematically <strong>fold it in half</strong> at index 0 and interleave the cells.
+              </p>
+
+              <div className="formal-def-box">
+                <h4>The Folded Layout</h4>
+                <p>
+                  Imagine folding a piece of paper in half and shuffling the left and right sides together. We place a <strong>Wall Marker ( | )</strong> at the start, and then alternate the original cells:
+                </p>
+                <div className="math-block">
+                  | , 0 , -1 , 1 , -2 , 2 , -3 ...
+                </div>
+                <ul>
+                  <li><strong>The Wall ( | )</strong>: Sits at the far left so the machine knows where the physical tape begins.</li>
+                  <li><strong>Right Side</strong>: The positive tape cells (1, 2, 3...) sit on the odd indices.</li>
+                  <li><strong>Left Side</strong>: The negative tape cells (-1, -2, -3...) sit on the even indices.</li>
+                </ul>
+              </div>
+
+              <div className="formal-def-box">
+                <h4>How the Machine works</h4>
+                <p>Because the tape layout has changed, the machine's logic must also change to suit it:</p>
+                <ul>
+                  <li><strong>State Doubling:</strong> The machine must remember which half of the tape it is currently reading. Every state is duplicated into a "Positive" (right side) and "Negative" (left side) version.</li>
+                  <li><strong>Double Stepping:</strong> Because the positive and negative cells are alternating, moving one space on the original tape requires jumping <strong>two spaces</strong> on the folded tape. You will see "hop states" in the diagram that handle this extra step.</li>
+                  <li><strong>The Wall Bounce:</strong> When the head hits the <code>|</code> marker, it knows it just crossed index 0. It bounces back to the right and swaps from a Positive state to a Negative state (or vice versa).</li>
+                </ul>
+              </div>
+            </>
+          )
+        },
+        {
+          id: "two-way-one-way-btn",
+          title: "Convert to One-Way Tape",
+          hasVideo: false,
+          content: (
+            <>
+              <p>
+                The <strong>One-Way Tape</strong> button converts your current Deterministic Turing Machine into an equivalent one-way machine using the folding method described above. The result opens as a new diagram.
+              </p>
+
+              <div className="formal-def-box">
+                <h4>What to Expect</h4>
+                <ul>
+                  <li><strong>State Explosion:</strong> Because every state is split in two and requires extra "hop states" to jump across the interleaved cells, the new diagram will be noticeably larger.</li>
+                  <li><strong>Auto-Pan:</strong> The visualiser will automatically follow the active node during simulation so you don't lose track of the machine in the larger graph.</li>
+                  <li><strong>Colour Coding:</strong> To help you visualise the fold, the tape cells are colour-coded. <strong>Green cells</strong> represent the right side of the original tape, and <strong>Yellow cells</strong> represent the left side.</li>
+                </ul>
+              </div>
+
+              <video src="./oneWayConvert.mp4" controls width="100%" style={{ marginTop: '10px' }} />
+            </>
+          )
         }
       ]
     }
@@ -929,16 +996,13 @@ export default function HelpMenu({ onClose }) {
     <div className="popup-overlay" onClick={onClose} style={{ zIndex: 3000 }}>
       <div className="help-modal-container" onClick={(e) => e.stopPropagation()}>
         
-        {/* HEADER */}
         <div className="help-modal-header">
           <h3>Help Guide</h3>
           <button className="help-close-btn" onClick={onClose}>&times;</button>
         </div>
 
-        {/* BODY */}
         <div className="help-modal-body">
           
-          {/* LEFT SIDEBAR */}
           <div className="help-sidebar">
             {helpData.map((cat) => {
               const isOpen = openCategoryId === cat.id;
@@ -971,13 +1035,11 @@ export default function HelpMenu({ onClose }) {
             })}
           </div>
 
-          {/* RIGHT CONTENT */}
           <div className="help-content">
             {currentItem && (
               <>
                 <h2 className="help-title">{currentItem.title}</h2>
                 
-                {/* RENDER JSX CONTENT */}
                 <div className="help-text-body">
                   {currentItem.content}
                 </div>
@@ -987,7 +1049,6 @@ export default function HelpMenu({ onClose }) {
           </div>
         </div>
 
-        {/* FOOTER */}
         <div className="help-modal-footer">
           <button 
             className="nav-btn" 
