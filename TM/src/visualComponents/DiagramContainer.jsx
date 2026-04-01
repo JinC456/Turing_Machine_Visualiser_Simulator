@@ -48,7 +48,8 @@ export default function DiagramContainer({
 
   const [showConvertedDiagram, setShowConvertedDiagram] = useState(false);
   const [showOneWayDiagram, setShowOneWayDiagram] = useState(false);
-  
+  const [showNtmDiagram, setShowNtmDiagram] = useState(false);
+
   const { project, fitView } = useReactFlow();
 
   const globalTapeCount = useMemo(() => {
@@ -586,11 +587,11 @@ export default function DiagramContainer({
           isLocked={isLocked} 
           engine={engine}
           onConvert={(mode) => {
-            if (engine === "MultiTape") {
-                if (mode === "combined") setShowConvertedDiagram(true);
-            }
+            if (mode === "combined") setShowConvertedDiagram(true);
+            if (mode === "oneWay") setShowOneWayDiagram(true);
+            if (mode === "ntm") setShowNtmDiagram(true);
           }}
-          onToggleOneWay={() => setShowOneWayDiagram(true)}
+
           note={note}
           onNoteChange={onNoteChange}
         />
@@ -612,6 +613,15 @@ export default function DiagramContainer({
             edges={edges}
             onClose={() => setShowOneWayDiagram(false)}
             mode="oneWay"
+          />
+        )}
+
+        {showNtmDiagram && (
+          <ConvertedDiagramModal
+            nodes={nodes}
+            edges={edges}
+            onClose={() => setShowNtmDiagram(false)}
+            mode="ntm"
           />
         )}
 

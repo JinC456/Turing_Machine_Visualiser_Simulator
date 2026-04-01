@@ -11,7 +11,9 @@ import 'reactflow/dist/style.css';
 
 import { convertMultiToSingle } from '../simulatorComponents/engines/conversion/convertMultiToSingle';
 import { convertToOneWay, buildOneWayTape } from '../simulatorComponents/engines/conversion/convertToOneWay';
+import { convertNtmToDtm, buildNtmQueueTape } from '../simulatorComponents/engines/conversion/convertNtmToDtm';
 import { getStartNode } from '../simulatorComponents/engines/Deterministic';
+import { stepMultiTM } from '../simulatorComponents/engines/MultiTape';
 import StartNode   from './StartNode';
 import NormalNode  from './NormalNode';
 import AcceptNode  from './AcceptNode';
@@ -23,6 +25,10 @@ const nodeTypes = { start: StartNode, normal: NormalNode, accept: AcceptNode };
 const edgeTypes = { draggable: DraggableEdge };
 const CELL_SIZE = 40;
 const PADDING   = 60;
+
+// ── NTM 3-tape constants ───────────────────────────────────────────────────
+const NTM_NUM_TAPES = 3;
+const NTM_TAPE_PADDING = 20;
 
 // ── Build the initial tape for the converted single-tape machine ───────────
 function buildInitialTape(inputStr, mtEdges) {
@@ -61,8 +67,6 @@ function buildInitialTape(inputStr, mtEdges) {
 }
 
 // ── Auto-pan ───────────────────────────────────────────────────────────────
-// Always instant (duration:0). Runs on every stepCount change so self-loops
-// also trigger a pan even when activeNodeId doesn't change.
 function useAutoPan(activeNodeId, stepCount) {
   const { setCenter, getNodes } = useReactFlow();
 
@@ -78,7 +82,7 @@ function useAutoPan(activeNodeId, stepCount) {
 }
 
 // ── Live diagram (inside ReactFlowProvider) ────────────────────────────────
-const BATCH_SIZE = 50; // nodes added per frame during initial load
+const BATCH_SIZE = 50;
 
 function LiveDiagram({ rawNodes, rawEdges, activeNodeId, activeEdgeId, activeSymbol, stepCount, onReady }) {
 
@@ -93,12 +97,11 @@ function LiveDiagram({ rawNodes, rawEdges, activeNodeId, activeEdgeId, activeSym
     data: { ...e.data, isActive: false, activeSymbol: null },
   })), [rawEdges]);
 
-  // Progressive loading: start empty, add BATCH_SIZE nodes per rAF frame
   const [visibleCount, setVisibleCount] = useState(0);
   const isLoaded = visibleCount >= styledNodes.length;
 
   useEffect(() => {
-    setVisibleCount(0); // reset on new graph
+    setVisibleCount(0);
   }, [styledNodes]);
 
   useEffect(() => {
@@ -110,22 +113,18 @@ function LiveDiagram({ rawNodes, rawEdges, activeNodeId, activeEdgeId, activeSym
   }, [visibleCount, isLoaded, styledNodes.length, onReady]);
 
   const visibleNodes = useMemo(() => styledNodes.slice(0, visibleCount), [styledNodes, visibleCount]);
-  // Only show edges once all nodes are loaded (edges reference node positions)
   const visibleEdges = isLoaded ? styledEdges : [];
 
   const [nodes, setNodes, onNodesChange] = useNodesState(visibleNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(visibleEdges);
 
-  // Sync as batches arrive and when fully loaded
   useEffect(() => { setNodes(visibleNodes); }, [visibleNodes, setNodes]);
   useEffect(() => { if (isLoaded) setEdges(styledEdges); }, [isLoaded, styledEdges, setEdges]);
 
-  // Refs tracking what's currently highlighted so we know what to deactivate
   const prevNodeId = useRef(null);
   const prevEdgeId = useRef(null);
   const prevSymbol = useRef(null);
 
-  // Node highlight: surgical O(1) patch
   useEffect(() => {
     if (!isLoaded) return;
     const prev = prevNodeId.current;
@@ -139,7 +138,6 @@ function LiveDiagram({ rawNodes, rawEdges, activeNodeId, activeEdgeId, activeSym
     }));
   }, [activeNodeId, isLoaded, setNodes]);
 
-  // Edge highlight: surgical O(1) patch
   useEffect(() => {
     if (!isLoaded) return;
     const prev = prevEdgeId.current;
@@ -155,7 +153,6 @@ function LiveDiagram({ rawNodes, rawEdges, activeNodeId, activeEdgeId, activeSym
     }));
   }, [activeEdgeId, activeSymbol, stepCount, isLoaded, setEdges]);
 
-  // Auto-pan: only once loaded, instant, fires on every step including self-loops
   useAutoPan(isLoaded ? activeNodeId : null, stepCount);
 
   return (
@@ -249,8 +246,6 @@ function simReducer(state, action) {
     }
 
     case 'FLUSH':
-      // Replace entire state with the synchronously-computed final snapshot.
-      // history is cleared since skip-to-end is not undoable step-by-step.
       return { ...action.payload, history: [] };
 
     default: return state;
@@ -267,8 +262,6 @@ function useDTMSimulation(rawNodes, rawEdges, mtEdges, initialInput, tapeBuilder
     stepCount: 0, status: 'IDLE', statusMessage: 'Ready.', history: [],
   }));
 
-  // Build edge index from rawEdges so the sim always uses the same IDs
-  // that LiveDiagram's useEdgesState was initialised with.
   const edgeIndex = useMemo(() => {
     const nodeMap = Object.fromEntries(rawNodes.map(n => [n.id, n]));
     const idx = {};
@@ -345,9 +338,6 @@ function useDTMSimulation(rawNodes, rawEdges, mtEdges, initialInput, tapeBuilder
     if (sim.status === 'ACCEPTED' || sim.status === 'REJECTED') return;
     setIsRunning(false);
 
-    // Run the full simulation synchronously using local mutable copies.
-    // We mirror exactly what the reducer does so we don't need to call dispatch
-    // in a loop (which would cause hundreds of re-renders).
     let curTape = [...sim.tape];
     let curHead = sim.head;
     let curNodeId = sim.currentNodeId;
@@ -428,6 +418,258 @@ function useDTMSimulation(rawNodes, rawEdges, mtEdges, initialInput, tapeBuilder
   };
 }
 
+// ── 3-tape multi-tape DTM simulation (used for NTM mode) ──────────────────
+
+function multiTapeSimReducer(state, action) {
+  switch (action.type) {
+    case 'INIT':
+      return { ...action.payload, history: [] };
+
+    case 'STEP': {
+      const { result } = action;
+      const snapshot = {
+        tapes: state.tapes.map(t => [...t]),
+        heads: [...state.heads],
+        currentNodeId: state.currentNodeId,
+        activeEdgeId: state.activeEdgeId,
+        activeReads: state.activeReads,
+        stepCount: state.stepCount,
+        status: state.status,
+        statusMessage: state.statusMessage,
+      };
+
+      if (result.halted) {
+        return {
+          ...state,
+          status: 'REJECTED',
+          statusMessage: `Halted: ${result.reason}`,
+          activeEdgeId: null,
+          activeReads: null,
+          history: [...state.history, snapshot],
+        };
+      }
+
+      const newTapes = state.tapes.map(t => [...t]);
+      const newHeads = [...state.heads];
+      const PAD = NTM_TAPE_PADDING;
+
+      for (let i = 0; i < NTM_NUM_TAPES; i++) {
+        newTapes[i][newHeads[i]] = result.writes[i];
+        if (result.directions[i] === 'R') newHeads[i]++;
+        if (result.directions[i] === 'L') newHeads[i]--;
+        // Expand tape if head goes out of bounds
+        if (newHeads[i] < 0) {
+          newTapes[i].unshift(...Array(PAD).fill('␣'));
+          newHeads[i] += PAD;
+        }
+        while (newHeads[i] >= newTapes[i].length) newTapes[i].push('␣');
+      }
+
+      return {
+        ...state,
+        tapes: newTapes,
+        heads: newHeads,
+        currentNodeId: result.toNodeId,
+        activeEdgeId: result.edgeId,
+        activeReads: result.reads,
+        stepCount: result.stepCount,
+        status: result.isAccept ? 'ACCEPTED' : 'RUNNING',
+        statusMessage: result.isAccept ? 'ACCEPTED!' : state.statusMessage,
+        history: [...state.history, snapshot],
+      };
+    }
+
+    case 'UNDO': {
+      if (state.history.length === 0) return state;
+      const prev = state.history[state.history.length - 1];
+      return { ...state, ...prev, history: state.history.slice(0, -1) };
+    }
+
+    case 'FLUSH':
+      return { ...action.payload, history: [] };
+
+    default:
+      return state;
+  }
+}
+
+function useNtmMultiTapeSimulation(rawNodes, rawEdges, initialInput) {
+  const [localInput, setLocalInput] = useState(initialInput || '');
+  const [isRunning, setIsRunning]   = useState(false);
+  const [speed, setSpeed]           = useState(1);
+
+  const [sim, dispatch] = useReducer(multiTapeSimReducer, null, () => {
+    const blankTapes = Array.from({ length: NTM_NUM_TAPES }, () =>
+      Array(NTM_TAPE_PADDING * 2).fill('␣')
+    );
+    return {
+      tapes: blankTapes,
+      heads: Array(NTM_NUM_TAPES).fill(NTM_TAPE_PADDING),
+      currentNodeId: null,
+      activeEdgeId: null,
+      activeReads: null,
+      stepCount: 0,
+      status: 'IDLE',
+      statusMessage: 'Ready.',
+      history: [],
+    };
+  });
+
+  // Build enriched edge index
+  const edgeIndex = useMemo(() => {
+    const nodeMap = Object.fromEntries(rawNodes.map(n => [n.id, n]));
+    const idx = {};
+    for (const e of rawEdges) {
+      const enriched = { ...e, _targetIsAccept: nodeMap[e.target]?.type === 'accept' };
+      (idx[e.source] ||= []).push(enriched);
+    }
+    return idx;
+  }, [rawNodes, rawEdges]);
+
+  const initialize = useCallback(() => {
+    const startNode = getStartNode(rawNodes);
+    if (!startNode) return;
+    const { tapes, heads } = buildNtmQueueTape(localInput); // USE THE IMPORTED BUILDER
+    dispatch({
+      type: 'INIT',
+      payload: {
+        tapes,
+        heads,
+        currentNodeId: startNode.id,
+        activeEdgeId: null,
+        activeReads: null,
+        stepCount: 0,
+        status: 'IDLE',
+        statusMessage: 'Initialized. Press Start or Step.',
+      },
+    });
+    setIsRunning(false);
+  }, [rawNodes, localInput]);
+
+  useEffect(() => { initialize(); }, [initialize]);
+
+  const step = useCallback(() => {
+    if (sim.status === 'ACCEPTED' || sim.status === 'REJECTED') return;
+
+    // stepMultiTM reads from the tapes using the heads
+    const result = stepMultiTM({
+      currentNodeId: sim.currentNodeId,
+      tapes: sim.tapes,
+      heads: sim.heads,
+      nodes: rawNodes,
+      edges: rawEdges,
+      stepCount: sim.stepCount,
+    });
+
+    dispatch({ type: 'STEP', result });
+  }, [sim, rawNodes, rawEdges]);
+
+  useEffect(() => {
+    if (!isRunning || sim.status === 'ACCEPTED' || sim.status === 'REJECTED') {
+      if (sim.status === 'ACCEPTED' || sim.status === 'REJECTED') setIsRunning(false);
+      return;
+    }
+    const interval = setInterval(step, 1000 / speed);
+    return () => clearInterval(interval);
+  }, [isRunning, step, speed, sim.status]);
+
+  const runToEnd = useCallback(() => {
+    if (sim.status === 'ACCEPTED' || sim.status === 'REJECTED') return;
+    setIsRunning(false);
+
+    // Run synchronously to avoid hundreds of re-renders
+    let curTapes = sim.tapes.map(t => [...t]);
+    let curHeads = [...sim.heads];
+    let curNodeId = sim.currentNodeId;
+    let curEdgeId = sim.activeEdgeId;
+    let curReads = sim.activeReads;
+    let curStep = sim.stepCount;
+    let finalStatus = 'RUNNING';
+    let finalMessage = sim.statusMessage;
+    const PAD = NTM_TAPE_PADDING;
+
+    while (finalStatus === 'RUNNING') {
+      const result = stepMultiTM({
+        currentNodeId: curNodeId,
+        tapes: curTapes,
+        heads: curHeads,
+        nodes: rawNodes,
+        edges: rawEdges,
+        stepCount: curStep,
+      });
+
+      if (result.halted) {
+        finalStatus = 'REJECTED';
+        finalMessage = `Halted: ${result.reason}`;
+        curEdgeId = null;
+        break;
+      }
+
+      for (let i = 0; i < NTM_NUM_TAPES; i++) {
+        curTapes[i][curHeads[i]] = result.writes[i];
+        if (result.directions[i] === 'R') curHeads[i]++;
+        if (result.directions[i] === 'L') curHeads[i]--;
+        if (curHeads[i] < 0) {
+          curTapes[i].unshift(...Array(PAD).fill('␣'));
+          curHeads[i] += PAD;
+        }
+        while (curHeads[i] >= curTapes[i].length) curTapes[i].push('␣');
+      }
+
+      curReads = result.reads;
+      curEdgeId = result.edgeId;
+      curNodeId = result.toNodeId;
+      curStep = result.stepCount;
+
+      if (result.isAccept) {
+        finalStatus = 'ACCEPTED';
+        finalMessage = 'ACCEPTED!';
+        break;
+      }
+    }
+
+    dispatch({
+      type: 'FLUSH',
+      payload: {
+        tapes: curTapes,
+        heads: curHeads,
+        currentNodeId: curNodeId,
+        activeEdgeId: curEdgeId,
+        activeReads: curReads,
+        stepCount: curStep,
+        status: finalStatus,
+        statusMessage: finalMessage,
+      },
+    });
+  }, [sim, rawNodes, rawEdges]);
+
+  return {
+    localInput, setLocalInput,
+    // Expose a unified `tape` / `head` for display — but also expose all tapes
+    tapes: sim.tapes,
+    heads: sim.heads,
+    // Single-tape compat shim: show tape 1 as the "primary" tape in the shared TapeDisplay
+    tape: sim.tapes[0] ?? [],
+    head: sim.heads[0] ?? 0,
+    currentNodeId: sim.currentNodeId,
+    activeEdgeId: sim.activeEdgeId,
+    activeReads: sim.activeReads,
+    stepCount: sim.stepCount,
+    status: sim.status,
+    statusMessage: sim.statusMessage,
+    isRunning, setIsRunning,
+    speed, setSpeed,
+    history: sim.history,
+    initialize,
+    undo: () => { dispatch({ type: 'UNDO' }); setIsRunning(false); },
+    step,
+    runToEnd,
+    handleClear: () => setLocalInput(''),
+  };
+}
+
+
+
 // ── Main modal ─────────────────────────────────────────────────────────────
 export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, onClose, mode = 'singleTape' }) {
   const defaultInput = mtNodes.find(n => n.type === 'start')?.data?.input || '';
@@ -439,9 +681,14 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
     setConverted(null);
     setIsRendering(false);
     const timer = setTimeout(() => {
-      const result = mode === 'oneWay'
-        ? convertToOneWay(mtNodes, mtEdges)
-        : convertMultiToSingle(mtNodes, mtEdges);
+      let result;
+      if (mode === 'oneWay') {
+        result = convertToOneWay(mtNodes, mtEdges);
+      } else if (mode === 'ntm') {
+        result = convertNtmToDtm(mtNodes, mtEdges);
+      } else {
+        result = convertMultiToSingle(mtNodes, mtEdges);
+      }
       setConverted(result);
       setIsRendering(true);
     }, 0);
@@ -452,15 +699,53 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
   const rawEdges = converted?.edges ?? [];
   const isLoading = converted === null || isRendering;
 
-  const sim = useDTMSimulation(
+  // ── JSON Export Handler ──────────────────────────────────────────────────
+  const handleExportJSON = useCallback(() => {
+    if (!converted) return;
+    
+    const exportData = {
+      nodes: rawNodes,
+      edges: rawEdges,
+      mode: mode
+    };
+    
+    const jsonString = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `converted-${mode}-diagram.json`;
+    
+    document.body.appendChild(link);
+    link.click();
+    
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [converted, rawNodes, rawEdges, mode]);
+
+  // ── Single-tape sim (singleTape + oneWay modes) ──────────────────────────
+  const singleSim = useDTMSimulation(
     rawNodes, rawEdges,
-    mode === 'oneWay' ? null : mtEdges,
+    mode === 'ntm' || mode === 'oneWay' ? null : mtEdges,
     defaultInput,
-    mode === 'oneWay' ? buildOneWayTape : null,
+    mode === 'oneWay' ? (input) => buildOneWayTape(input) : null,
   );
 
-  // activeRead is the symbol read BEFORE the write - needed to match label.read in DraggableEdge
-  const activeSymbol = sim.activeRead ?? null;
+  // ── 3-tape sim (ntm mode) ────────────────────────────────────────────────
+  const multiSim = useNtmMultiTapeSimulation(
+    rawNodes, rawEdges,
+    defaultInput,
+  );
+
+  // Select the active sim based on mode
+  const sim = mode === 'ntm' ? multiSim : singleSim;
+
+  // activeRead for edge highlighting
+  // Single-tape: sim.activeRead (scalar). Multi-tape: sim.activeReads[0] (tape 1 symbol).
+  const activeSymbol = mode === 'ntm'
+    ? (sim.activeReads?.[0] ?? null)
+    : (sim.activeRead ?? null);
 
   const activeNodeLabel = useMemo(() => {
     const n = rawNodes.find(n => n.id === sim.currentNodeId);
@@ -470,8 +755,8 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
   const isAccepted = sim.status === 'ACCEPTED';
   const isRejected = sim.status === 'REJECTED';
   const isFinished = isAccepted || isRejected;
-  const cardStatus = isAccepted ? 'accepted' : isRejected ? 'rejected' : 'active';
-  const badgeLabel = isAccepted ? '✔ ACCEPTED' : isRejected ? '✖ REJECTED' : sim.isRunning ? '● RUNNING' : 'READY';
+  const cardStatus  = isAccepted ? 'accepted' : isRejected ? 'rejected' : 'active';
+  const badgeLabel  = isAccepted ? '✔ ACCEPTED' : isRejected ? '✖ REJECTED' : sim.isRunning ? '● RUNNING' : 'READY';
 
   return (
     <div style={{
@@ -489,7 +774,7 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
         boxShadow: '0 8px 40px rgba(0,0,0,0.45)',
       }}>
 
-        {/* Loading overlay - shown while converting and rendering */}
+        {/* Loading overlay */}
         {isLoading && (
           <div style={{
             position: 'absolute', inset: 0, zIndex: 10,
@@ -497,7 +782,7 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
             display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center',
             gap: 14, borderRadius: 10,
-            fontFamily: "Verdana",
+            fontFamily: 'Verdana',
           }}>
             <style>{`@keyframes cdm-spin { to { transform: rotate(360deg); } }`}</style>
             <button onClick={onClose} style={{
@@ -517,12 +802,28 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
           </div>
         )}
 
+        {/* Header */}
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           padding: '10px 18px', borderBottom: '1px solid #e0e0e0',
           background: '#fafafa', flexShrink: 0,
         }}>
-          <span style={{ fontWeight: 600, fontSize: 14, color: '#333' }}></span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+             <span style={{ fontWeight: 600, fontSize: 14, color: '#333' }}>
+               Converted Diagram
+             </span>
+             <button
+               onClick={handleExportJSON}
+               disabled={isLoading}
+               style={{
+                 padding: '4px 10px', borderRadius: 4, cursor: isLoading ? 'not-allowed' : 'pointer',
+                 background: '#eee', border: '1px solid #ccc',
+                 fontSize: 12, color: '#333', opacity: isLoading ? 0.5 : 1
+               }}
+             >
+               Debug: Export JSON
+             </button>
+          </div>
           <button onClick={onClose} style={{
             padding: '6px 13px', borderRadius: 6, cursor: 'pointer',
             background: 'transparent', border: '1px solid #ccc',
@@ -530,57 +831,96 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
           }}>×</button>
         </div>
 
+        {/* Controls + tape area */}
         <div style={{
           flexShrink: 0, borderBottom: '2px solid #e0e0e0',
           padding: '12px 18px 10px', background: '#fdfdfd',
           display: 'flex', flexDirection: 'column', gap: 10,
         }}>
-          <div className={`thread-card ${cardStatus} tree-card`} style={{ width: '100%', marginTop: 0 }}>
-            <div className="thread-header">
-              <div className="thread-id-info">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 14, height: 14, borderRadius: 3, backgroundColor: '#333', border: '1px solid rgba(0,0,0,0.1)' }} />
-                  <span className="thread-name">{mode === 'oneWay' ? 'One-Way Tape Equivalent' : 'Sipser Single-Tape Equivalent'}</span>
-                </div>
-                <span className="thread-meta">Step: {sim.stepCount}</span>
-              </div>
-
-              {/* Badge + legend inline */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                {mode === 'oneWay' && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.72rem', color: '#666' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <div style={{ width: 18, height: 12, borderRadius: 3, backgroundColor: 'rgba(166, 253, 147, 0.35)', border: '1px solid rgba(0,0,0,0.15)' }} />
-                      <span>Right</span>
+          {/* ── NTM: one card per tape, matching TapeContainer's multi-tape layout ── */}
+          {mode === 'ntm' ? (
+            <div className="thread-list-container" style={{ border: 'none', gap: 12, padding: 0 }}>
+              {sim.tapes.map((tape, index) => (
+                <div key={index} className="thread-tree-row" style={{ width: '100%' }}>
+                  <div className={`thread-card ${cardStatus} tree-card`} style={{ width: '100%', marginTop: 0 }}>
+                    <div className="thread-header">
+                      <div className="thread-id-info">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{ width: 14, height: 14, borderRadius: 3, backgroundColor: '#e8d71a', border: '1px solid rgba(0,0,0,0.1)' }} />
+                          <span className="thread-name">Tape {index + 1}</span>
+                        </div>
+                        <span className="thread-meta">(Step {sim.stepCount})</span>
+                      </div>
+                      <span
+                        className={`thread-status-badge ${cardStatus}`}
+                        onClick={() => isRejected && alert(sim.statusMessage)}
+                        title={isRejected ? 'Click to see reason' : ''}
+                        style={{ cursor: isRejected ? 'pointer' : 'default' }}
+                      >
+                        {badgeLabel}
+                      </span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <div style={{ width: 18, height: 12, borderRadius: 3, backgroundColor: 'rgba(249, 254, 180, 0.35)', border: '1px solid rgba(0,0,0,0.15)' }} />
-                      <span>Left</span>
-                    </div>
+                    <TapeDisplay
+                      tape={tape}
+                      head={sim.heads[index]}
+                      activeLabel={activeNodeLabel}
+                      cellSize={CELL_SIZE}
+                      width="100%"
+                      instantScroll={true}
+                    />
                   </div>
-                )}
-                <span
-                  className={`thread-status-badge ${cardStatus}`}
-                  onClick={() => isRejected && alert(sim.statusMessage)}
-                  title={isRejected ? 'Click to see reason' : ''}
-                  style={{ cursor: isRejected ? 'pointer' : 'default' }}
-                >
-                  {badgeLabel}
-                </span>
-              </div>
+                </div>
+              ))}
             </div>
+          ) : (
+            /* ── Single / one-way: one card ── */
+            <div className={`thread-card ${cardStatus} tree-card`} style={{ width: '100%', marginTop: 0 }}>
+              <div className="thread-header">
+                <div className="thread-id-info">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 14, height: 14, borderRadius: 3, backgroundColor: '#333', border: '1px solid rgba(0,0,0,0.1)' }} />
+                    <span className="thread-name">
+                      {mode === 'oneWay' ? 'One-Way Tape Equivalent' : 'Sipser Single-Tape Equivalent'}
+                    </span>
+                  </div>
+                  <span className="thread-meta">Step: {sim.stepCount}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {mode === 'oneWay' && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.72rem', color: '#666' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ width: 18, height: 12, borderRadius: 3, backgroundColor: 'rgba(166, 253, 147, 0.35)', border: '1px solid rgba(0,0,0,0.15)' }} />
+                        <span>Right</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ width: 18, height: 12, borderRadius: 3, backgroundColor: 'rgba(249, 254, 180, 0.35)', border: '1px solid rgba(0,0,0,0.15)' }} />
+                        <span>Left</span>
+                      </div>
+                    </div>
+                  )}
+                  <span
+                    className={`thread-status-badge ${cardStatus}`}
+                    onClick={() => isRejected && alert(sim.statusMessage)}
+                    title={isRejected ? 'Click to see reason' : ''}
+                    style={{ cursor: isRejected ? 'pointer' : 'default' }}
+                  >
+                    {badgeLabel}
+                  </span>
+                </div>
+              </div>
+              <TapeDisplay
+                tape={sim.tape}
+                head={sim.head}
+                activeLabel={activeNodeLabel}
+                cellSize={CELL_SIZE}
+                width="100%"
+                instantScroll={true}
+                oneWayColours={mode === 'oneWay'}
+              />
+            </div>
+          )}
 
-            <TapeDisplay
-              tape={sim.tape}
-              head={sim.head}
-              activeLabel={activeNodeLabel}
-              cellSize={CELL_SIZE}
-              width="100%"
-              instantScroll={true} 
-              oneWayColours={mode === 'oneWay'}
-            />
-          </div>
-
+          {/* Input + playback */}
           <div style={{
             display: 'flex', justifyContent: 'center', alignItems: 'center',
             gap: 22, flexWrap: 'wrap',
@@ -615,7 +955,7 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
             <div className="speed-control" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
               <label>Speed: {sim.speed}x</label>
               <input
-                type="range" min="0.25" max="2" step="0.25"
+                type="range" min="0.25" max="5" step="0.25"
                 value={sim.speed}
                 onChange={e => sim.setSpeed(Number(e.target.value))}
               />
@@ -623,6 +963,7 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
           </div>
         </div>
 
+        {/* Graph */}
         <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           <div style={{
             display: 'flex', gap: 20, flexWrap: 'wrap',
@@ -635,8 +976,6 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
           </div>
 
           <div style={{ flex: 1, minHeight: 0 }}>
-            {/* Strip transitions/animations - with 200+ states every border-color
-                and stroke animation fires simultaneously per step, causing severe lag */}
             <style>{`
               .cdm-no-transition .node,
               .cdm-no-transition .node-ring,

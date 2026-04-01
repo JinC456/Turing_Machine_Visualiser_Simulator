@@ -13,7 +13,6 @@ export default function DiagramControls({
   onConvert,
   note,
   onNoteChange,
-  onToggleOneWay
 }) {
   const fileInputRef = useRef(null);
   const editorRef = useRef(null);
@@ -150,7 +149,11 @@ export default function DiagramControls({
         )}
 
         {engine === "Deterministic" && (
-          <button onClick={onToggleOneWay}>⇄ One-Way Tape</button>
+          <button onClick={() => onConvert("oneWay")}>⇄ One-Way Tape</button>
+        )}
+
+        {engine === "NonDeterministic" && (
+          <button onClick={() => onConvert("ntm")}>⇄ DTM</button>
         )}
 
         <div className="diagram-controls-divider" />
