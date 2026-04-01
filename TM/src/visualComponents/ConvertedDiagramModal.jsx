@@ -699,31 +699,6 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
   const rawEdges = converted?.edges ?? [];
   const isLoading = converted === null || isRendering;
 
-  // ── JSON Export Handler ──────────────────────────────────────────────────
-  const handleExportJSON = useCallback(() => {
-    if (!converted) return;
-    
-    const exportData = {
-      nodes: rawNodes,
-      edges: rawEdges,
-      mode: mode
-    };
-    
-    const jsonString = JSON.stringify(exportData, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `converted-${mode}-diagram.json`;
-    
-    document.body.appendChild(link);
-    link.click();
-    
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  }, [converted, rawNodes, rawEdges, mode]);
-
   // ── Single-tape sim (singleTape + oneWay modes) ──────────────────────────
   const singleSim = useDTMSimulation(
     rawNodes, rawEdges,
@@ -808,22 +783,7 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
           padding: '10px 18px', borderBottom: '1px solid #e0e0e0',
           background: '#fafafa', flexShrink: 0,
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-             <span style={{ fontWeight: 600, fontSize: 14, color: '#333' }}>
-               Converted Diagram
-             </span>
-             <button
-               onClick={handleExportJSON}
-               disabled={isLoading}
-               style={{
-                 padding: '4px 10px', borderRadius: 4, cursor: isLoading ? 'not-allowed' : 'pointer',
-                 background: '#eee', border: '1px solid #ccc',
-                 fontSize: 12, color: '#333', opacity: isLoading ? 0.5 : 1
-               }}
-             >
-               Debug: Export JSON
-             </button>
-          </div>
+          <span style={{ fontWeight: 600, fontSize: 14, color: '#333' }}></span>
           <button onClick={onClose} style={{
             padding: '6px 13px', borderRadius: 6, cursor: 'pointer',
             background: 'transparent', border: '1px solid #ccc',
@@ -955,7 +915,7 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
             <div className="speed-control" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
               <label>Speed: {sim.speed}x</label>
               <input
-                type="range" min="0.25" max="5" step="0.25"
+                type="range" min="0.25" max="2" step="0.25"
                 value={sim.speed}
                 onChange={e => sim.setSpeed(Number(e.target.value))}
               />
