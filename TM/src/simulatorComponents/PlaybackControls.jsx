@@ -10,27 +10,57 @@ export default function PlaybackControls({
   onClear,
   isRunning,
   isFinished,
-  canUndo
+  canUndo,
+  isSkipping,
 }) {
   return (
     <div className="playback-controls">
-      <button onClick={onSkipToStart} disabled={isRunning} title="Skip to Start">
+      <style>{`
+        @keyframes pcb-soft-pulse {
+          0% {
+            box-shadow: 0 0 0 0 rgba(66, 133, 244, 0.4);
+          }
+          70% {
+            box-shadow: 0 0 0 6px rgba(66, 133, 244, 0);
+          }
+          100% {
+            box-shadow: 0 0 0 0 rgba(66, 133, 244, 0);
+          }
+        }
+
+        .pcb-skipping {
+          background: #e8f0fe !important;
+          color: #1a3c7c !important;
+          border-color: #a8c7fa !important;
+          cursor: wait !important;
+
+          animation: pcb-soft-pulse 1.8s ease-out infinite;
+          transition: all 0.25s ease;
+        }
+      `}</style>
+
+      <button onClick={onSkipToStart} disabled={isRunning || isSkipping} title="Skip to Start">
         ◀◀
       </button>
 
-      <button onClick={onStepBack} disabled={isRunning || !canUndo} title="Step Back">
+      <button onClick={onStepBack} disabled={isRunning || isSkipping || !canUndo} title="Step Back">
         ◀
       </button>
 
-      <button onClick={onStepForward} disabled={isRunning || isFinished} title="Step Forward">
+      <button onClick={onStepForward} disabled={isRunning || isSkipping || isFinished} title="Step Forward">
         ▶
       </button>
 
-      <button onClick={onSkipToEnd} disabled={isRunning || isFinished} title="Skip to End">
+      <button
+        onClick={onSkipToEnd}
+        disabled={isRunning || isFinished}
+        title={isSkipping ? "Computing…" : "Skip to End"}
+        className={isSkipping ? "pcb-skipping" : ""}
+      >
         ▶▶
       </button>
 
-      <button onClick={onStart} disabled={isRunning || isFinished} title="Auto Run">
+      <button onClick={onStart} disabled={isRunning || isSkipping || isFinished} title="Auto Run">
         Start
       </button>
 
@@ -38,7 +68,7 @@ export default function PlaybackControls({
         Stop
       </button>
 
-      <button onClick={onClear} title="Clear">
+      <button onClick={onClear} disabled={isSkipping} title="Clear">
         Clear
       </button>
     </div>

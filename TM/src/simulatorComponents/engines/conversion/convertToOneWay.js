@@ -141,7 +141,12 @@ export function convertToOneWay(origNodes, origEdges) {
   const alphabet = buildAlphabet(origEdges);
 
   const startOrig = origNodes.find(n => n.type === 'start');
-  if (!startOrig) return { nodes: [], edges: [] };
+  if (!startOrig) {
+    const emptyGraph = new GraphBuilder();
+    emptyGraph.addNode('q_ow_init', 'init', 'start');
+    emptyGraph.applyLayout('q_ow_init');
+    return { nodes: emptyGraph.nodes, edges: emptyGraph.edges };
+  }
 
   const acceptIds = new Set(origNodes.filter(n => n.type === 'accept').map(n => n.id));
   const nodeLabel = (id) => origNodes.find(n => n.id === id)?.data?.label ?? id;

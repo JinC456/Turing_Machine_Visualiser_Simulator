@@ -20,7 +20,7 @@ function makeEdge(source, target, labels) {
   };
 }
 
-function r(read, write, direction) { return { read, write, direction }; }
+function rule(read, write, direction) { return { read, write, direction }; }
 
 function label(...tapeRules) {
   return Object.fromEntries(tapeRules);
@@ -151,8 +151,21 @@ export function addressToTape(tape, headStart, address) {
 
 function applyTapeAction(tape, head, write, direction) {
   const next = tape.slice();
+
+  // If we're sitting on the left wall, don't overwrite it —
+  // insert a blank to its right so the wall stays in place.
+  if (next[head] === LWALL || next[head] === VALID_FLAG) {
+    next.splice(head + 1, 0, write);   // insert the written symbol after [
+    const newHead = direction === 'R' ? head + 1
+                  : direction === 'L' ? head       // can't go further left than [
+                  : head + 1;                      // 'N' — stay on the inserted cell
+    return [next, newHead];
+  }
+
   next[head] = write;
-  let newHead = direction === 'R' ? head + 1 : direction === 'L' ? Math.max(0, head - 1) : head;
+  let newHead = direction === 'R' ? head + 1
+              : direction === 'L' ? Math.max(0, head - 1)
+              : head;
 
   if (newHead >= next.length) next.push(BLANK);
 
@@ -162,8 +175,15 @@ function applyTapeAction(tape, head, write, direction) {
     next[newHead]     = BLANK;
   }
   if (direction === 'L' && (next[newHead] === LWALL || next[newHead] === VALID_FLAG)) {
-    next.splice(newHead + 1, 0, BLANK);
-    newHead++;
+    const wallSym = next[newHead];
+    if (newHead > 0) {
+      next[newHead - 1] = wallSym;
+      next[newHead]     = BLANK;
+    } else {
+      // Array padding exhausted — grow leftward
+      next.unshift(wallSym);
+      newHead = 1;
+    }
   }
   return [next, newHead];
 }
@@ -220,17 +240,23 @@ export function simulatePath(nodeById, adjOut, startNode, tape2, head2, address,
   };
 }
 
-function addT3Loop(graph, src, tgt, t3syms, t2Rule, t1Rule = r(RWALL, RWALL, 'N')) {
+function addT3Loop(graph, src, tgt, t3syms, t2Rule, t1Rule = rule(RWALL, RWALL, 'N')) {
   for (const t3sym of t3syms) {
     graph.addEdge(src, tgt, [
-      label(['tape1', t1Rule], ['tape2', t2Rule], ['tape3', r(t3sym, t3sym, 'N')]),
+      label(['tape1', t1Rule], ['tape2', t2Rule], ['tape3', rule(t3sym, t3sym, 'N')]),
     ]);
   }
 }
 
 export function convertNtmToDtm(origNodes, origEdges) {
   const startOrig = origNodes.find(n => n.type === 'start');
-  if (!startOrig) return { nodes: [], edges: [] };
+
+  if (!startOrig) {
+    const emptyGraph = new GraphBuilder();
+    emptyGraph.addNode('D_INIT', 'INIT', 'start');
+    emptyGraph.applyLayout('D_INIT');
+    return { nodes: emptyGraph.nodes, edges: emptyGraph.edges };
+  }
 
   const alpha        = buildAlphabet(origEdges);
   const inputSymbols = [...alpha].filter(s => s !== BLANK && s !== LWALL && s !== RWALL);
@@ -252,36 +278,36 @@ export function convertNtmToDtm(origNodes, origEdges) {
 
   for (const sym of allSymbols) {
     graph.addEdge(INIT, COPY, [label(
-      ['tape1', r(sym,   sym,   'N')],
-      ['tape2', r(BLANK, BLANK, 'N')],
-      ['tape3', r(BLANK, '1',   'N')],
+      ['tape1', rule(sym,   sym,   'N')],
+      ['tape2', rule(BLANK, BLANK, 'N')],
+      ['tape3', rule(BLANK, '1',   'N')],
     )]);
     graph.addEdge(COPY, COPY, [label(
-      ['tape1', r(sym, sym, 'R')],
-      ['tape2', r(BLANK, sym, 'R')],
-      ['tape3', r('1', '1', 'N')],
+      ['tape1', rule(sym, sym, 'R')],
+      ['tape2', rule(BLANK, sym, 'R')],
+      ['tape3', rule('1', '1', 'N')],
     )]);
   }
 
   graph.addEdge(COPY, REWIND, [label(
-    ['tape1', r(RWALL, RWALL, 'N')],
-    ['tape2', r(BLANK, RWALL, 'N')],
-    ['tape3', r('1',   '1',   'N')],
+    ['tape1', rule(RWALL, RWALL, 'N')],
+    ['tape2', rule(BLANK, RWALL, 'N')],
+    ['tape3', rule('1',   '1',   'N')],
   )]);
 
   for (const sym of [...inputSymbols, BLANK, RWALL]) {
     graph.addEdge(REWIND, REWIND, [label(
-      ['tape1', r(RWALL, RWALL, 'N')],
-      ['tape2', r(sym,   sym,   'L')],
-      ['tape3', r('1',   '1',   'N')],
+      ['tape1', rule(RWALL, RWALL, 'N')],
+      ['tape2', rule(sym,   sym,   'L')],
+      ['tape3', rule('1',   '1',   'N')],
     )]);
   }
 
   for (const d of digits) {
     graph.addEdge(REWIND, `D_READ_ADDR_${startOrig.id}`, [label(
-      ['tape1', r(RWALL, RWALL, 'N')],
-      ['tape2', r(LWALL, LWALL, 'R')],
-      ['tape3', r(d,     d,     'N')],
+      ['tape1', rule(RWALL, RWALL, 'N')],
+      ['tape2', rule(LWALL, LWALL, 'R')],
+      ['tape3', rule(d,     d,     'N')],
     )]);
   }
 
@@ -299,7 +325,7 @@ export function convertNtmToDtm(origNodes, origEdges) {
 
     if (ntmNode.type === 'accept') {
       for (const sym of allSymbols)
-        addT3Loop(graph, readId, D_ACCEPT, digitsBlank, r(sym, sym, 'N'));
+        addT3Loop(graph, readId, D_ACCEPT, digitsBlank, rule(sym, sym, 'N'));
       continue;
     }
 
@@ -308,18 +334,18 @@ export function convertNtmToDtm(origNodes, origEdges) {
 
     for (const sym of [...allSymbols, RWALL]) {
       graph.addEdge(readId, survRewindId, [label(
-        ['tape1', r(RWALL, RWALL,       'N')],
-        ['tape2', r(sym,   sym,         'N')],
-        ['tape3', r(BLANK, BLANK,       'L')], 
+        ['tape1', rule(RWALL, RWALL,       'N')],
+        ['tape2', rule(sym,   sym,         'N')],
+        ['tape3', rule(BLANK, BLANK,       'L')], 
       )]);
     }
 
     for (const d of [...digits, ...deadDigits]) {
       for (const sym of [...allSymbols, RWALL]) {
         graph.addEdge(survRewindId, survRewindId, [label(
-          ['tape1', r(RWALL, RWALL, 'N')],
-          ['tape2', r(sym,   sym,   'N')],
-          ['tape3', r(d,     d,     'L')],
+          ['tape1', rule(RWALL, RWALL, 'N')],
+          ['tape2', rule(sym,   sym,   'N')],
+          ['tape3', rule(d,     d,     'L')],
         )]);
       }
     }
@@ -327,63 +353,32 @@ export function convertNtmToDtm(origNodes, origEdges) {
     for (const wall of [LWALL, VALID_FLAG]) {
       for (const sym of [...allSymbols, RWALL]) {
         graph.addEdge(survRewindId, RESET_START, [label(
-          ['tape1', r(RWALL,       RWALL,      'N')],
-          ['tape2', r(sym,         sym,        'N')],
-          ['tape3', r(wall,        VALID_FLAG, 'R')], 
+          ['tape1', rule(RWALL,       RWALL,      'N')],
+          ['tape2', rule(sym,         sym,        'N')],
+          ['tape3', rule(wall,        VALID_FLAG, 'R')], 
         )]);
       }
     }
 
-    const shiftSymbols  = [...allSymbols, RWALL];
-    const shiftStartId  = `D_SHIFT_START_${q}`;
-    const shiftReturnId = `D_SHIFT_RETURN_${q}`;
-    graph.addNode(shiftStartId,  `Shift\nStart`);
-    graph.addNode(shiftReturnId, `Shift\nReturn`);
-
-    addT3Loop(graph, readId, shiftStartId, digitsBlank, r(LWALL,      LWALL,      'R'));
-    addT3Loop(graph, readId, shiftStartId, digitsBlank, r(VALID_FLAG, VALID_FLAG, 'R'));
+    const wallShiftId = `D_WALL_SHIFT_${q}`;
+    graph.addNode(wallShiftId, `Wall\nShift L`);
 
     for (const t3sym of [...digitsBlank, VALID_FLAG]) {
-      for (const sym of shiftSymbols) {
-        const carryId = `D_SHIFT_CARRY_${q}_${sym}`;
-        graph.addNode(carryId, `Carry\n${sym}`);
-        graph.addEdge(shiftStartId, carryId, [label(
-          ['tape1', r(RWALL, RWALL, 'N')],
-          ['tape2', r(sym,   BLANK, 'R')],
-          ['tape3', r(t3sym, t3sym, 'N')],
+      for (const wall of [LWALL, VALID_FLAG]) {
+        // 1. Hit wall: write BLANK, move L (head is now on the new empty cell to the left)
+        graph.addEdge(readId, wallShiftId, [label(
+          ['tape1', rule(RWALL, RWALL, 'N')],
+          ['tape2', rule(wall,  BLANK, 'L')],
+          ['tape3', rule(t3sym, t3sym, 'N')],
         )]);
 
-        if (sym === RWALL) {
-          graph.addEdge(carryId, shiftReturnId, [label(
-            ['tape1', r(RWALL, RWALL, 'N')],
-            ['tape2', r(BLANK, RWALL, 'L')],
-            ['tape3', r(t3sym, t3sym, 'N')],
-          )]);
-        } else {
-          for (const tapeSym of shiftSymbols) {
-            graph.addEdge(carryId, `D_SHIFT_CARRY_${q}_${tapeSym}`, [label(
-              ['tape1', r(RWALL,   RWALL,    'N')],
-              ['tape2', r(tapeSym, sym,      'R')],
-              ['tape3', r(t3sym,   t3sym,    'N')],
-            )]);
-          }
-        }
-      }
-    }
-
-    for (const t3sym of [...digitsBlank, VALID_FLAG]) {
-      for (const sym of shiftSymbols) {
-        graph.addEdge(shiftReturnId, shiftReturnId, [label(
-          ['tape1', r(RWALL, RWALL, 'N')],
-          ['tape2', r(sym,   sym,   'L')],
-          ['tape3', r(t3sym, t3sym, 'N')],
+        // 2. Read BLANK, write wall, move R (places head on the new BLANK cell)
+        graph.addEdge(wallShiftId, readId, [label(
+          ['tape1', rule(RWALL, RWALL, 'N')],
+          ['tape2', rule(BLANK, wall,  'R')],
+          ['tape3', rule(t3sym, t3sym, 'N')],
         )]);
       }
-      graph.addEdge(shiftReturnId, readId, [label(
-        ['tape1', r(RWALL, RWALL, 'N')],
-        ['tape2', r(LWALL, LWALL, 'R')],
-        ['tape3', r(t3sym, t3sym, 'N')],
-      )]);
     }
 
     for (const d of digits) {
@@ -392,9 +387,9 @@ export function convertNtmToDtm(origNodes, origEdges) {
 
       for (const sym of [...allSymbols, RWALL]) {
         graph.addEdge(readId, simId, [label(
-          ['tape1', r(RWALL, RWALL, 'N')],
-          ['tape2', r(sym,   sym,   'N')],
-          ['tape3', r(d,     d,     'R')],
+          ['tape1', rule(RWALL, RWALL, 'N')],
+          ['tape2', rule(sym,   sym,   'N')],
+          ['tape3', rule(d,     d,     'R')],
         )]);
       }
 
@@ -407,35 +402,35 @@ export function convertNtmToDtm(origNodes, origEdges) {
           graph.addNode(markId, `Mark\n${d}^`);
           for (const t3sym of digitsBlank) {
             graph.addEdge(simId, markId, [label(
-              ['tape1', r(RWALL, RWALL, 'N')],
-              ['tape2', r(sym,   sym,   'N')],
-              ['tape3', r(t3sym, t3sym, 'L')],
+              ['tape1', rule(RWALL, RWALL, 'N')],
+              ['tape2', rule(sym,   sym,   'N')],
+              ['tape3', rule(t3sym, t3sym, 'L')],
             )]);
             graph.addEdge(markId, RESET_START, [label(
-              ['tape1', r(RWALL, RWALL, 'N')],
-              ['tape2', r(sym,   sym,   'N')],
-              ['tape3', r(t3sym, `${d}^`, 'R')],
+              ['tape1', rule(RWALL, RWALL, 'N')],
+              ['tape2', rule(sym,   sym,   'N')],
+              ['tape3', rule(t3sym, `${d}^`, 'R')],
             )]);
           }
           continue;
         }
 
-        const { edge: ntmEdge, rule } = chosen;
+        const { edge: ntmEdge, rule: transitionRule } = chosen;
         const nextStateId = `D_READ_ADDR_${ntmEdge.target}`;
 
-        if (rule.direction === 'R') {
+        if (transitionRule.direction === 'R') {
           const expandCheckId  = `D_EXPAND_CHECK_${simId}_${sym}`;
           const expandReturnId = `D_EXPAND_RETURN_${simId}_${sym}`;
           graph.addNode(expandCheckId,  'Expand\nCheck');
           graph.addNode(expandReturnId, 'Expand\nReturn');
 
-          addT3Loop(graph, simId, expandCheckId, digitsBlank, r(sym, rule.write, 'R'));
+          addT3Loop(graph, simId, expandCheckId, digitsBlank, rule(sym, transitionRule.write, 'R'));
           for (const nextSym of allSymbols)
-            addT3Loop(graph, expandCheckId, nextStateId, digitsBlank, r(nextSym, nextSym, 'N'));
-          addT3Loop(graph, expandCheckId,  expandReturnId, digitsBlank, r(RWALL, BLANK, 'R'));
-          addT3Loop(graph, expandReturnId, nextStateId,    digitsBlank, r(BLANK, RWALL, 'L'));
+            addT3Loop(graph, expandCheckId, nextStateId, digitsBlank, rule(nextSym, nextSym, 'N'));
+          addT3Loop(graph, expandCheckId,  expandReturnId, digitsBlank, rule(RWALL, BLANK, 'R'));
+          addT3Loop(graph, expandReturnId, nextStateId,    digitsBlank, rule(BLANK, RWALL, 'L'));
         } else {
-          addT3Loop(graph, simId, nextStateId, digitsBlank, r(sym, rule.write, rule.direction));
+          addT3Loop(graph, simId, nextStateId, digitsBlank, rule(sym, transitionRule.write, transitionRule.direction));
         }
       }
     }
@@ -456,48 +451,48 @@ export function convertNtmToDtm(origNodes, origEdges) {
   for (const d of [...digits, ...deadDigits])
     for (const sym of [...allSymbols, RWALL])
       graph.addEdge(RESET_START, RESET_START, [label(
-        ['tape1', r(RWALL, RWALL, 'N')],
-        ['tape2', r(sym,   sym,   'N')],
-        ['tape3', r(d,     d,     'R')],
+        ['tape1', rule(RWALL, RWALL, 'N')],
+        ['tape2', rule(sym,   sym,   'N')],
+        ['tape3', rule(d,     d,     'R')],
       )]);
 
   graph.addEdge(RESET_START, WIPE_T2, [label(
-    ['tape1', r(RWALL, RWALL, 'N')],
-    ['tape2', r(LWALL, LWALL, 'R')],
-    ['tape3', r(BLANK, BLANK, 'N')],
+    ['tape1', rule(RWALL, RWALL, 'N')],
+    ['tape2', rule(LWALL, LWALL, 'R')],
+    ['tape3', rule(BLANK, BLANK, 'N')],
   )]);
 
   for (const sym of [...allSymbols, RWALL]) {
     graph.addEdge(RESET_START, GOTO_LWALL, [label(
-      ['tape1', r(RWALL, RWALL, 'N')],
-      ['tape2', r(sym,   sym,   'L')],
-      ['tape3', r(BLANK, BLANK, 'N')],
+      ['tape1', rule(RWALL, RWALL, 'N')],
+      ['tape2', rule(sym,   sym,   'L')],
+      ['tape3', rule(BLANK, BLANK, 'N')],
     )]);
     graph.addEdge(GOTO_LWALL, GOTO_LWALL, [label(
-      ['tape1', r(RWALL, RWALL, 'N')],
-      ['tape2', r(sym,   sym,   'L')],
-      ['tape3', r(BLANK, BLANK, 'N')],
+      ['tape1', rule(RWALL, RWALL, 'N')],
+      ['tape2', rule(sym,   sym,   'L')],
+      ['tape3', rule(BLANK, BLANK, 'N')],
     )]);
   }
 
   graph.addEdge(GOTO_LWALL, WIPE_T2, [label(
-    ['tape1', r(RWALL, RWALL, 'N')],
-    ['tape2', r(LWALL, LWALL, 'R')],
-    ['tape3', r(BLANK, BLANK, 'N')],
+    ['tape1', rule(RWALL, RWALL, 'N')],
+    ['tape2', rule(LWALL, LWALL, 'R')],
+    ['tape3', rule(BLANK, BLANK, 'N')],
   )]);
 
   for (const sym of allSymbols) {
     graph.addEdge(WIPE_T2, WIPE_T2, [label(
-      ['tape1', r(RWALL, RWALL, 'N')],
-      ['tape2', r(sym,   BLANK, 'R')],
-      ['tape3', r(BLANK, BLANK, 'N')],
+      ['tape1', rule(RWALL, RWALL, 'N')],
+      ['tape2', rule(sym,   BLANK, 'R')],
+      ['tape3', rule(BLANK, BLANK, 'N')],
     )]);
   }
 
   graph.addEdge(WIPE_T2, REWIND_T1_T2, [label(
-    ['tape1', r(RWALL, RWALL, 'L')],
-    ['tape2', r(RWALL, BLANK, 'L')],
-    ['tape3', r(BLANK, BLANK, 'N')],
+    ['tape1', rule(RWALL, RWALL, 'L')],
+    ['tape2', rule(RWALL, BLANK, 'L')],
+    ['tape3', rule(BLANK, BLANK, 'N')],
   )]);
 
   const rewindSyms = [...inputSymbols, BLANK, LWALL, RWALL];
@@ -505,33 +500,33 @@ export function convertNtmToDtm(origNodes, origEdges) {
     for (const t2 of rewindSyms) {
       if (t1 === LWALL && t2 === LWALL) continue;
       graph.addEdge(REWIND_T1_T2, REWIND_T1_T2, [label(
-        ['tape1', r(t1, t1, t1 === LWALL ? 'N' : 'L')],
-        ['tape2', r(t2, t2, t2 === LWALL ? 'N' : 'L')],
-        ['tape3', r(BLANK, BLANK, 'N')],
+        ['tape1', rule(t1, t1, t1 === LWALL ? 'N' : 'L')],
+        ['tape2', rule(t2, t2, t2 === LWALL ? 'N' : 'L')],
+        ['tape3', rule(BLANK, BLANK, 'N')],
       )]);
     }
   }
 
   graph.addEdge(REWIND_T1_T2, RESET_COPY, [label(
-    ['tape1', r(LWALL, LWALL, 'R')],
-    ['tape2', r(LWALL, LWALL, 'R')],
-    ['tape3', r(BLANK, BLANK, 'N')],
+    ['tape1', rule(LWALL, LWALL, 'R')],
+    ['tape2', rule(LWALL, LWALL, 'R')],
+    ['tape3', rule(BLANK, BLANK, 'N')],
   )]);
 
   for (const sym of allSymbols)
     for (const d of digitsBlank)
       graph.addEdge(RESET_COPY, RESET_COPY, [label(
-        ['tape1', r(sym,   sym,   'R')],
-        ['tape2', r(BLANK, sym,   'R')],
-        ['tape3', r(d,     d,     'N')],
+        ['tape1', rule(sym,   sym,   'R')],
+        ['tape2', rule(BLANK, sym,   'R')],
+        ['tape3', rule(d,     d,     'N')],
       )]);
 
   for (const d of digitsBlank)
     for (const t2Sym of [BLANK, RWALL])
       graph.addEdge(RESET_COPY, RESET_COPY_DONE, [label(
-        ['tape1', r(RWALL, RWALL, 'N')],
-        ['tape2', r(t2Sym, RWALL, 'N')],
-        ['tape3', r(d,     d,     'N')],
+        ['tape1', rule(RWALL, RWALL, 'N')],
+        ['tape2', rule(t2Sym, RWALL, 'N')],
+        ['tape3', rule(d,     d,     'N')],
       )]);
 
   const INC_REWIND_FIRST = 'D_INC_REWIND_FIRST';
@@ -548,32 +543,32 @@ export function convertNtmToDtm(origNodes, origEdges) {
   graph.addNode(INC_REWIND_T3,    'Inc\nRewind T3');
   graph.addNode(INC_REWIND_T1T2,  'Inc\nRewind\nT2');
 
-  const t1t2Stay = r(RWALL, RWALL, 'N'); 
+  const t1t2Stay = rule(RWALL, RWALL, 'N'); 
 
   for (const t3sym of digitsBlank)
     graph.addEdge(RESET_COPY_DONE, INC_REWIND_FIRST, [label(
-      ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', r(t3sym, t3sym, 'L')],
+      ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', rule(t3sym, t3sym, 'L')],
     )]);
 
   for (const d of [...digits, ...deadDigits])
     graph.addEdge(INC_REWIND_FIRST, INC_REWIND_FIRST, [label(
-      ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', r(d, d, 'L')],
+      ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', rule(d, d, 'L')],
     )]);
 
   graph.addEdge(INC_REWIND_FIRST, INC_FIND_END, [label(
-    ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', r(LWALL,      LWALL,      'R')],
+    ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', rule(LWALL,      LWALL,      'R')],
   )]);
   graph.addEdge(INC_REWIND_FIRST, INC_FIND_END, [label(
-    ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', r(VALID_FLAG, VALID_FLAG, 'R')],
+    ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', rule(VALID_FLAG, VALID_FLAG, 'R')],
   )]);
 
   for (const d of digits)
     graph.addEdge(INC_FIND_END, INC_FIND_END, [label(
-      ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', r(d, d, 'R')],
+      ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', rule(d, d, 'R')],
     )]);
 
   graph.addEdge(INC_FIND_END, INC_MATH, [label(
-    ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', r(BLANK, BLANK, 'L')],
+    ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', rule(BLANK, BLANK, 'L')],
   )]);
 
   const INC_WIPE_RIGHT  = 'D_INC_WIPE_RIGHT';
@@ -583,81 +578,81 @@ export function convertNtmToDtm(origNodes, origEdges) {
 
   for (const dead of deadDigits) {
     graph.addEdge(INC_FIND_END, INC_WIPE_RIGHT, [label(
-      ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', r(dead, dead, 'R')],
+      ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', rule(dead, dead, 'R')],
     )]);
   }
 
   for (const d of digits) {
     graph.addEdge(INC_WIPE_RIGHT, INC_WIPE_RIGHT, [label(
-      ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', r(d, '1', 'R')],
+      ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', rule(d, '1', 'R')],
     )]);
   }
 
   graph.addEdge(INC_WIPE_RIGHT, INC_WIPE_RETURN, [label(
-    ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', r(BLANK, BLANK, 'L')],
+    ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', rule(BLANK, BLANK, 'L')],
   )]);
 
   graph.addEdge(INC_WIPE_RETURN, INC_WIPE_RETURN, [label(
-    ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', r('1', '1', 'L')],
+    ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', rule('1', '1', 'L')],
   )]);
 
   for (const dead of deadDigits) {
     graph.addEdge(INC_WIPE_RETURN, INC_MATH, [label(
-      ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', r(dead, dead, 'N')],
+      ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', rule(dead, dead, 'N')],
     )]);
   }
 
   for (let i = 1; i < base; i++) {
     graph.addEdge(INC_MATH, INC_REWIND_T3, [label(
-      ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', r(String(i), String(i + 1), 'N')],
+      ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', rule(String(i), String(i + 1), 'N')],
     )]);
     graph.addEdge(INC_MATH, INC_REWIND_T3, [label(
-      ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', r(`${i}^`, String(i + 1), 'N')],
+      ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', rule(`${i}^`, String(i + 1), 'N')],
     )]);
   }
 
   graph.addEdge(INC_MATH, INC_MATH, [label(
-    ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', r(String(base), '1', 'L')],
+    ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', rule(String(base), '1', 'L')],
   )]);
   graph.addEdge(INC_MATH, INC_MATH, [label(
-    ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', r(`${base}^`, '1', 'L')],
+    ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', rule(`${base}^`, '1', 'L')],
   )]);
 
   graph.addEdge(INC_MATH, INC_EXPAND, [label(
-    ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', r(VALID_FLAG, '1', 'L')],
+    ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', rule(VALID_FLAG, '1', 'L')],
   )]);
   
   graph.addEdge(INC_EXPAND, INC_REWIND_T3, [label(
-    ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', r(BLANK, LWALL, 'R')],
+    ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', rule(BLANK, LWALL, 'R')],
   )]);
 
   for (const d of [...digits, ...deadDigits])
     graph.addEdge(INC_REWIND_T3, INC_REWIND_T3, [label(
-      ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', r(d, d, 'L')],
+      ['tape1', t1t2Stay], ['tape2', t1t2Stay], ['tape3', rule(d, d, 'L')],
     )]);
 
   graph.addEdge(INC_REWIND_T3, INC_REWIND_T1T2, [label(
-    ['tape1', t1t2Stay], ['tape2', r(RWALL, RWALL, 'L')], ['tape3', r(LWALL,      LWALL,      'R')],
+    ['tape1', t1t2Stay], ['tape2', rule(RWALL, RWALL, 'L')], ['tape3', rule(LWALL,      LWALL,      'R')],
   )]);
   graph.addEdge(INC_REWIND_T3, INC_REWIND_T1T2, [label(
-    ['tape1', t1t2Stay], ['tape2', r(RWALL, RWALL, 'L')], ['tape3', r(VALID_FLAG, VALID_FLAG, 'R')],
+    ['tape1', t1t2Stay], ['tape2', rule(RWALL, RWALL, 'L')], ['tape3', rule(VALID_FLAG, VALID_FLAG, 'R')],
   )]);
 
   for (const d of [...digits, ...deadDigits])
     for (const t2 of [...inputSymbols, BLANK, RWALL]) {
       graph.addEdge(INC_REWIND_T1T2, INC_REWIND_T1T2, [label(
-        ['tape1', t1t2Stay], ['tape2', r(t2, t2, 'L')], ['tape3', r(d, d, 'N')],
+        ['tape1', t1t2Stay], ['tape2', rule(t2, t2, 'L')], ['tape3', rule(d, d, 'N')],
       )]);
     }
 
   for (const d of [...digits, ...deadDigits]) {
     graph.addEdge(INC_REWIND_T1T2, `D_READ_ADDR_${startOrig.id}`, [label(
-      ['tape1', t1t2Stay], ['tape2', r(LWALL, LWALL, 'R')], ['tape3', r(d, d, 'N')],
+      ['tape1', t1t2Stay], ['tape2', rule(LWALL, LWALL, 'R')], ['tape3', rule(d, d, 'N')],
     )]);
   }
 
   graph.addEdge(INC_REWIND_T1T2, `D_READ_ADDR_${startOrig.id}`, [label(
-    ['tape1', t1t2Stay], ['tape2', r(LWALL, LWALL, 'R')], ['tape3', r(VALID_FLAG, VALID_FLAG, 'N')],
+    ['tape1', t1t2Stay], ['tape2', rule(LWALL, LWALL, 'R')], ['tape3', rule(VALID_FLAG, VALID_FLAG, 'N')],
   )]);
 
   graph.mergeParallelEdges();
@@ -678,7 +673,10 @@ export function convertNtmToDtm(origNodes, origEdges) {
 }
 
 export function copyToTape2(tape1, head1, tape2, tape2ContentStart) {
-  const fresh = tape2.slice();
+  // Build a clean tape so wandering walls from previous branches don't persist
+  const fresh = Array(tape2.length).fill(BLANK);
+  fresh[tape2ContentStart - 1] = LWALL;
+
   let writeIdx = tape2ContentStart;
   for (let readIdx = head1; readIdx < tape1.length; readIdx++) {
     const sym = tape1[readIdx];
@@ -687,10 +685,8 @@ export function copyToTape2(tape1, head1, tape2, tape2ContentStart) {
     fresh[writeIdx++] = sym;
     if (sym === RWALL) break;
   }
-  for (let i = writeIdx; i < fresh.length; i++) {
-    if (fresh[i] === RWALL || fresh[i] === BLANK) break;
-    fresh[i] = BLANK;
-  }
+  fresh[writeIdx] = RWALL;
+
   return { tape2: fresh, head2: tape2ContentStart };
 }
 

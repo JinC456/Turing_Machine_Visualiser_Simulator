@@ -187,6 +187,38 @@ export default function TapeContainer({
     setIsRunning(false);
     setIsTimeout(false);
 
+    // Guard: if there is no start node, flush a "No Start Node" rejection
+    // so the UI behaves identically to pressing the Step button on an empty canvas.
+    const startNode = nodes.find(n => n.type === 'start');
+    if (!startNode) {
+      if (isNonDeterministic) {
+        flushRunToEnd({
+          threads: [{
+            id: '1', status: 'rejected', reason: 'No Start Node',
+            tape: tm.threads[0]?.tape ?? Array(50).fill('␣'),
+            head: tm.threads[0]?.head ?? 25,
+            currentNodeId: null, stepCount: 0, color: '#e6194b',
+          }],
+          stepCount: 0,
+        });
+      } else {
+        flushRunToEnd({
+          tape: isMultiTape ? tm.tapes[0] : tm.tape,
+          tapes: isMultiTape ? tm.tapes : undefined,
+          head: isMultiTape ? tm.heads[0] : tm.head,
+          heads: isMultiTape ? tm.heads : undefined,
+          activeNodeId: null,
+          activeEdgeId: null,
+          lastRead: null,
+          stepCount: 0,
+          halted: true,
+          isAccept: false,
+          error: 'No Start Node',
+        });
+      }
+      return;
+    }
+
     const doSkip = (currentTm) => {
       if (isNonDeterministic) {
         const result = computeNonDetRunToEnd({
@@ -238,7 +270,7 @@ export default function TapeContainer({
     } else {
       doSkip(tm);
     }
-  }, [tm, isNonDeterministic, isMultiTape, numTapes, nodes, edges, flushRunToEnd, tmStepCount, canUndo, initializeTape, setIsRunning]);
+  }, [tm, isNonDeterministic, isMultiTape, numTapes, nodes, edges, flushRunToEnd, tmStepCount, canUndo, initializeTape, setIsRunning, setIsTimeout]);
 
   const handleClear = () => {
     setIsRunning(false);
@@ -283,7 +315,7 @@ export default function TapeContainer({
     }
 
     return (
-        <div className="thread-list-container" style={{ width: '90%', border: 'none', gap: '20px' }}>
+        <div className="thread-list-container" style={{ border: 'none', gap: '20px' }}>
             {isMultiTape ? tm.tapes.map((tape, index) => (
                 <div key={index} className="thread-tree-row" style={{ width: '100%' }}>
                     <div className={`thread-card ${cardStatusClass} tree-card`} style={{ width: '100%', marginTop: '0px' }}>
@@ -347,7 +379,7 @@ export default function TapeContainer({
     const sortedThreads = visibleThreads.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
 
     return (
-      <div className="thread-list-wrapper" style={{ width: '90%' }}>
+      <div className="thread-list-wrapper" style={{ width: '100%' }}>
           <div className="ntm-view-controls" style={{ display: 'flex', gap: '15px', marginBottom: '10px', fontSize: '0.9rem', color: '#555', width: '90%', maxWidth: '1200px', margin: '0 auto 10px auto' }}>
               <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
                   <input type="checkbox" checked={showFrozen} onChange={(e) => setShowFrozen(e.target.checked)} style={{ marginRight: '6px' }} />

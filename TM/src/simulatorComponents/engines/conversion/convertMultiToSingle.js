@@ -471,8 +471,13 @@ export function convertMultiToSingle(mtNodes, mtEdges) {
   const { alphabet, hatSymbols } = buildAlphabets(mtEdges, numTapes);
 
   const startOrig = mtNodes.find(n => n.type === 'start');
-  if (!startOrig) return { nodes: [], edges: [] };
-  const acceptOrigIds = new Set(mtNodes.filter(n => n.type === 'accept').map(n => n.id));
+
+  if (!startOrig) {
+    const emptyGraph = new GraphBuilder();
+    emptyGraph.addNode('q_init', 'q_init', 'start');
+    emptyGraph.applyLayout('q_init');
+    return { nodes: emptyGraph.nodes, edges: emptyGraph.edges };
+  }
 
   //Graph accumulator 
   const graph = new GraphBuilder();

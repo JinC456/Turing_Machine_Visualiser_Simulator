@@ -958,8 +958,7 @@ textarea,
   display: flex;
   flex-direction: column;
   gap: 12px;
-  width: 90%;
-  max-width: 1200px;
+  width: 75vw;
   margin: 0 auto;
   max-height: 60vh;
   min-height: 150px;
@@ -985,7 +984,7 @@ textarea,
   display: flex;
   align-items: flex-start;
   min-width: 300px;
-  max-width: 100%;
+  width: 100%;
 }
 
 .tree-connector {

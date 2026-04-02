@@ -67,18 +67,56 @@ function buildInitialTape(inputStr, mtEdges) {
 }
 
 // ── Auto-pan ───────────────────────────────────────────────────────────────
+// ── Auto-pan ───────────────────────────────────────────────────────────────
 function useAutoPan(activeNodeId, stepCount) {
-  const { setCenter, getNodes } = useReactFlow();
+  // Note: We changed `setCenter` to `setViewport`
+  const { getNodes, setViewport } = useReactFlow();
 
   useEffect(() => {
     if (!activeNodeId) return;
     const target = getNodes().find(n => n.id === activeNodeId);
     if (!target) return;
+
+    // 1. Grab the main wrapper element of the graph
+    const container = document.querySelector('.cdm-no-transition');
+    if (!container) return;
+
+    // 2. Find the exact center of the current active node
     const { x, y } = target.position;
-    const w = target.width  ?? 150;
+    const w = target.width ?? 50;
     const h = target.height ?? 50;
-    setCenter(x + w / 2, y + h / 2, { duration: 0, zoom: 1 });
-  }, [activeNodeId, stepCount, setCenter, getNodes]);
+    const nodeX = x + w / 2;
+    const nodeY = y + h / 2;
+
+    // 3. Get the container's bounds and screen space
+    const rect = container.getBoundingClientRect();
+    const fullWidth = container.clientWidth;
+    const fullHeight = container.clientHeight;
+    const windowHeight = window.innerHeight;
+
+    // 4. Calculate the specific "Visible Slice" of the graph container
+    let visibleTop = Math.max(0, -rect.top);
+    let visibleBottom = Math.min(fullHeight, windowHeight - rect.top);
+
+    // Fallback just in case the user scrolled the graph entirely off-screen
+    if (visibleBottom <= visibleTop) {
+      visibleTop = 0;
+      visibleBottom = fullHeight;
+    }
+
+    // 5. Calculate the center of the visible area
+    const visibleCenterX = fullWidth / 2;
+    const visibleCenterY = (visibleTop + visibleBottom) / 2;
+
+    // 6. Project the viewport so the node lands on our custom visible center
+    const zoom = 1; 
+    setViewport({
+      x: visibleCenterX - (nodeX * zoom),
+      y: visibleCenterY - (nodeY * zoom),
+      zoom: zoom
+    }, { duration: 0 });
+
+  }, [activeNodeId, stepCount, getNodes, setViewport]);
 }
 
 // ── Live diagram (inside ReactFlowProvider) ────────────────────────────────
@@ -224,8 +262,13 @@ function simReducer(state, action) {
       let newHead = state.head;
       if (result.direction === 'R') newHead++;
       if (result.direction === 'L') newHead--;
-      if (newHead < 0) { newTape.unshift(...Array(PAD).fill('\u2423')); newHead += PAD; }
-      while (newHead >= newTape.length) newTape.push('\u2423');
+      if (newHead < 20) { 
+        newTape.unshift(...Array(PAD).fill('\u2423')); 
+        newHead += PAD; 
+      }
+      while (newHead >= newTape.length - 20) {
+        newTape.push('\u2423');
+      }
       return {
         ...state,
         tape: newTape, head: newHead,
@@ -255,6 +298,7 @@ function simReducer(state, action) {
 function useDTMSimulation(rawNodes, rawEdges, mtEdges, initialInput, tapeBuilder = null) {
   const [localInput, setLocalInput] = useState(initialInput || '');
   const [isRunning, setIsRunning]   = useState(false);
+  const [isSkipping, setIsSkipping] = useState(false);
   const [speed, setSpeed]           = useState(1);
 
   const [sim, dispatch] = useReducer(simReducer, null, () => ({
@@ -337,6 +381,9 @@ function useDTMSimulation(rawNodes, rawEdges, mtEdges, initialInput, tapeBuilder
   const runToEnd = useCallback(() => {
     if (sim.status === 'ACCEPTED' || sim.status === 'REJECTED') return;
     setIsRunning(false);
+    setIsSkipping(true);
+
+    const CHUNK = 2000; // steps per animation frame
 
     let curTape = [...sim.tape];
     let curHead = sim.head;
@@ -347,59 +394,74 @@ function useDTMSimulation(rawNodes, rawEdges, mtEdges, initialInput, tapeBuilder
     let finalStatus = 'RUNNING';
     let finalMessage = sim.statusMessage;
 
-    while (finalStatus === 'RUNNING') {
-      const outgoing = edgeIndex[curNodeId] || [];
-      const read = curTape[curHead] || '\u2423';
+    function runChunk() {
+      let i = 0;
+      while (i < CHUNK && finalStatus === 'RUNNING') {
+        const outgoing = edgeIndex[curNodeId] || [];
+        const read = curTape[curHead] || '\u2423';
 
-      let matched = null;
-      for (const edge of outgoing) {
-        const rule = (edge.data?.labels || []).find(
-          l => l.read === read || (l.read === '\u2423' && read === '')
-        );
-        if (rule) { matched = { edge, rule }; break; }
+        let matched = null;
+        for (const edge of outgoing) {
+          const rule = (edge.data?.labels || []).find(
+            l => l.read === read || (l.read === '\u2423' && read === '')
+          );
+          if (rule) { matched = { edge, rule }; break; }
+        }
+
+        if (!matched) {
+          finalStatus = 'REJECTED';
+          finalMessage = 'Halted: No transition defined';
+          curEdgeId = null;
+          break;
+        }
+
+        const { edge, rule } = matched;
+        curTape[curHead] = rule.write;
+        let newHead = curHead;
+        if (rule.direction === 'R') newHead++;
+        if (rule.direction === 'L') newHead--;
+        if (newHead < 20) {
+          curTape.unshift(...Array(PADDING).fill('\u2423'));
+          newHead += PADDING;
+        }
+        while (newHead >= curTape.length - 20) curTape.push('\u2423');
+
+        curHead = newHead;
+        curRead = read;
+        curEdgeId = edge.id;
+        curNodeId = edge.target;
+        curStep++;
+
+        if (edge._targetIsAccept) {
+          finalStatus = 'ACCEPTED';
+          finalMessage = 'ACCEPTED!';
+          break;
+        }
+        i++;
       }
 
-      if (!matched) {
-        finalStatus = 'REJECTED';
-        finalMessage = 'Halted: No transition defined';
-        curEdgeId = null;
-        break;
-      }
-
-      const { edge, rule } = matched;
-      curTape[curHead] = rule.write;
-      let newHead = curHead;
-      if (rule.direction === 'R') newHead++;
-      if (rule.direction === 'L') newHead--;
-      if (newHead < 0) { curTape.unshift(...Array(PADDING).fill('\u2423')); newHead += PADDING; }
-      while (newHead >= curTape.length) curTape.push('\u2423');
-
-      curHead = newHead;
-      curRead = read;
-      curEdgeId = edge.id;
-      curNodeId = edge.target;
-      curStep++;
-
-      if (edge._targetIsAccept) {
-        finalStatus = 'ACCEPTED';
-        finalMessage = 'ACCEPTED!';
-        break;
+      if (finalStatus === 'RUNNING') {
+        // Yield to the browser so the shimmer animation can paint, then continue
+        setTimeout(runChunk, 0);
+      } else {
+        dispatch({
+          type: 'FLUSH',
+          payload: {
+            tape: curTape,
+            head: curHead,
+            currentNodeId: curNodeId,
+            activeEdgeId: curEdgeId,
+            activeRead: curRead,
+            stepCount: curStep,
+            status: finalStatus,
+            statusMessage: finalMessage,
+          },
+        });
+        setIsSkipping(false);
       }
     }
 
-    dispatch({
-      type: 'FLUSH',
-      payload: {
-        tape: curTape,
-        head: curHead,
-        currentNodeId: curNodeId,
-        activeEdgeId: curEdgeId,
-        activeRead: curRead,
-        stepCount: curStep,
-        status: finalStatus,
-        statusMessage: finalMessage,
-      },
-    });
+    setTimeout(runChunk, 0);
   }, [sim, edgeIndex]);
 
   return {
@@ -408,6 +470,7 @@ function useDTMSimulation(rawNodes, rawEdges, mtEdges, initialInput, tapeBuilder
     currentNodeId: sim.currentNodeId, activeEdgeId: sim.activeEdgeId, activeRead: sim.activeRead,
     stepCount: sim.stepCount, status: sim.status, statusMessage: sim.statusMessage,
     isRunning, setIsRunning,
+    isSkipping,
     speed, setSpeed,
     history: sim.history,
     initialize,
@@ -458,11 +521,13 @@ function multiTapeSimReducer(state, action) {
         if (result.directions[i] === 'R') newHeads[i]++;
         if (result.directions[i] === 'L') newHeads[i]--;
         // Expand tape if head goes out of bounds
-        if (newHeads[i] < 0) {
+        if (newHeads[i] < 20) {
           newTapes[i].unshift(...Array(PAD).fill('␣'));
           newHeads[i] += PAD;
         }
-        while (newHeads[i] >= newTapes[i].length) newTapes[i].push('␣');
+        while (newHeads[i] >= newTapes[i].length - 20) {
+          newTapes[i].push('␣');
+        }
       }
 
       return {
@@ -496,6 +561,7 @@ function multiTapeSimReducer(state, action) {
 function useNtmMultiTapeSimulation(rawNodes, rawEdges, initialInput) {
   const [localInput, setLocalInput] = useState(initialInput || '');
   const [isRunning, setIsRunning]   = useState(false);
+  const [isSkipping, setIsSkipping] = useState(false);
   const [speed, setSpeed]           = useState(1);
 
   const [sim, dispatch] = useReducer(multiTapeSimReducer, null, () => {
@@ -576,8 +642,10 @@ function useNtmMultiTapeSimulation(rawNodes, rawEdges, initialInput) {
   const runToEnd = useCallback(() => {
     if (sim.status === 'ACCEPTED' || sim.status === 'REJECTED') return;
     setIsRunning(false);
+    setIsSkipping(true);
 
-    // Run synchronously to avoid hundreds of re-renders
+    const CHUNK = 2000;
+
     let curTapes = sim.tapes.map(t => [...t]);
     let curHeads = [...sim.heads];
     let curNodeId = sim.currentNodeId;
@@ -588,59 +656,70 @@ function useNtmMultiTapeSimulation(rawNodes, rawEdges, initialInput) {
     let finalMessage = sim.statusMessage;
     const PAD = NTM_TAPE_PADDING;
 
-    while (finalStatus === 'RUNNING') {
-      const result = stepMultiTM({
-        currentNodeId: curNodeId,
-        tapes: curTapes,
-        heads: curHeads,
-        nodes: rawNodes,
-        edges: rawEdges,
-        stepCount: curStep,
-      });
+    function runChunk() {
+      let i = 0;
+      while (i < CHUNK && finalStatus === 'RUNNING') {
+        const result = stepMultiTM({
+          currentNodeId: curNodeId,
+          tapes: curTapes,
+          heads: curHeads,
+          nodes: rawNodes,
+          edges: rawEdges,
+          stepCount: curStep,
+        });
 
-      if (result.halted) {
-        finalStatus = 'REJECTED';
-        finalMessage = `Halted: ${result.reason}`;
-        curEdgeId = null;
-        break;
-      }
-
-      for (let i = 0; i < NTM_NUM_TAPES; i++) {
-        curTapes[i][curHeads[i]] = result.writes[i];
-        if (result.directions[i] === 'R') curHeads[i]++;
-        if (result.directions[i] === 'L') curHeads[i]--;
-        if (curHeads[i] < 0) {
-          curTapes[i].unshift(...Array(PAD).fill('␣'));
-          curHeads[i] += PAD;
+        if (result.halted) {
+          finalStatus = 'REJECTED';
+          finalMessage = `Halted: ${result.reason}`;
+          curEdgeId = null;
+          break;
         }
-        while (curHeads[i] >= curTapes[i].length) curTapes[i].push('␣');
+
+        for (let t = 0; t < NTM_NUM_TAPES; t++) {
+          curTapes[t][curHeads[t]] = result.writes[t];
+          if (result.directions[t] === 'R') curHeads[t]++;
+          if (result.directions[t] === 'L') curHeads[t]--;
+          if (curHeads[t] < 20) {
+            curTapes[t].unshift(...Array(PAD).fill('␣'));
+            curHeads[t] += PAD;
+          }
+          while (curHeads[t] >= curTapes[t].length - 20) curTapes[t].push('␣');
+        }
+
+        curReads = result.reads;
+        curEdgeId = result.edgeId;
+        curNodeId = result.toNodeId;
+        curStep = result.stepCount;
+
+        if (result.isAccept) {
+          finalStatus = 'ACCEPTED';
+          finalMessage = 'ACCEPTED!';
+          break;
+        }
+        i++;
       }
 
-      curReads = result.reads;
-      curEdgeId = result.edgeId;
-      curNodeId = result.toNodeId;
-      curStep = result.stepCount;
-
-      if (result.isAccept) {
-        finalStatus = 'ACCEPTED';
-        finalMessage = 'ACCEPTED!';
-        break;
+      if (finalStatus === 'RUNNING') {
+        setTimeout(runChunk, 0);
+      } else {
+        dispatch({
+          type: 'FLUSH',
+          payload: {
+            tapes: curTapes,
+            heads: curHeads,
+            currentNodeId: curNodeId,
+            activeEdgeId: curEdgeId,
+            activeReads: curReads,
+            stepCount: curStep,
+            status: finalStatus,
+            statusMessage: finalMessage,
+          },
+        });
+        setIsSkipping(false);
       }
     }
 
-    dispatch({
-      type: 'FLUSH',
-      payload: {
-        tapes: curTapes,
-        heads: curHeads,
-        currentNodeId: curNodeId,
-        activeEdgeId: curEdgeId,
-        activeReads: curReads,
-        stepCount: curStep,
-        status: finalStatus,
-        statusMessage: finalMessage,
-      },
-    });
+    setTimeout(runChunk, 0);
   }, [sim, rawNodes, rawEdges]);
 
   return {
@@ -658,6 +737,7 @@ function useNtmMultiTapeSimulation(rawNodes, rawEdges, initialInput) {
     status: sim.status,
     statusMessage: sim.statusMessage,
     isRunning, setIsRunning,
+    isSkipping,
     speed, setSpeed,
     history: sim.history,
     initialize,
@@ -704,7 +784,7 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
     rawNodes, rawEdges,
     mode === 'ntm' || mode === 'oneWay' ? null : mtEdges,
     defaultInput,
-    mode === 'oneWay' ? (input) => buildOneWayTape(input) : null,
+    mode === 'oneWay' ? buildOneWayTape : null,
   );
 
   // ── 3-tape sim (ntm mode) ────────────────────────────────────────────────
@@ -745,7 +825,7 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
         background: '#fff', borderRadius: 10,
         width: '96vw', height: '94vh',
         display: 'flex', flexDirection: 'column',
-        overflow: 'hidden',
+        overflow: mode === 'ntm' ? 'auto' : 'hidden',
         boxShadow: '0 8px 40px rgba(0,0,0,0.45)',
       }}>
 
@@ -796,10 +876,11 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
           flexShrink: 0, borderBottom: '2px solid #e0e0e0',
           padding: '12px 18px 10px', background: '#fdfdfd',
           display: 'flex', flexDirection: 'column', gap: 10,
+
         }}>
           {/* ── NTM: one card per tape, matching TapeContainer's multi-tape layout ── */}
           {mode === 'ntm' ? (
-            <div className="thread-list-container" style={{ border: 'none', gap: 12, padding: 0 }}>
+            <div className="thread-list-container" style={{ border: 'none', gap: 12, padding: 0, width: '100%', maxWidth: 'none', overflow: 'visible' }}>
               {sim.tapes.map((tape, index) => (
                 <div key={index} className="thread-tree-row" style={{ width: '100%' }}>
                   <div className={`thread-card ${cardStatus} tree-card`} style={{ width: '100%', marginTop: 0 }}>
@@ -910,21 +991,23 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
               isRunning={sim.isRunning}
               isFinished={isFinished}
               canUndo={sim.history.length > 0}
+              isSkipping={sim.isSkipping}
             />
 
             <div className="speed-control" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
               <label>Speed: {sim.speed}x</label>
               <input
-                type="range" min="0.25" max="2" step="0.25"
+                type="range" min="0.25" max="3" step="0.25"
                 value={sim.speed}
                 onChange={e => sim.setSpeed(Number(e.target.value))}
               />
+
             </div>
           </div>
         </div>
 
         {/* Graph */}
-        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, minHeight: mode === 'ntm' ? '70vh' : 0, display: 'flex', flexDirection: 'column' }}>
           <div style={{
             display: 'flex', gap: 20, flexWrap: 'wrap',
             padding: '5px 14px', background: '#f8f8f8',
