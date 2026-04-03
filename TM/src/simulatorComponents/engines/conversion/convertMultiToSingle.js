@@ -470,7 +470,8 @@ export function convertMultiToSingle(mtNodes, mtEdges) {
   const origTransitions = buildTransitionMap(mtNodes, mtEdges);
   const { alphabet, hatSymbols } = buildAlphabets(mtEdges, numTapes);
 
-  const startOrig = mtNodes.find(n => n.type === 'start');
+  const startOrig     = mtNodes.find(n => n.type === 'start');
+  const acceptOrigIds = new Set(mtNodes.filter(n => n.type === 'accept').map(n => n.id));
 
   if (!startOrig) {
     const emptyGraph = new GraphBuilder();
