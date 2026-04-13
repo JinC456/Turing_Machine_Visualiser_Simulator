@@ -1,6 +1,7 @@
 /* src/Visualiser.jsx */
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { ReactFlowProvider, useNodesState, useEdgesState } from 'reactflow';
+import { getNodeLabel } from './simulatorComponents/engines/Deterministic';
 
 import TapeContainer from './simulatorComponents/TapeContainer';
 import DiagramContainer from './visualComponents/DiagramContainer';
@@ -55,6 +56,93 @@ export default function Visualiser({ engine, selectedExample, showTable, setShow
   // --- LIFTED STATE: Simulation Running Status ---
   const [isRunning, setIsRunning] = useState(false);
 
+  // --- UNIFIED HISTORY ---
+  const [history, setHistory] = useState([]);
+  const [future, setFuture] = useState([]);
+  const historyCounter = useRef(0);
+
+  // Snapshot nodes+edges+manualSymbols. snapshotOverride lets callers pass
+  // a pre-mutation snapshot (e.g. before a drag begins).
+  const pushToHistory = useCallback((label = "Unknown Action", snapshotOverride = null) => {
+    historyCounter.current += 1;
+    const actionId = historyCounter.current;
+
+    const snap = snapshotOverride ?? { nodes, edges, manualSymbols };
+
+    const clonedNodes = snap.nodes.map(n => ({ ...n, data: { ...n.data } }));
+    const clonedEdges = snap.edges.map(e => ({
+      ...e,
+      data: { ...e.data, labels: JSON.parse(JSON.stringify(e.data.labels || [])) },
+    }));
+    const clonedSymbols = [...(snap.manualSymbols ?? manualSymbols)];
+
+    setHistory(h => [...h, { nodes: clonedNodes, edges: clonedEdges, manualSymbols: clonedSymbols, metadata: { id: actionId, label } }].slice(-50));
+    setFuture([]);
+  }, [nodes, edges, manualSymbols]);
+
+  const handleUndo = useCallback(() => {
+    if (history.length === 0) return;
+
+    const previous = history[history.length - 1];
+    const currentSnapshot = {
+      nodes: nodes.map(n => ({ ...n, data: { ...n.data } })),
+      edges: edges.map(e => ({ ...e, data: { ...e.data, labels: JSON.parse(JSON.stringify(e.data.labels || [])) } })),
+      manualSymbols: [...manualSymbols],
+    };
+
+    setHistory(h => h.slice(0, -1));
+    setFuture(f => [...f, { ...currentSnapshot, metadata: previous.metadata }]);
+
+    setNodes(previous.nodes);
+    setEdges(previous.edges);
+    setManualSymbols(previous.manualSymbols ?? []);
+  }, [history, nodes, edges, manualSymbols, setNodes, setEdges]);
+
+  const handleRedo = useCallback(() => {
+    if (future.length === 0) return;
+
+    const next = future[future.length - 1];
+    const currentSnapshot = {
+      nodes: nodes.map(n => ({ ...n, data: { ...n.data } })),
+      edges: edges.map(e => ({ ...e, data: { ...e.data, labels: JSON.parse(JSON.stringify(e.data.labels || [])) } })),
+      manualSymbols: [...manualSymbols],
+    };
+
+    setFuture(f => f.slice(0, -1));
+    setHistory(h => [...h, { ...currentSnapshot, metadata: next.metadata }]);
+
+    setNodes(next.nodes);
+    setEdges(next.edges);
+    setManualSymbols(next.manualSymbols ?? []);
+  }, [future, nodes, edges, manualSymbols, setNodes, setEdges]);
+
+  // Reset history when engine changes or example loads (handled below)
+
+  // Global: space key → ␣ in any input/textarea on the site
+  useEffect(() => {
+    const handleGlobalSpace = (e) => {
+      const el = e.target;
+      if ((el.tagName === "INPUT" && el.type === "text") || el.tagName === "TEXTAREA") {
+        if (e.key === " " || e.code === "Space") {
+          e.preventDefault();
+          const start = el.selectionStart;
+          const end = el.selectionEnd;
+          const blank = "␣";
+          const newVal = el.value.slice(0, start) + blank + el.value.slice(end);
+          // Use native input setter so React's onChange fires
+          const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set
+            || Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value")?.set;
+          nativeInputValueSetter?.call(el, newVal);
+          el.dispatchEvent(new Event("input", { bubbles: true }));
+          // Restore cursor after the inserted character
+          requestAnimationFrame(() => el.setSelectionRange(start + blank.length, start + blank.length));
+        }
+      }
+    };
+    document.addEventListener("keydown", handleGlobalSpace, true);
+    return () => document.removeEventListener("keydown", handleGlobalSpace, true);
+  }, []);
+
   // Clear workspace/tape when engine changes
   useEffect(() => {
     setNodes([]);
@@ -67,6 +155,8 @@ export default function Visualiser({ engine, selectedExample, showTable, setShow
     setActiveEdgeId(null);
     setNote("");
     setIsRunning(false); // Ensure simulation stops on engine switch
+    setHistory([]);
+    setFuture([]);
   }, [engine, setNodes, setEdges]);
 
   useEffect(() => {
@@ -82,6 +172,8 @@ export default function Visualiser({ engine, selectedExample, showTable, setShow
       setCurrentSymbol("");
       setManualSymbols([]); 
       setIsRunning(false); // Ensure simulation stops on example load
+      setHistory([]);
+      setFuture([]);
     }
   }, [selectedExample, setNodes, setEdges]);
 
@@ -96,6 +188,8 @@ export default function Visualiser({ engine, selectedExample, showTable, setShow
     setActiveEdgeId(null);
     setNote("");
     setIsRunning(false);
+    setHistory([]);
+    setFuture([]);
   }, [setNodes, setEdges]);
 
   // Calculate Valid Alphabet
@@ -119,6 +213,7 @@ export default function Visualiser({ engine, selectedExample, showTable, setShow
   }, [edges, manualSymbols]);
 
   const handleSymbolScrub = useCallback((targetChar) => {
+  pushToHistory(`Deleted Symbol: ${targetChar}`);
   setManualSymbols(prev => prev.filter(s => s !== targetChar));
 
   setEdges(prev => prev.map(edge => ({
@@ -141,9 +236,24 @@ export default function Visualiser({ engine, selectedExample, showTable, setShow
 
   setActiveEdgeId(null);
   setCurrentSymbol("");
-}, [engine, setEdges, setManualSymbols, setActiveEdgeId, setCurrentSymbol]);
+}, [engine, setEdges, setManualSymbols, setActiveEdgeId, setCurrentSymbol, pushToHistory]);
+
+  const handleAddState = useCallback((label) => {
+    pushToHistory(`Added State: ${label}`);
+    const id = `state-${Date.now()}`;
+    // Place new nodes in a staggered position so they don't stack
+    const offset = nodes.length * 20;
+    const newNode = {
+      id,
+      type: 'normal',
+      position: { x: 200 + offset, y: 200 + offset },
+      data: { label },
+    };
+    setNodes(prev => [...prev, newNode]);
+  }, [nodes.length, setNodes, pushToHistory]);
 
   const handleSymbolReplace = useCallback((oldChar, newChar) => {
+    pushToHistory(`Replaced Symbol: ${oldChar} → ${newChar}`);
     setEdges(prev => prev.map(edge => ({
       ...edge,
       data: {
@@ -165,7 +275,262 @@ export default function Visualiser({ engine, selectedExample, showTable, setShow
         })
       }
     })));
-  }, [engine, setEdges]);
+  }, [engine, setEdges, pushToHistory]);
+
+  const handleDeleteNode = useCallback((nodeId) => {
+    pushToHistory("Deleted State");
+    setNodes(prev => prev.filter(n => n.id !== nodeId));
+    setEdges(prev => prev.filter(e => e.source !== nodeId && e.target !== nodeId));
+    setActiveNodeId(prev => prev === nodeId ? null : prev);
+  }, [setNodes, setEdges, setActiveNodeId, pushToHistory]);
+
+  // Called by TransitionTable when user edits a cell inline
+  const handleEditRule = useCallback(({ type, nodeId, symbol, rules, ruleIdx, field, value, allRules, tuple }) => {
+    pushToHistory("Rule Edited");
+    if (type === "matrix") {
+      // rules is an array of { write, direction, nextStateLabel } (NTM may have multiple)
+      // First, ensure all target nodes exist and collect their ids
+      const resolvedRules = [];
+      const newNodes = [];
+      for (const rule of rules) {
+        let targetNode = nodes.find(n => getNodeLabel(n) === rule.nextStateLabel);
+        if (!targetNode) {
+          const id = `state-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+          const offset = (nodes.length + newNodes.length) * 20;
+          targetNode = { id, type: 'normal', position: { x: 200 + offset, y: 200 + offset }, data: { label: rule.nextStateLabel } };
+          newNodes.push(targetNode);
+        }
+        resolvedRules.push({ ...rule, targetId: targetNode.id });
+        if (rule.write && rule.write !== "␣") setManualSymbols(prev => prev.includes(rule.write) ? prev : [...prev, rule.write]);
+      }
+      if (newNodes.length > 0) setNodes(prev => [...prev, ...newNodes]);
+      setManualSymbols(prev => prev.includes(symbol) ? prev : [...prev, symbol]);
+
+      setEdges(prev => {
+        // Remove all existing labels with this symbol as read from nodeId
+        let updated = prev.map(e => {
+          if (e.source !== nodeId) return e;
+          const remaining = (e.data?.labels || []).filter(l => l.read !== symbol);
+          if (remaining.length === e.data.labels.length) return e; // nothing removed
+          if (remaining.length === 0) return { ...e, _delete: true };
+          return { ...e, data: { ...e.data, labels: remaining } };
+        }).filter(e => !e._delete);
+
+        // Now add each resolved rule as a label on the appropriate edge
+        for (const { write, direction, targetId } of resolvedRules) {
+          const newLabel = { read: symbol, write, direction };
+          const existingEdgeIdx = updated.findIndex(e => e.source === nodeId && e.target === targetId);
+          if (existingEdgeIdx !== -1) {
+            updated = updated.map((e, i) =>
+              i === existingEdgeIdx
+                ? { ...e, data: { ...e.data, labels: [...(e.data.labels || []), newLabel] } }
+                : e
+            );
+          } else {
+            updated = [...updated, {
+              id: `edge-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+              source: nodeId,
+              target: targetId,
+              type: 'draggable',
+              "markerEnd": {
+              "type": "arrowclosed",
+              "color": "#333"
+              },
+              data: { labels: [newLabel] },
+            }];
+          }
+        }
+        return updated;
+      });
+
+    } else if (type === "matrix-mt") {
+      // multiRegex format: (w,D : w,D) -> nextState  — pass raw value to parse
+      // Parse: extract per-tape write/dir pairs and next state
+      const arrowIdx = value.lastIndexOf("->"); 
+      if (arrowIdx === -1) return;
+      const nextStateLabel = value.slice(arrowIdx + 2).trim();
+      const innerStr = value.slice(value.indexOf("(") + 1, value.lastIndexOf(")"));
+      const tapeParts = innerStr.split(":").map(s => s.trim()); // ["w,D", "w,D", ...]
+
+      let targetNode = nodes.find(n => getNodeLabel(n) === nextStateLabel);
+      if (!targetNode) {
+        const id = `state-${Date.now()}`;
+        targetNode = { id, type: 'normal', position: { x: 200 + nodes.length * 20, y: 200 + nodes.length * 20 }, data: { label: nextStateLabel } };
+        setNodes(prev => [...prev, targetNode]);
+      }
+      const targetId = targetNode.id;
+
+      // tuple is the read-tuple string e.g. "a : b" — split to get per-tape reads
+      const readKeys = tuple.split(":").map(s => s.trim());
+
+      setEdges(prev => {
+        // Find the edge from nodeId that contains a label matching this read tuple
+        const findLabelIdx = (labels) => labels?.findIndex(l => {
+          const tapeKeys = Object.keys(l).filter(k => k.startsWith('tape')).sort();
+          return tapeKeys.length === readKeys.length && tapeKeys.every((k, i) => l[k]?.read === readKeys[i]);
+        }) ?? -1;
+
+        // Remove old label
+        let updated = prev.map(e => {
+          if (e.source !== nodeId) return e;
+          const idx = findLabelIdx(e.data?.labels);
+          if (idx === -1) return e;
+          const remaining = e.data.labels.filter((_, i) => i !== idx);
+          if (remaining.length === 0) return { ...e, _delete: true };
+          return { ...e, data: { ...e.data, labels: remaining } };
+        }).filter(e => !e._delete);
+
+        // Build new label from parsed tape parts
+        const newLabel = {};
+        tapeParts.forEach((part, i) => {
+          const [w, d] = part.split(",").map(s => s.trim());
+          newLabel[`tape${i + 1}`] = { 
+            read: readKeys[i] || "␣", // <-- Fallback to blank for new tapes
+            write: w || "␣", 
+            direction: d || "N" 
+          };
+        });
+
+        // Add to correct edge
+        const existingIdx = updated.findIndex(e => e.source === nodeId && e.target === targetId);
+        if (existingIdx !== -1) {
+          updated = updated.map((e, i) =>
+            i === existingIdx
+              ? { ...e, data: { ...e.data, labels: [...(e.data.labels || []), newLabel] } }
+              : e
+          );
+        } else {
+          updated = [...updated, {
+            id: `edge-${Date.now()}`,
+            source: nodeId,
+            target: targetId,
+            type: 'draggable',
+            "markerEnd": {
+            "type": "arrowclosed",
+            "color": "#333"
+            },
+            data: { labels: [newLabel] },
+          }];
+        }
+        return updated;
+      });
+
+    } else if (type === "list") {
+      const rule = allRules[ruleIdx];
+      if (!rule) return;
+
+      const readKeys = rule.read.split(" : ").map(s => s.trim());
+
+      const findLabelIdx = (labels) => labels?.findIndex(l => {
+        const tapeKeys = Object.keys(l).filter(k => k.startsWith('tape')).sort();
+        return tapeKeys.length === readKeys.length && tapeKeys.every((k, i) => l[k]?.read === readKeys[i]);
+      }) ?? -1;
+
+      if (field === "end") {
+        let targetNode = nodes.find(n => getNodeLabel(n) === value);
+        if (!targetNode) {
+          const id = `state-${Date.now()}`;
+          targetNode = { id, type: 'normal', position: { x: 200 + nodes.length * 20, y: 200 + nodes.length * 20 }, data: { label: value } };
+          setNodes(prev => [...prev, targetNode]);
+        }
+        const targetId = targetNode.id;
+
+        setEdges(prev => {
+          // Extract the label from the old edge
+          let movedLabel = null;
+          let updated = prev.map(e => {
+            if (e.source !== rule.startId) return e;
+            const idx = findLabelIdx(e.data?.labels);
+            if (idx === -1) return e;
+            movedLabel = e.data.labels[idx];
+            const remaining = e.data.labels.filter((_, i) => i !== idx);
+            if (remaining.length === 0) return { ...e, _delete: true };
+            return { ...e, data: { ...e.data, labels: remaining } };
+          }).filter(e => !e._delete);
+
+          if (!movedLabel) return prev;
+          const existingIdx = updated.findIndex(e => e.source === rule.startId && e.target === targetId);
+          if (existingIdx !== -1) {
+            updated = updated.map((e, i) =>
+              i === existingIdx
+                ? { ...e, data: { ...e.data, labels: [...(e.data.labels || []), movedLabel] } }
+                : e
+            );
+          } else {
+            updated = [...updated, {
+              id: `edge-${Date.now()}`,
+              source: rule.startId,
+              target: targetId,
+              type: 'draggable',
+              "markerEnd": {
+              "type": "arrowclosed",
+              "color": "#333"
+              },
+              data: { labels: [movedLabel] },
+            }];
+          }
+          return updated;
+        });
+
+      } else if (field === "write") {
+        // value is comma-separated writes per tape e.g. "a, b"
+        const writes = value.split(",").map(s => s.trim());
+        setEdges(prev => prev.map(e => {
+          if (e.source !== rule.startId) return e;
+          const idx = findLabelIdx(e.data?.labels);
+          if (idx === -1) return e;
+          const newLabels = e.data.labels.map((l, i) => {
+            if (i !== idx) return l;
+            const updated = { ...l };
+            Object.keys(updated).filter(k => k.startsWith('tape')).sort().forEach((k, ti) => {
+              if (writes[ti] !== undefined) updated[k] = { ...updated[k], write: writes[ti] };
+            });
+            return updated;
+          });
+          return { ...e, data: { ...e.data, labels: newLabels } };
+        }));
+
+      } else if (field === "direction") {
+        // value is comma-separated directions per tape e.g. "L, R"
+        const dirs = value.split(",").map(s => s.trim().toUpperCase());
+        setEdges(prev => prev.map(e => {
+          if (e.source !== rule.startId) return e;
+          const idx = findLabelIdx(e.data?.labels);
+          if (idx === -1) return e;
+          const newLabels = e.data.labels.map((l, i) => {
+            if (i !== idx) return l;
+            const updated = { ...l };
+            Object.keys(updated).filter(k => k.startsWith('tape')).sort().forEach((k, ti) => {
+              if (dirs[ti] !== undefined) updated[k] = { ...updated[k], direction: dirs[ti] };
+            });
+            return updated;
+          });
+          return { ...e, data: { ...e.data, labels: newLabels } };
+        }));
+
+      } else if (field === "read") {
+        // value is colon-separated reads per tape e.g. "a : b"
+        const newReads = value.split(":").map(s => s.trim());
+        setEdges(prev => prev.map(e => {
+          if (e.source !== rule.startId) return e;
+          const idx = findLabelIdx(e.data?.labels);
+          if (idx === -1) return e;
+          const newLabels = e.data.labels.map((l, i) => {
+            if (i !== idx) return l;
+            const updated = { ...l };
+            Object.keys(updated).filter(k => k.startsWith('tape')).sort().forEach((k, ti) => {
+              if (newReads[ti] !== undefined) updated[k] = { ...updated[k], read: newReads[ti] };
+            });
+            return updated;
+          });
+          return { ...e, data: { ...e.data, labels: newLabels } };
+        }));
+
+      } else if (field === "start") {
+        console.warn("Changing start state from table not yet supported - use the diagram");
+      }
+    }
+  }, [nodes, setNodes, setEdges, setManualSymbols, pushToHistory]);
 
   return (
     <ReactFlowProvider>
@@ -180,6 +545,10 @@ export default function Visualiser({ engine, selectedExample, showTable, setShow
             onClose={() => setShowTable(false)} 
             onDeleteSymbol={handleSymbolScrub}
             onReplaceSymbol={handleSymbolReplace}
+            onAddState={handleAddState}
+            onEditRule={handleEditRule}
+            onDeleteNode={handleDeleteNode}
+            engine={engine}
           />
         )}
 
@@ -220,6 +589,12 @@ export default function Visualiser({ engine, selectedExample, showTable, setShow
             isLocked={isRunning}
             note={note}
             onNoteChange={setNote}
+            // Unified history
+            history={history}
+            future={future}
+            pushToHistory={pushToHistory}
+            handleUndo={handleUndo}
+            handleRedo={handleRedo}
           />
         </div>
 

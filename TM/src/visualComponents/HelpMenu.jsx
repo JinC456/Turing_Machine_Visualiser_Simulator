@@ -665,6 +665,37 @@ export default function HelpMenu({ onClose }) {
               </p>
             </>
           )
+        },
+        {
+          id: "tt-edit-via-table",
+          title: "Editing the Diagram via the Table",
+          hasVideo: true,
+          content: (
+            <>
+              <p>
+                The Transition Table and the diagram are <strong>fully connected</strong>, any change you make in the table is instantly reflected in the diagram, and vice versa. You do not need to switch back and forth; editing in either place updates both.
+              </p>
+
+              <div className="formal-def-box">
+                <h4>How to Edit a Rule</h4>
+                <p>
+                  <strong>Double-click</strong> any cell in the table to make it editable. Type your new rule using the standard transition syntax, then press <strong>Enter</strong> to save the change. The corresponding edge on the diagram will update immediately.
+                </p>
+
+                <h4>Auto-Adding States and Symbols</h4>
+                <p>
+                  If the rule you save references a <strong>state</strong> or <strong>alphabet symbol</strong> that does not yet exist in the diagram, it will be <strong>created automatically</strong> once you press Enter. You do not need to add the state or symbol manually first.
+                </p>
+
+                <h4>Deleting a State via the Table</h4>
+                <p>
+                  Removing a state row from the table will also <strong>delete that state from the diagram</strong>. All transition edges connected to that state, both incoming and outgoing, will be removed at the same time.
+                </p>
+              </div>
+              <video src="./EditTable.mp4" controls width="100%" style={{ marginTop: '10px' }} />
+            </>
+
+          )
         }
       ]
     },
@@ -951,6 +982,65 @@ export default function HelpMenu({ onClose }) {
               </div>
 
               <video src="./oneWayConvert.mp4" controls width="100%" style={{ marginTop: '10px' }} />
+            </>
+          )
+        },
+        {
+          id: "Ntm-to-dtm",
+          title: "How NTM to DTM Conversion Works",
+          hasVideo: false,
+          content: (
+            <>
+              <p>
+                A Deterministic Turing Machine (DTM) can simulate a Non-Deterministic Turing Machine (NTM) by systematically exploring every possible branch of the NTM's computation. 
+              </p>
+              <p>
+                Because an NTM can have infinite paths, the DTM cannot simply follow one path to the end—it might get trapped in an infinite loop! Instead, it must explore them step-by-step using a <strong>Breadth-First Search</strong> approach.
+              </p>
+
+              <div className="formal-def-box">
+                <h4>The 3-Tape Simulation Model</h4>
+                <p>The simulator converts the NTM logic into a 3 tape DTM:</p>
+                <ul>
+                  <li><strong>Tape 1 (Input):</strong> Stores the original input string, it is never modified.</li>
+                  <li><strong>Tape 2 (Simulation):</strong> The working tape, the DTM uses this tape to simulate the NTM running down one specific, chosen path.</li>
+                  <li><strong>Tape 3 (Address):</strong> Keeps track of <em>which</em> branch is currently being explored. It stores an "address" of numbers (e.g., <code>1, 2, 1</code>) dictating exactly which choice to make at every non-deterministic split.</li>
+                </ul>
+
+                <h4>The Execution Loop</h4>
+                <p>To process the input, the DTM runs in a continuous loop:</p>
+                <ol>
+                  <li><strong>Copy:</strong> The DTM rewinds and copies the original input from Tape 1 to Tape 2.</li>
+                  <li><strong>Simulate:</strong> The machine runs your NTM logic on Tape 2. Whenever it hits a state with multiple choices, it consults Tape 3 to decide which path to take.</li>
+                  <li><strong>Evaluate:</strong> 
+                    <br />• If it reaches an Accept state, the DTM halts and accepts!
+                    <br />• If it hits a dead end, reaches a Reject state, or asks for a choice that doesn't exist on Tape 3, it aborts this branch.
+                  </li>
+                  <li><strong>Increment:</strong> The DTM mathematically increments the address string on Tape 3 to point to the "next" possible path (e.g., advancing from path <code>1</code> to <code>2</code>). It then wipes Tape 2 and jumps back to step 1 to try again.</li>
+                </ol>
+              </div>
+            </>
+          )
+        },
+        {
+          id: "ntm-to-dtm-btn",
+          title: "Convert to Deterministic Tape",
+          hasVideo: true,
+          content: (
+            <>
+              <p>
+                The <strong>Convert to Deterministic</strong> button applies the 3-tape Breadth-First Search algorithm to your current NTM and generates a mathematically equivalent Deterministic Turing Machine. 
+              </p>
+
+              <div className="formal-def-box">
+                <h4>What to Expect</h4>
+                <ul>
+                  <li><strong>Slower Execution:</strong> Because the DTM must sequentially restart and re-simulate the machine from the beginning for <em>every single branch combination</em>, simulating an NTM this way takes significantly longer than running the native NTM Visualiser.</li>
+                  <li><strong>Auto-Pan:</strong> As with other conversions, the visualiser will automatically follow the active node during simulation so you do not lose track of the machine's progress.</li>
+                </ul>
+              </div>
+
+              <video src="./dtmConvert.mp4" controls width="100%" style={{ marginTop: '10px' }} />
             </>
           )
         }

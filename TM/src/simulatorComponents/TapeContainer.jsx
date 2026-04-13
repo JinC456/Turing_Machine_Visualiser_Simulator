@@ -72,6 +72,7 @@ export default function TapeContainer({
   const [inputValue, setInputValue] = useState(loadedInput || "");
   const [isTimeout, setIsTimeout] = useState(false);
   const [inputError, setInputError] = useState(null);
+  const [bubbleDismissed, setBubbleDismissed] = useState(false);
   const [speed, setSpeed] = useState(1); 
   const isFinished = !!(error || success || isTimeout);
 
@@ -85,7 +86,7 @@ export default function TapeContainer({
     if (!inputValue) { setInputError(null); return; }
     const chars = inputValue.split("");
     const invalidChars = chars.filter(char => !validAlphabet.has(char));
-    if (invalidChars.length > 0) setInputError(`Invalid: ${[...new Set(invalidChars)].join(", ")}`);
+    if (invalidChars.length > 0) { setInputError(`Invalid: ${[...new Set(invalidChars)].join(", ")}`); setBubbleDismissed(false); }
     else setInputError(null);
   }, [inputValue, validAlphabet]);
 
@@ -460,6 +461,12 @@ export default function TapeContainer({
 
       <div className="controls-row">
         <div className="input-wrapper">
+          {inputError && !bubbleDismissed && (
+            <div className="input-error-bubble">
+              <span>⚠ {inputError} not in alphabet Σ</span>
+              <div className="input-error-bubble-tail" />
+            </div>
+          )}
           <input className={`tape-input ${inputError ? "error" : ""}`} type="text" value={inputValue} onChange={(e) => setInputValue(e.target.value)} disabled={isRunning || isFinished || canUndo} placeholder="Input string..." />
           <div className="alphabet-label">Σ: <span>{`{ ${alphabetString} }`}</span></div>
         </div>

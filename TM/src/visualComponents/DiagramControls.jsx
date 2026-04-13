@@ -25,6 +25,8 @@ export default function DiagramControls({
   const [isResizing, setIsResizing] = useState(false);
   const resizeStart = useRef({ x: 0, y: 0, width: 0, height: 0 });
 
+  const [hasClickedNotes, setHasClickedNotes] = useState(false);
+
   const onHeaderMouseDown = (e) => {
     setIsDragging(true);
     dragOffset.current = { x: e.clientX - position.x, y: e.clientY - position.y };
@@ -116,6 +118,9 @@ export default function DiagramControls({
     updateActiveFormats();
   };
 
+  // Check if there is actual text in the note, ignoring empty HTML tags
+  const hasContent = note && note.replace(/<[^>]*>?/gm, '').trim().length > 0;
+
   return (
     <>
       <div className="diagram-controls">
@@ -126,6 +131,15 @@ export default function DiagramControls({
           <button onClick={onRedo} disabled={!canRedo || isLocked} title="Redo">↷ Redo</button>
         </div>
 
+        <button
+          onClick={onClearAll}
+          disabled={isLocked}
+          className="diagram-controls-clear"
+        >
+          Clear All
+        </button>
+
+
         <div className="diagram-controls-divider" />
 
         {/* File actions */}
@@ -134,15 +148,6 @@ export default function DiagramControls({
         <input type="file" accept=".json" ref={fileInputRef} style={{ display: "none" }} onChange={onFileChange} />
 
         <div className="diagram-controls-divider" />
-
-        {/* Tools */}
-        <button
-          onClick={() => setShowNote((v) => !v)}
-          className={showNote ? "notes-btn--active" : ""}
-          title="Toggle machine notes"
-        >
-          Notes
-        </button>
 
         {engine === "MultiTape" && (
           <button onClick={() => onConvert("combined")}>⇄ Single-Tape</button>
@@ -158,12 +163,16 @@ export default function DiagramControls({
 
         <div className="diagram-controls-divider" />
 
+        {/* Tools */}
         <button
-          onClick={onClearAll}
-          disabled={isLocked}
-          className="diagram-controls-clear"
+          onClick={() => {
+            setShowNote((v) => !v);
+            if (!hasClickedNotes) setHasClickedNotes(true); 
+          }}
+          className={`notes-btn-main ${showNote ? "notes-btn--active" : ""} ${!hasClickedNotes && hasContent ? "notes-btn--pulsing" : ""}`}
+          title="Toggle machine notes"
         >
-          Clear All
+          Notes
         </button>
 
       </div>

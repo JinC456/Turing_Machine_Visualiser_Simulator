@@ -24,8 +24,11 @@ export function computeRunToEnd({ tape, head, activeNodeId, activeEdgeId, lastRe
   let haltReason = null;
   let curEdgeId = activeEdgeId;
   let curLastRead = lastRead;
+  const history = [];
 
   while (!halted && curStep < MAX_RUN_STEPS) {
+    history.push({ tape: [...curTape], head: curHead, activeNodeId: curNodeId, activeEdgeId: curEdgeId, lastRead: curLastRead, stepCount: curStep });
+
     const result = stepTM({ currentNodeId: curNodeId, tape: curTape, head: curHead, nodes, edges, stepCount: curStep });
 
     if (result.halted) {
@@ -62,6 +65,7 @@ export function computeRunToEnd({ tape, head, activeNodeId, activeEdgeId, lastRe
     tape: curTape, head: curHead, activeNodeId: curNodeId, activeEdgeId: curEdgeId,
     lastRead: curLastRead, stepCount: curStep, success: accepted,
     error: haltReason || (timedOut ? "Timeout: max steps reached" : null),
+    history,
   };
 }
 
@@ -78,8 +82,11 @@ export function computeMultiRunToEnd({ tapes, heads, activeNodeId, activeEdgeId,
   let haltReason = null;
   let curEdgeId = activeEdgeId;
   let curLastRead = lastRead;
+  const history = [];
 
   while (!halted && curStep < MAX_RUN_STEPS) {
+    history.push({ tapes: curTapes.map(t => [...t]), heads: [...curHeads], activeNodeId: curNodeId, activeEdgeId: curEdgeId, lastRead: curLastRead, stepCount: curStep });
+
     const result = stepMultiTM({ currentNodeId: curNodeId, tapes: curTapes, heads: curHeads, nodes, edges, stepCount: curStep });
 
     if (result.halted) {
@@ -116,6 +123,7 @@ export function computeMultiRunToEnd({ tapes, heads, activeNodeId, activeEdgeId,
     tapes: curTapes, heads: curHeads, activeNodeId: curNodeId, activeEdgeId: curEdgeId,
     lastRead: curLastRead, stepCount: curStep, success: accepted,
     error: haltReason || (timedOut ? "Timeout: max steps reached" : null),
+    history,
   };
 }
 
@@ -128,6 +136,7 @@ export function computeNonDetRunToEnd({ threads, stepCount, nodes, edges }) {
   let curThreads = threads;
   let curStep = stepCount;
   let globalAccept = false;
+  const history = [];
 
   if (curStep === 0 && curThreads.length > 0 && curThreads[0].currentNodeId === null) {
     curThreads = [{ ...curThreads[0], currentNodeId: startNode.id }];
@@ -137,13 +146,15 @@ export function computeNonDetRunToEnd({ threads, stepCount, nodes, edges }) {
     const activeCount = curThreads.filter(t => t.status === 'active').length;
     if (activeCount === 0) break;
 
+    history.push({ threads: curThreads, stepCount: curStep, success: globalAccept });
+
     const result = stepNonDeterministicTM({ threads: curThreads, nodes, edges });
     curThreads = result.threads;
     curStep++;
     if (result.globalAccept) { globalAccept = true; break; }
   }
 
-  return { threads: curThreads, stepCount: curStep, success: globalAccept };
+  return { threads: curThreads, stepCount: curStep, success: globalAccept, history };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -247,7 +258,7 @@ export const useTuringMachine = (initialCells = 13) => {
     setActiveEdgeId(result.activeEdgeId);
     setLastRead(result.lastRead);
     setStepCount(result.stepCount);
-    setHistory([]);
+    setHistory(result.history || []);
     if (result.success) setSuccess(true);
     else if (result.error) setError(result.error);
   }, []);
@@ -357,7 +368,7 @@ export const useMultiTapeTuringMachine = (initialCells = 13, numTapes = 2) => {
     setActiveEdgeId(result.activeEdgeId);
     setLastRead(result.lastRead);
     setStepCount(result.stepCount);
-    setHistory([]);
+    setHistory(result.history || []);
     if (result.success) setSuccess(true);
     else if (result.error) setError(result.error);
   }, []);
@@ -430,7 +441,7 @@ export const useNonDeterministicTM = (initialCells = 13) => {
   const flushRunToEnd = useCallback((result) => {
     setThreads(result.threads);
     setStepCount(result.stepCount);
-    setHistory([]);
+    setHistory(result.history || []);
     if (result.success) setSuccess(true);
   }, []);
 

@@ -96,13 +96,21 @@ export default function EdgeMenu({
 
   // --- FIELD UPDATES ---
 
+  // Allow only 1 character; space becomes ␣
+  const clampOne = (value) => {
+    const raw = value.length > 1 ? value[value.length - 1] : value;
+    return raw === " " ? "␣" : raw;
+  };
+
   const updateLabel = (index, key, value) => {
+    const clamped = (key === "read" || key === "write") ? clampOne(value) : value;
     setLabels((prev) =>
-      prev.map((lbl, i) => (i === index ? { ...lbl, [key]: value } : lbl))
+      prev.map((lbl, i) => (i === index ? { ...lbl, [key]: clamped } : lbl))
     );
   };
 
   const updateMultiLabel = (index, tapeKey, field, value) => {
+    const clamped = (field === "read" || field === "write") ? clampOne(value) : value;
     setLabels((prev) =>
       prev.map((lbl, i) => {
         if (i !== index) return lbl;
@@ -110,7 +118,7 @@ export default function EdgeMenu({
           ...lbl,
           [tapeKey]: {
             ...lbl[tapeKey] || { read: "", write: "", direction: "" },
-            [field]: value
+            [field]: clamped
           }
         };
       })
@@ -190,7 +198,7 @@ export default function EdgeMenu({
     <div className="popup-overlay">
       <div className="popup-menu" style={{ maxWidth: isMultiTape ? '90vw' : '320px', width: 'auto' }}>
         <h3>Edit Edge {isMultiTape }</h3>
-        <h4>check box to indicate blank</h4>
+        <h4>Press space to indicate blank (␣)</h4>
 
         <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
         {labels.map((label, index) => (
@@ -202,20 +210,10 @@ export default function EdgeMenu({
                 <label>
                   Read:
                   <input type="text" value={label.read} onChange={(e) => updateLabel(index, "read", e.target.value)} />
-                  <input 
-                    type="checkbox" 
-                    checked={label.read === "␣"} 
-                    onChange={() => toggleBlank(index, "read", label.read)} 
-                  /> 
                 </label>
                 <label>
                   Write:
                   <input type="text" value={label.write} onChange={(e) => updateLabel(index, "write", e.target.value)} />
-                  <input 
-                    type="checkbox" 
-                    checked={label.write === "␣"} 
-                    onChange={() => toggleBlank(index, "write", label.write)} 
-                  /> 
                 </label>
                 <div className="direction-buttons">
                   <DirectionButton selected={label.direction === "L"} onClick={() => updateLabel(index, "direction", "L")} text="Left" />
@@ -264,20 +262,10 @@ export default function EdgeMenu({
                             
                             <label>Read:
                               <input type="text" value={tapeData.read} onChange={(e) => updateMultiLabel(index, key, "read", e.target.value)} />
-                              <input 
-                                type="checkbox" 
-                                checked={tapeData.read === "␣"} 
-                                onChange={() => toggleBlank(index, "read", tapeData.read, key)} 
-                              /> 
                             </label>
 
                             <label>Write:
                               <input type="text" value={tapeData.write} onChange={(e) => updateMultiLabel(index, key, "write", e.target.value)} />
-                              <input 
-                                type="checkbox" 
-                                checked={tapeData.write === "␣"} 
-                                onChange={() => toggleBlank(index, "write", tapeData.write, key)} 
-                              /> 
                             </label>
                             <div className="direction-buttons" style={{ marginTop: '5px' }}>
                                 <DirectionButton selected={tapeData.direction === "L"} onClick={() => updateMultiLabel(index, key, "direction", "L")} text="L" />

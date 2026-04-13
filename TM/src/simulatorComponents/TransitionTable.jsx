@@ -3,9 +3,29 @@ import React, { useMemo, useState, useRef, useEffect } from "react";
 import "../Visualiser.css";
 import { getNodeLabel } from "./engines/Deterministic";
 
-export default function TransitionTable({ nodes, edges, manualSymbols, setManualSymbols, onClose, onDeleteSymbol, onReplaceSymbol }) {
+// --- REGEX VALIDATION ---
+const DTMRegex       = /^[^,\s],\s*(L|R),\s*[^,\s]+$/;
+const NTMRegex       = /^([^,\s],\s*(L|R|N),\s*[^,\s]+)(\s*\|\s*[^,\s],\s*(L|R|N),\s*[^,\s]+)*$/;
+const multiRegex     = /^\(\s*[^,\s],\s*(L|R|N)(\s*:\s*[^,\s],\s*(L|R|N))*\s*\)\s*->\s*[^,\s]+$/;
+
+// List-view per-field regexes
+const stateRegex     = /^[^\s,|:()]+$/;
+const readRegex      = /^[^,\s:]\s*:\s*[^,\s:](\s*:\s*[^,\s:])*$/;
+const writeRegex     = /^[^,\s]\s*,\s*[^,\s](\s*,\s*[^,\s])*$/;
+const directionRegex = /^(L|R|N)\s*,\s*(L|R|N)(\s*,\s*(L|R|N))*$/;
+
+function getListFieldRegex(field) {
+  if (field === "start" || field === "end") return stateRegex;
+  if (field === "read")      return readRegex;
+  if (field === "write")     return writeRegex;
+  if (field === "direction") return directionRegex;
+  return null;
+}
+
+export default function TransitionTable({ nodes, edges, manualSymbols, setManualSymbols, onClose, onDeleteSymbol, onReplaceSymbol, onAddState, onEditRule, onDeleteNode, engine }) {
   
   const [newSymbol, setNewSymbol] = useState("");
+  const [newStateName, setNewStateName] = useState("");
   const [isWindowMode, setIsWindowMode] = useState(false);
   const [viewMode, setViewMode] = useState("matrix"); 
 
@@ -19,6 +39,91 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
 
   const [replacementChar, setReplacementChar] = useState("");
   const [cleanupTarget, setCleanupTarget] = useState(null);
+
+  const [deleteNodeTarget, setDeleteNodeTarget] = useState(null); // { id, label }
+  const [skipNodeDeleteConfirm, setSkipNodeDeleteConfirm] = useState(false);
+  const [doNotAskAgainChecked, setDoNotAskAgainChecked] = useState(false);
+
+  // Inline cell editing
+  const [editingCell, setEditingCell] = useState(null); // { type, nodeId?, symbol?, ruleIdx?, field?, tuple? }
+  const [editValue, setEditValue] = useState("");
+  const [invalidCell, setInvalidCell] = useState(null); // tracks which cell has a format error
+  const editInputRef = useRef(null);
+
+  useEffect(() => {
+    if (editingCell && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
+    }
+  }, [editingCell]);
+
+  const committingRef = useRef(false);
+
+  const startEdit = (cellKey, currentValue) => {
+    committingRef.current = false;
+    setInvalidCell(null);
+    setEditingCell(cellKey);
+    setEditValue(currentValue);
+  };
+
+  const commitEdit = (cellKey, value) => {
+    if (committingRef.current) return;
+
+    const trimmed = (value !== undefined ? value : editValue).trim();
+    if (!trimmed) { setEditingCell(null); setInvalidCell(null); return; }
+
+    if (cellKey.type === "matrix") {
+      // Normalise direction to uppercase before validation so l/r/n are accepted
+      const normMatrix = trimmed.replace(/,\s*([lrn])\s*,/gi, (_, d) => `, ${d.toUpperCase()},`);
+      const matrixValid = engine === "NonDeterministic" ? NTMRegex.test(normMatrix) : DTMRegex.test(normMatrix);
+      if (!matrixValid) { setInvalidCell(cellKey); return; }
+      setInvalidCell(null);
+      committingRef.current = true;
+      const ruleParts = normMatrix.split(/\s*\|\s*/);
+      const rules = ruleParts.map(segment => {
+        const parts = segment.split(",").map(s => s.trim());
+        return { write: parts[0], direction: parts[1], nextStateLabel: parts.slice(2).join(",").trim() };
+      });
+      onEditRule({ type: "matrix", nodeId: cellKey.nodeId, symbol: cellKey.symbol, rules });
+
+    } else if (cellKey.type === "matrix-mt") {
+      // Normalise direction letters inside parens to uppercase
+      const normMt = trimmed.replace(/,\s*([lrn])\s*([):])/gi, (_, d, after) => `, ${d.toUpperCase()}${after}`);
+      if (!multiRegex.test(normMt)) { setInvalidCell(cellKey); return; }
+      setInvalidCell(null);
+      committingRef.current = true;
+      onEditRule({ type: "matrix-mt", nodeId: cellKey.nodeId, tuple: cellKey.tuple, value: normMt });
+
+    } else if (cellKey.type === "list") {
+      const regex = getListFieldRegex(cellKey.field);
+      // Normalise direction field to uppercase before testing
+      const normValue = cellKey.field === "direction"
+        ? trimmed.toUpperCase()
+        : trimmed;
+      if (regex && !regex.test(normValue)) { setInvalidCell(cellKey); return; }
+      setInvalidCell(null);
+      committingRef.current = true;
+      onEditRule({ type: "list", ruleIdx: cellKey.ruleIdx, field: cellKey.field, value: normValue, allRules: multiTapeRules });
+    }
+
+    setEditingCell(null);
+  };
+
+  const cancelEdit = () => {
+    committingRef.current = true;
+    setInvalidCell(null);
+    setEditingCell(null);
+  };
+
+  const isCellEditing = (key) => {
+    if (!editingCell) return false;
+    return JSON.stringify(editingCell) === JSON.stringify(key);
+  };
+
+  const isCellInvalid = (key) => {
+    if (!invalidCell) return false;
+    return JSON.stringify(invalidCell) === JSON.stringify(key);
+  };
 
   const handleMouseDown = (e) => {
     if (isWindowMode) {
@@ -45,7 +150,7 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
   useEffect(() => {
     const handleMouseMove = (e) => {
       if (isDragging) {
-        const HEADER_H = 42; // minimum visible strip to grab (px)
+        const HEADER_H = 42;
         const rawX = e.clientX - dragOffset.current.x;
         const rawY = e.clientY - dragOffset.current.y;
         setPosition({
@@ -57,7 +162,6 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
       if (isResizing) {
         const deltaX = e.clientX - resizeStart.current.x;
         const deltaY = e.clientY - resizeStart.current.y;
-        
         setSize({
           width: Math.max(320, resizeStart.current.width + deltaX),
           height: Math.max(200, resizeStart.current.height + deltaY)
@@ -209,11 +313,18 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
     }
   }, [nodes, edges, manualSymbols]);
 
+  // Allow only 1 character; space becomes ␣
+  const clampOne = (value) => {
+    const raw = value.length > 1 ? value[value.length - 1] : value;
+    return raw === " " ? "␣" : raw;
+  };
+
   const handleAddSymbol = (e) => {
     e.preventDefault();
     const trimmed = newSymbol.trim();
     if (!trimmed) return;
-    if (!manualSymbols.includes(trimmed)) setManualSymbols(prev => [...prev, trimmed]);
+    const clamped = clampOne(trimmed);
+    if (!manualSymbols.includes(clamped)) setManualSymbols(prev => [...prev, clamped]);
     setNewSymbol("");
   };
 
@@ -223,6 +334,31 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
     } else {
       setManualSymbols(prev => prev.filter(s => s !== symbol));
     }
+  };
+
+  const handleAddState = (e) => {
+    e.preventDefault();
+    const trimmed = newStateName.trim();
+    if (!trimmed) return;
+    const exists = nodes.some(n => getNodeLabel(n) === trimmed);
+    if (exists) { setNewStateName(""); return; }
+    onAddState(trimmed);
+    setNewStateName("");
+  };
+
+  const handleDeleteNodeClick = (node) => {
+    if (skipNodeDeleteConfirm) {
+      onDeleteNode(node.id);
+    } else {
+      setDoNotAskAgainChecked(false);
+      setDeleteNodeTarget({ id: node.id, label: getNodeLabel(node) });
+    }
+  };
+
+  const confirmDeleteNode = () => {
+    if (doNotAskAgainChecked) setSkipNodeDeleteConfirm(true);
+    onDeleteNode(deleteNodeTarget.id);
+    setDeleteNodeTarget(null);
   };
 
   const executeCleanup = (action) => {
@@ -260,27 +396,54 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
         </div>
 
         {isMultiTape ? (
-          <div className="multitape-alphabet-display">
-              <div className="sigma-box">Σ :</div>
-              <div className="symbol-list">
-                {symbols.map((symbol) => (
-                  <span key={symbol} className={`symbol-tag ${derivedSymbols.has(symbol) ? 'derived' : 'manual'}`}>
-                    {symbol}
-                    {/* Using remove-symbol-btn class to fix missing X on pills */}
-                    <button className="remove-symbol-btn" onClick={() => handleDeleteSymbol(symbol)}>×</button>
-                  </span>
-                ))}
-                <form onSubmit={handleAddSymbol} style={{ display: 'inline-flex' }}>
-                  <input type="text" value={newSymbol} onChange={(e) => setNewSymbol(e.target.value)} placeholder="+" maxLength={1} className="symbol-input-inline" title="Type and press Enter to add symbol" />
-                </form>
+          <>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
+              <div className="multitape-alphabet-display" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: '6px',width: '95%'}}>
+                  <div className="sigma-box" style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>Alphabet (Σ) :</div>
+                  {symbols.map((symbol) => (
+                    <span key={symbol} className={`symbol-tag ${derivedSymbols.has(symbol) ? 'derived' : 'manual'}`}>
+                      {symbol}
+                      <button className="remove-symbol-btn" onClick={() => handleDeleteSymbol(symbol)}>×</button>
+                    </span>
+                  ))}
+                  <form onSubmit={handleAddSymbol} style={{ display: 'inline-flex', margin: 0 }}>
+                    <input type="text" value={newSymbol} onChange={(e) => setNewSymbol(clampOne(e.target.value))} placeholder="+" maxLength={1} className="symbol-input-inline" title="Type and press Enter to add symbol" />
+                  </form>
               </div>
-          </div>
+              <form className="alphabet-controls"  onSubmit={handleAddState}>
+                <label>New State (Q): </label>
+                <input
+                  type="text"
+                  value={newStateName}
+                  onChange={(e) => setNewStateName(e.target.value)}
+                  placeholder="e.g. S2"
+                  className="symbol-input"
+                  style={{ width: '90px' }}
+                />
+                <button type="submit" disabled={!newStateName.trim()}>Add</button>
+              </form>
+            </div>
+          </>
         ) : (
-          <form className="alphabet-controls" onSubmit={handleAddSymbol}>
-            <label>Alphabet (Σ): </label>
-            <input type="text" value={newSymbol} onChange={(e) => setNewSymbol(e.target.value)} placeholder="Add char..." maxLength={1} className="symbol-input" />
-            <button type="submit" disabled={!newSymbol.trim()}>Add</button>
-          </form>
+          <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '15px', marginBottom: '15px', flexWrap: 'wrap' }}>
+            <form className="alphabet-controls" onSubmit={handleAddSymbol} style={{ margin: 0 }}>
+              <label>New Alphabet (Σ): </label>
+              <input type="text" value={newSymbol} onChange={(e) => setNewSymbol(clampOne(e.target.value))} placeholder="Add char..." maxLength={1} className="symbol-input" />
+              <button type="submit" disabled={!newSymbol.trim()}>Add</button>
+            </form>
+            <form className="alphabet-controls" onSubmit={handleAddState} style={{ margin: 0 }}>
+              <label>New State (Q): </label>
+              <input
+                type="text"
+                value={newStateName}
+                onChange={(e) => setNewStateName(e.target.value)}
+                placeholder="e.g. S2"
+                className="symbol-input"
+                style={{ width: '90px' }}
+              />
+              <button type="submit" disabled={!newStateName.trim()}>Add</button>
+            </form>
+          </div>
         )}
               
         <div className="table-wrapper">
@@ -298,44 +461,117 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
                     </tr>
                   </thead>
                   <tbody>
-                    {multiTapeRules.map((rule, idx) => (
+                    {multiTapeRules.map((rule, idx) => {
+                      const ruleNode = nodes.find(n => n.id === rule.startId);
+                      return (
                       <tr key={idx}>
-                        <td style={{ textAlign: 'left', fontWeight: 'bold' }}>{rule.start}</td>
-                        <td>{rule.read}</td>
-                        <td>{rule.write}</td>
-                        <td>{rule.direction}</td>
-                        <td style={{ fontStyle: 'italic' }}>{rule.end}</td>
+                        {["start", "read", "write", "direction", "end"].map((field, fi) => {
+                          const cellKey = { type: "list", ruleIdx: idx, field };
+                          const editing = isCellEditing(cellKey);
+                          const value = field === "start" ? rule.start : field === "read" ? rule.read : field === "write" ? rule.write : field === "direction" ? rule.direction : rule.end;
+                          const style = fi === 0 ? { textAlign: 'left', fontWeight: 'bold', whiteSpace: 'nowrap' } : fi === 4 ? { fontStyle: 'italic' } : {};
+                          return (
+                            <td key={field} style={style}>
+                              {fi === 0 ? (
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                  {ruleNode && <button className="delete-node-btn" onClick={() => handleDeleteNodeClick(ruleNode)} title="Delete state">×</button>}
+                                  {value}
+                                </span>
+                              ) : editing ? (
+                                <div className="rule-cell-input-wrapper">
+                                  {isCellInvalid(cellKey) && (
+                                    <div className="rule-cell-error-bubble">
+                                      ⚠ Invalid format
+                                      <div className="rule-cell-error-bubble-tail" />
+                                    </div>
+                                  )}
+                                  <input
+                                    ref={editInputRef}
+                                    className={`rule-cell-input${isCellInvalid(cellKey) ? " error" : ""}`}
+                                    value={editValue}
+                                    onChange={e => { setEditValue(e.target.value); setInvalidCell(null); }}
+                                    onBlur={() => commitEdit(cellKey, editValue)}
+                                    onKeyDown={e => {
+                                      if (e.key === "Enter") { e.preventDefault(); commitEdit(cellKey, editValue); }
+                                      if (e.key === "Escape") cancelEdit();
+                                    }}
+                                    style={{ minWidth: "120px", width: `${Math.max(editValue.length + 2, 10)}ch` }}
+                                  />
+                                </div>
+                              ) : (
+                                <span
+                                  className="rule-cell rule-cell--editable"
+                                  title="Double-click to edit"
+                                  onDoubleClick={() => startEdit(cellKey, value)}
+                                >{value}</span>
+                              )}
+                            </td>
+                          );
+                        })}
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </>
               ) : (
                 <>
-                   <thead>
-                      <tr>
-                        <th className="diagonal-cell"><span className="diagonal-top">Read</span><span className="diagonal-bottom">Q</span></th>
-                        {multiTapeColumns.map((tuple) => (
-                          <th key={tuple} className="symbol-header">
-                            {tuple}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sortedNodes.map((node) => (
-                        <tr key={node.id}>
-                          <td className="row-header">{getNodeLabel(node)}</td>
-                          {multiTapeColumns.map((tuple) => {
-                            const content = multiTapeMatrix[node.id]?.[tuple];
-                            return (
-                              <td key={`${node.id}-${tuple}`}>
-                                {content ? <span className="rule-cell" style={{ fontSize: '0.85rem' }}>{content}</span> : <span className="empty-cell">/</span>}
-                              </td>
-                            );
-                          })}
-                        </tr>
+                  <thead>
+                    <tr>
+                      <th className="diagonal-cell"><span className="diagonal-top">Read</span><span className="diagonal-bottom">Q</span></th>
+                      {multiTapeColumns.map((tuple) => (
+                        <th key={tuple} className="symbol-header">
+                          {tuple}
+                        </th>
                       ))}
-                    </tbody>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedNodes.map((node) => (
+                      <tr key={node.id}>
+                        <td className="row-header">
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <button className="delete-node-btn" onClick={() => handleDeleteNodeClick(node)} title="Delete state">×</button>
+                            {getNodeLabel(node)}
+                          </span>
+                        </td>
+                        {multiTapeColumns.map((tuple) => {
+                          const content = multiTapeMatrix[node.id]?.[tuple];
+                          const cellKey = { type: "matrix-mt", nodeId: node.id, tuple };
+                          const editing = isCellEditing(cellKey);
+                          return (
+                            <td key={`${node.id}-${tuple}`}>
+                              {editing ? (
+                                <div className="rule-cell-input-wrapper">
+                                  {isCellInvalid(cellKey) && (
+                                    <div className="rule-cell-error-bubble">
+                                      ⚠ Invalid format
+                                      <div className="rule-cell-error-bubble-tail" />
+                                    </div>
+                                  )}
+                                  <input
+                                    ref={editInputRef}
+                                    className={`rule-cell-input${isCellInvalid(cellKey) ? " error" : ""}`}
+                                    value={editValue}
+                                    onChange={e => { setEditValue(e.target.value); setInvalidCell(null); }}
+                                    onBlur={() => commitEdit(cellKey, editValue)}
+                                    onKeyDown={e => {
+                                      if (e.key === "Enter") { e.preventDefault(); commitEdit(cellKey, editValue); }
+                                      if (e.key === "Escape") cancelEdit();
+                                    }}
+                                    style={{ minWidth: "120px", width: `${Math.max(editValue.length + 2, 10)}ch` }}
+                                  />
+                                </div>
+                              ) : content ? (
+                                <span className="rule-cell rule-cell--editable" style={{ fontSize: '0.85rem' }} title="Double-click to edit" onDoubleClick={() => startEdit(cellKey, content)}>{content}</span>
+                              ) : (
+                                <span className="empty-cell rule-cell--editable" title="Double-click to add rule" onDoubleClick={() => startEdit(cellKey, "")}>/</span>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
                 </>
               )
             ) : (
@@ -356,12 +592,52 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
                 <tbody>
                   {sortedNodes.map((node) => (
                     <tr key={node.id}>
-                      <td className="row-header">{getNodeLabel(node)}</td>
+                      <td className="row-header">
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <button className="delete-node-btn" onClick={() => handleDeleteNodeClick(node)} >×</button>
+                          {getNodeLabel(node)}
+                        </span>
+                      </td>
                       {symbols.map((symbol) => {
                         const content = matrix[node.id]?.[symbol];
+                        const cellKey = { type: "matrix", nodeId: node.id, symbol };
+                        const editing = isCellEditing(cellKey);
                         return (
                           <td key={`${node.id}-${symbol}`}>
-                            {content ? <span className="rule-cell">{content}</span> : <span className="empty-cell">/</span>}
+                            {editing ? (
+                              <div className="rule-cell-input-wrapper">
+                                {isCellInvalid(cellKey) && (
+                                  <div className="rule-cell-error-bubble">
+                                    ⚠ Invalid format
+                                    <div className="rule-cell-error-bubble-tail" />
+                                  </div>
+                                )}
+                                <input
+                                  ref={editInputRef}
+                                  className={`rule-cell-input${isCellInvalid(cellKey) ? " error" : ""}`}
+                                  value={editValue}
+                                  onChange={e => { setEditValue(e.target.value); setInvalidCell(null); }}
+                                  onBlur={() => commitEdit(cellKey, editValue)}
+                                  onKeyDown={e => {
+                                    if (e.key === "Enter") { e.preventDefault(); commitEdit(cellKey, editValue); }
+                                    if (e.key === "Escape") cancelEdit();
+                                  }}
+                                  style={{ minWidth: "120px", width: `${Math.max(editValue.length + 2, 10)}ch` }}
+                                />
+                              </div>
+                            ) : content ? (
+                              <span
+                                className="rule-cell rule-cell--editable"
+                                title="Double-click to edit"
+                                onDoubleClick={() => startEdit(cellKey, content)}
+                              >{content}</span>
+                            ) : (
+                              <span
+                                className="empty-cell rule-cell--editable"
+                                title="Double-click to add rule"
+                                onDoubleClick={() => startEdit(cellKey, "")}
+                              >/</span>
+                            )}
                           </td>
                         );
                       })}
@@ -422,6 +698,41 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
                 Cancel
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {deleteNodeTarget && (
+        <div className="popup-overlay" style={{ zIndex: 3000 }} onClick={(e) => e.stopPropagation()}>
+          <div className="popup-menu" style={{ maxWidth: '400px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
+            <h3>Delete State "{deleteNodeTarget.label}"?</h3>
+            <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '20px', textAlign: 'center' }}>
+              This will delete the state and all connecting edges.
+            </p>
+            <div className="popup-actions" style={{ flexDirection: 'column', gap: '10px' }}>
+              <button
+                className="remove-button"
+                style={{ width: '100%', margin: 0 }}
+                onClick={confirmDeleteNode}
+              >
+                Yes, Delete
+              </button>
+              <button
+                className="window-toggle-btn"
+                style={{ width: '100%' }}
+                onClick={() => setDeleteNodeTarget(null)}
+              >
+                No, Cancel
+              </button>
+            </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '14px', fontSize: '0.82rem', color: '#888', cursor: 'pointer', justifyContent: 'center' }}>
+              <input
+                type="checkbox"
+                checked={doNotAskAgainChecked}
+                onChange={(e) => setDoNotAskAgainChecked(e.target.checked)}
+              />
+              Do not ask again
+            </label>
           </div>
         </div>
       )}

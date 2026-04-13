@@ -43,7 +43,13 @@ export default function DiagramContainer({
   onClear,
   isLocked,
   note,
-  onNoteChange
+  onNoteChange,
+  // Unified history props — provided by Visualiser
+  history,
+  future,
+  pushToHistory,
+  handleUndo: handleUndoExternal,
+  handleRedo: handleRedoExternal,
 }) {
 
   const [showConvertedDiagram, setShowConvertedDiagram] = useState(false);
@@ -81,38 +87,6 @@ export default function DiagramContainer({
   const [selectedNode, setSelectedNode] = useState(null);
   const [selectedEdge, setSelectedEdge] = useState(null);
 
-  const [history, setHistory] = useState([]);
-  const [future, setFuture] = useState([]);
-  
-  const historyCounter = useRef(0);
-
-  // --- HISTORY ---
-  const pushToHistory = useCallback((label = "Unknown Action", snapshotOverride = null) => {
-    historyCounter.current += 1;
-    const actionId = historyCounter.current;
-    
-    const sourceNodes = snapshotOverride ? snapshotOverride.nodes : nodes;
-    const sourceEdges = snapshotOverride ? snapshotOverride.edges : edges;
-
-    const clonedNodes = sourceNodes.map((n) => ({ ...n, data: { ...n.data } }));
-    const clonedEdges = sourceEdges.map((e) => ({
-      ...e,
-      data: {
-        ...e.data,
-        labels: JSON.parse(JSON.stringify(e.data.labels || [])),
-      },
-    }));
-
-    setHistory((h) =>
-      [...h, { 
-        nodes: clonedNodes, 
-        edges: clonedEdges,
-        metadata: { id: actionId, label } 
-      }].slice(-50)
-    );
-    setFuture([]);
-  }, [nodes, edges]);
-
   // --- DEBOUNCED HISTORY ---
   const historyTimeoutRef = useRef(null);
 
@@ -120,7 +94,6 @@ export default function DiagramContainer({
     if (historyTimeoutRef.current) {
       clearTimeout(historyTimeoutRef.current);
     }
-    
     historyTimeoutRef.current = setTimeout(() => {
       pushToHistory(label);
       historyTimeoutRef.current = null;
@@ -129,38 +102,12 @@ export default function DiagramContainer({
 
   const handleUndo = () => {
     if (isLocked) return;
-    if (history.length === 0) return;
-
-    const previous = history[history.length - 1];
-    
-    const currentSnapshot = { 
-        nodes: nodes.map(n => ({ ...n, data: { ...n.data } })), 
-        edges: edges.map(e => ({ ...e, data: { ...e.data, labels: JSON.parse(JSON.stringify(e.data.labels || [])) } })) 
-    };
-
-    setHistory((h) => h.slice(0, -1));
-    setFuture((f) => [...f, { ...currentSnapshot, metadata: previous.metadata }]);
-    
-    setNodes(previous.nodes);
-    setEdges(previous.edges);
+    handleUndoExternal();
   };
 
   const handleRedo = () => {
     if (isLocked) return;
-    if (future.length === 0) return;
-
-    const next = future[future.length - 1];
-    
-    const currentSnapshot = { 
-        nodes: nodes.map(n => ({ ...n, data: { ...n.data } })), 
-        edges: edges.map(e => ({ ...e, data: { ...e.data, labels: JSON.parse(JSON.stringify(e.data.labels || [])) } })) 
-    };
-
-    setFuture((f) => f.slice(0, -1));
-    setHistory((h) => [...h, { ...currentSnapshot, metadata: next.metadata }]);
-    
-    setNodes(next.nodes);
-    setEdges(next.edges);
+    handleRedoExternal();
   };
 
   // --- DRAG SNAPSHOT LOGIC ---
@@ -497,48 +444,6 @@ export default function DiagramContainer({
       },
     };
   });
-
-  const handleSymbolScrub = useCallback((targetChar) => {
-    pushToHistory(`Deleted Symbol: ${targetChar}`);
-    setEdges(prev => prev.map(edge => ({
-      ...edge,
-      data: {
-        ...edge.data,
-        labels: edge.data.labels.filter(l => {
-          // Multi-tape check
-          if (engine === "MultiTape") {
-            return !Object.keys(l).some(k => k.startsWith('tape') && l[k].read === targetChar);
-          }
-          return l.read !== targetChar;
-        })
-      }
-    })).filter(edge => edge.data.labels.length > 0)); // Remove edges with no rules left
-  }, [engine, setEdges, pushToHistory]);
-
-  const handleSymbolReplace = useCallback((oldChar, newChar) => {
-    pushToHistory(`Replaced ${oldChar} with ${newChar}`);
-    setEdges(prev => prev.map(edge => ({
-      ...edge,
-      data: {
-        ...edge.data,
-        labels: edge.data.labels.map(l => {
-          const newL = { ...l };
-          if (engine === "MultiTape") {
-            Object.keys(newL).forEach(k => {
-              if (k.startsWith('tape')) {
-                if (newL[k].read === oldChar) newL[k].read = newChar;
-                if (newL[k].write === oldChar) newL[k].write = newChar;
-              }
-            });
-          } else {
-            if (newL.read === oldChar) newL.read = newChar;
-            if (newL.write === oldChar) newL.write = newChar;
-          }
-          return newL;
-        })
-      }
-    })));
-  }, [engine, setEdges, pushToHistory]);
 
   return (
     <HistoryContext.Provider value={pushToHistory}>
