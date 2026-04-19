@@ -695,7 +695,7 @@ export function buildNtmQueueTape(inputStr) {
   const blanks     = Array(PAD).fill(BLANK);
   const inputChars = inputStr
     ? inputStr.split('').map(c => (c === ' ' ? BLANK : c))
-    : [];
+    : [BLANK];
 
   return {
     tapes: [

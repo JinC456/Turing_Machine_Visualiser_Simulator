@@ -941,10 +941,10 @@ export default function HelpMenu({ onClose }) {
                   Imagine folding a piece of paper in half and shuffling the left and right sides together. We place a <strong>Wall Marker ( | )</strong> at the start, and then alternate the original cells:
                 </p>
                 <div className="math-block">
-                  | , 0 , -1 , 1 , -2 , 2 , -3 ...
+                  | , 1 , -1 , 2 , -2 , 3 , -3 ...
                 </div>
                 <ul>
-                  <li><strong>The Wall ( | )</strong>: Sits at the far left so the machine knows where the physical tape begins.</li>
+                  <li><strong>The Wall ( | )</strong>: Sits at the far left (index 0) so the machine knows where the physical tape begins.</li>
                   <li><strong>Right Side</strong>: The positive tape cells (1, 2, 3...) sit on the odd indices.</li>
                   <li><strong>Left Side</strong>: The negative tape cells (-1, -2, -3...) sit on the even indices.</li>
                 </ul>

@@ -14,6 +14,7 @@ import { convertToOneWay, buildOneWayTape } from '../simulatorComponents/engines
 import { convertNtmToDtm, buildNtmQueueTape } from '../simulatorComponents/engines/conversion/convertNtmToDtm';
 import { getStartNode } from '../simulatorComponents/engines/Deterministic';
 import { stepMultiTM } from '../simulatorComponents/engines/MultiTape';
+import { MAX_RUN_STEPS_ONE_WAY, MAX_RUN_STEPS_SINGLE, MAX_RUN_STEPS_NTM } from '../simulatorComponents/TuringMachineLogic';
 import StartNode   from './StartNode';
 import NormalNode  from './NormalNode';
 import AcceptNode  from './AcceptNode';
@@ -295,7 +296,7 @@ function simReducer(state, action) {
   }
 }
 
-function useDTMSimulation(rawNodes, rawEdges, mtEdges, initialInput, tapeBuilder = null) {
+function useDTMSimulation(rawNodes, rawEdges, mtEdges, initialInput, tapeBuilder = null, maxSteps = MAX_RUN_STEPS_SINGLE) {
   const [localInput, setLocalInput] = useState(initialInput || '');
   const [isRunning, setIsRunning]   = useState(false);
   const [isSkipping, setIsSkipping] = useState(false);
@@ -397,6 +398,12 @@ function useDTMSimulation(rawNodes, rawEdges, mtEdges, initialInput, tapeBuilder
     function runChunk() {
       let i = 0;
       while (i < CHUNK && finalStatus === 'RUNNING') {
+        if (curStep >= maxSteps) {
+          finalStatus = 'REJECTED';
+          finalMessage = `Timeout: exceeded ${maxSteps.toLocaleString()} steps`;
+          curEdgeId = null;
+          break;
+        }
         const outgoing = edgeIndex[curNodeId] || [];
         const read = curTape[curHead] || '\u2423';
 
@@ -558,7 +565,7 @@ function multiTapeSimReducer(state, action) {
   }
 }
 
-function useNtmMultiTapeSimulation(rawNodes, rawEdges, initialInput) {
+function useNtmMultiTapeSimulation(rawNodes, rawEdges, initialInput, maxSteps = MAX_RUN_STEPS_NTM) {
   const [localInput, setLocalInput] = useState(initialInput || '');
   const [isRunning, setIsRunning]   = useState(false);
   const [isSkipping, setIsSkipping] = useState(false);
@@ -659,6 +666,12 @@ function useNtmMultiTapeSimulation(rawNodes, rawEdges, initialInput) {
     function runChunk() {
       let i = 0;
       while (i < CHUNK && finalStatus === 'RUNNING') {
+        if (curStep >= maxSteps) {
+          finalStatus = 'REJECTED';
+          finalMessage = `Timeout: exceeded ${maxSteps.toLocaleString()} steps`;
+          curEdgeId = null;
+          break;
+        }
         const result = stepMultiTM({
           currentNodeId: curNodeId,
           tapes: curTapes,
@@ -785,12 +798,14 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
     mode === 'ntm' || mode === 'oneWay' ? null : mtEdges,
     defaultInput,
     mode === 'oneWay' ? buildOneWayTape : null,
+    mode === 'oneWay' ? MAX_RUN_STEPS_ONE_WAY : MAX_RUN_STEPS_SINGLE,
   );
 
   // ── 3-tape sim (ntm mode) ────────────────────────────────────────────────
   const multiSim = useNtmMultiTapeSimulation(
     rawNodes, rawEdges,
     defaultInput,
+    MAX_RUN_STEPS_NTM,
   );
 
   // Select the active sim based on mode

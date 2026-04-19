@@ -4,7 +4,10 @@ import { stepTM, getStartNode } from './engines/Deterministic';
 import { stepMultiTM } from './engines/MultiTape';
 import { stepNonDeterministicTM, generateThreadColor } from './engines/NonDeterministic';
 
-export const MAX_RUN_STEPS = 200;
+export const MAX_RUN_STEPS         = 1_000;       // standard DTM (base simulator)
+export const MAX_RUN_STEPS_ONE_WAY = 5_000;     // converted one-way infinite tape DTM
+export const MAX_RUN_STEPS_SINGLE  = 50_000;    // converted single-tape DTM (multi→single)
+export const MAX_RUN_STEPS_NTM     = 1_000_000; // converted NTM→DTM
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Pure "run to end" helpers - no hooks, just logic.
