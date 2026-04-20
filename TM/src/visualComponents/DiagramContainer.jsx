@@ -379,13 +379,64 @@ export default function DiagramContainer({
         return;
     }
 
+    let importedEdges = importedData.edges;
+
+    if (engine === "MultiTape") {
+      // Detect how many tape keys the imported data already has
+      let maxTape = 0;
+      importedEdges.forEach(e => {
+        (e.data?.labels || []).forEach(l => {
+          Object.keys(l).forEach(k => {
+            if (k.startsWith('tape')) {
+              const n = parseInt(k.replace('tape', ''), 10);
+              if (!isNaN(n)) maxTape = Math.max(maxTape, n);
+            }
+          });
+        });
+      });
+
+      if (maxTape === 0) {
+        // Single-tape import: wrap read/write/direction into tape1,
+        // and add tape2 with blank/blank/N defaults.
+        importedEdges = importedEdges.map(e => ({
+          ...e,
+          data: {
+            ...e.data,
+            labels: (e.data?.labels || []).map(({ read, write, direction, ...rest }) => ({
+              ...rest,
+              tape1: { read: read ?? '\u2423', write: write ?? '\u2423', direction: direction ?? 'R' },
+              tape2: { read: '\u2423', write: '\u2423', direction: 'N' },
+            })),
+          },
+        }));
+      } else {
+        // Already has tape keys — pad any missing tapes up to max(existing, 2)
+        const minTapes = Math.max(maxTape, 2);
+        importedEdges = importedEdges.map(e => ({
+          ...e,
+          data: {
+            ...e.data,
+            labels: (e.data?.labels || []).map(l => {
+              const padded = { ...l };
+              for (let t = 1; t <= minTapes; t++) {
+                if (!padded[`tape${t}`]) {
+                  padded[`tape${t}`] = { read: '\u2423', write: '\u2423', direction: 'N' };
+                }
+              }
+              return padded;
+            }),
+          },
+        }));
+      }
+    }
+
     pushToHistory("Imported Diagram");
     setNodes(importedData.nodes);
-    setEdges(importedData.edges);
+    setEdges(importedEdges);
     onNoteChange(importedData.note ?? "");
     setSelectedNode(null);
     setSelectedEdge(null);
-  }, [pushToHistory, setNodes, setEdges, onNoteChange, isLocked]);
+  }, [pushToHistory, setNodes, setEdges, onNoteChange, isLocked, engine]);
 
   // --- RENDER PREP ---
 

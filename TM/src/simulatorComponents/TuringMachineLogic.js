@@ -104,7 +104,7 @@ export function computeMultiRunToEnd({ tapes, heads, activeNodeId, activeEdgeId,
       if (result.directions[i] === "R") curHeads[i]++;
       if (result.directions[i] === "L") curHeads[i]--;
 
-      const edgeThreshold = 6, expansionSize = 6;
+      const edgeThreshold = 15, expansionSize = 15;
       if (curHeads[i] < edgeThreshold) {
         curTapes[i] = [...Array(expansionSize).fill("␣"), ...curTapes[i]];
         curHeads[i] += expansionSize;
@@ -346,7 +346,7 @@ export const useMultiTapeTuringMachine = (initialCells = 13, numTapes = 2) => {
       if (result.directions[i] === "R") newHeads[i]++;
       if (result.directions[i] === "L") newHeads[i]--;
 
-      const edgeThreshold = 6, expansionSize = 6;
+      const edgeThreshold = 15, expansionSize = 15;
       if (newHeads[i] < edgeThreshold) {
         newTapes[i] = [...Array(expansionSize).fill("␣"), ...newTapes[i]];
         newHeads[i] += expansionSize;

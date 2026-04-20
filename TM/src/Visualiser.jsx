@@ -549,6 +549,7 @@ export default function Visualiser({ engine, selectedExample, showTable, setShow
             onEditRule={handleEditRule}
             onDeleteNode={handleDeleteNode}
             engine={engine}
+            isLocked={isRunning}
           />
         )}
 
@@ -595,6 +596,7 @@ export default function Visualiser({ engine, selectedExample, showTable, setShow
             pushToHistory={pushToHistory}
             handleUndo={handleUndo}
             handleRedo={handleRedo}
+            validAlphabet={validAlphabet}
           />
         </div>
 

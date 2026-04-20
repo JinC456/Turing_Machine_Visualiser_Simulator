@@ -6,7 +6,7 @@ import "./App.css";
 
 const EXAMPLES = {
   Deterministic: [
-    { value: "palindrome", label: "Palindrome Detector" },
+    { value: "palindrome", label: "Palindrome" },
     { value: "binary_increment", label: "Binary Increment" },
     { value: "flip", label: "Flip" },
     { value: "busy_beaver", label: "Busy Beaver (3-state)" },

@@ -22,7 +22,7 @@ function getListFieldRegex(field) {
   return null;
 }
 
-export default function TransitionTable({ nodes, edges, manualSymbols, setManualSymbols, onClose, onDeleteSymbol, onReplaceSymbol, onAddState, onEditRule, onDeleteNode, engine }) {
+export default function TransitionTable({ nodes, edges, manualSymbols, setManualSymbols, onClose, onDeleteSymbol, onReplaceSymbol, onAddState, onEditRule, onDeleteNode, engine, isLocked = false }) {
   
   const [newSymbol, setNewSymbol] = useState("");
   const [newStateName, setNewStateName] = useState("");
@@ -60,6 +60,7 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
   const committingRef = useRef(false);
 
   const startEdit = (cellKey, currentValue) => {
+    if (isLocked) return;
     committingRef.current = false;
     setInvalidCell(null);
     setEditingCell(cellKey);
@@ -395,6 +396,12 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
             </div>
         </div>
 
+        {isLocked && (
+          <div style={{ background: '#fff3cd', color: '#856404', fontSize: '0.8rem', padding: '5px 12px', borderBottom: '1px solid #ffc107', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            Table is read-only while the simulation is running.
+          </div>
+        )}
+
         {isMultiTape ? (
           <>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
@@ -403,11 +410,11 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
                   {symbols.map((symbol) => (
                     <span key={symbol} className={`symbol-tag ${derivedSymbols.has(symbol) ? 'derived' : 'manual'}`}>
                       {symbol}
-                      <button className="remove-symbol-btn" onClick={() => handleDeleteSymbol(symbol)}>×</button>
+                      <button className="remove-symbol-btn" onClick={() => handleDeleteSymbol(symbol)} disabled={isLocked}>×</button>
                     </span>
                   ))}
                   <form onSubmit={handleAddSymbol} style={{ display: 'inline-flex', margin: 0 }}>
-                    <input type="text" value={newSymbol} onChange={(e) => setNewSymbol(clampOne(e.target.value))} placeholder="+" maxLength={1} className="symbol-input-inline" title="Type and press Enter to add symbol" />
+                    <input type="text" value={newSymbol} onChange={(e) => setNewSymbol(clampOne(e.target.value))} placeholder="+" maxLength={1} className="symbol-input-inline" title="Type and press Enter to add symbol" disabled={isLocked} />
                   </form>
               </div>
               <form className="alphabet-controls"  onSubmit={handleAddState}>
@@ -419,8 +426,9 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
                   placeholder="e.g. S2"
                   className="symbol-input"
                   style={{ width: '90px' }}
+                  disabled={isLocked}
                 />
-                <button type="submit" disabled={!newStateName.trim()}>Add</button>
+                <button type="submit" disabled={!newStateName.trim() || isLocked}>Add</button>
               </form>
             </div>
           </>
@@ -428,8 +436,8 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
           <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '15px', marginBottom: '15px', flexWrap: 'wrap' }}>
             <form className="alphabet-controls" onSubmit={handleAddSymbol} style={{ margin: 0 }}>
               <label>New Alphabet (Σ): </label>
-              <input type="text" value={newSymbol} onChange={(e) => setNewSymbol(clampOne(e.target.value))} placeholder="Add char..." maxLength={1} className="symbol-input" />
-              <button type="submit" disabled={!newSymbol.trim()}>Add</button>
+              <input type="text" value={newSymbol} onChange={(e) => setNewSymbol(clampOne(e.target.value))} placeholder="Add char..." maxLength={1} className="symbol-input" disabled={isLocked} />
+              <button type="submit" disabled={!newSymbol.trim() || isLocked}>Add</button>
             </form>
             <form className="alphabet-controls" onSubmit={handleAddState} style={{ margin: 0 }}>
               <label>New State (Q): </label>
@@ -440,8 +448,9 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
                 placeholder="e.g. S2"
                 className="symbol-input"
                 style={{ width: '90px' }}
+                disabled={isLocked}
               />
-              <button type="submit" disabled={!newStateName.trim()}>Add</button>
+              <button type="submit" disabled={!newStateName.trim() || isLocked}>Add</button>
             </form>
           </div>
         )}
@@ -474,7 +483,7 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
                             <td key={field} style={style}>
                               {fi === 0 ? (
                                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                  {ruleNode && <button className="delete-node-btn" onClick={() => handleDeleteNodeClick(ruleNode)} title="Delete state">×</button>}
+                                  {ruleNode && <button className="delete-node-btn" onClick={() => handleDeleteNodeClick(ruleNode)} title="Delete state" disabled={isLocked}>×</button>}
                                   {value}
                                 </span>
                               ) : editing ? (
@@ -530,7 +539,7 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
                       <tr key={node.id}>
                         <td className="row-header">
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <button className="delete-node-btn" onClick={() => handleDeleteNodeClick(node)} title="Delete state">×</button>
+                            <button className="delete-node-btn" onClick={() => handleDeleteNodeClick(node)} title="Delete state" disabled={isLocked}>×</button>
                             {getNodeLabel(node)}
                           </span>
                         </td>
@@ -584,7 +593,7 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
                         <span style={{ color: derivedSymbols.has(symbol) ? '#1565c0' : '#a21f1f' }}>
                             {symbol}
                         </span>
-                        <button className="delete-symbol-btn" onClick={() => handleDeleteSymbol(symbol)}>×</button>
+                        <button className="delete-symbol-btn" onClick={() => handleDeleteSymbol(symbol)} disabled={isLocked}>×</button>
                       </th>
                   ))}
                   </tr>
@@ -594,7 +603,7 @@ export default function TransitionTable({ nodes, edges, manualSymbols, setManual
                     <tr key={node.id}>
                       <td className="row-header">
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          <button className="delete-node-btn" onClick={() => handleDeleteNodeClick(node)} >×</button>
+                          <button className="delete-node-btn" onClick={() => handleDeleteNodeClick(node)} disabled={isLocked}>×</button>
                           {getNodeLabel(node)}
                         </span>
                       </td>

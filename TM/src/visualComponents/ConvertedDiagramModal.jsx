@@ -764,7 +764,7 @@ function useNtmMultiTapeSimulation(rawNodes, rawEdges, initialInput, maxSteps = 
 
 
 // ── Main modal ─────────────────────────────────────────────────────────────
-export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, onClose, mode = 'singleTape' }) {
+export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, onClose, mode = 'singleTape', validAlphabet }) {
   const defaultInput = mtNodes.find(n => n.type === 'start')?.data?.input || '';
 
   const [converted, setConverted] = useState(null);
@@ -821,6 +821,23 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
     const n = rawNodes.find(n => n.id === sim.currentNodeId);
     return n?.data?.label || sim.currentNodeId || '';
   }, [rawNodes, sim.currentNodeId]);
+
+  // ── Input alphabet validation ─────────────────────────────────────────────
+  const [inputError, setInputError] = useState(null);
+
+  useEffect(() => {
+    if (!validAlphabet || validAlphabet.size === 0) {
+      setInputError(null);
+      return;
+    }
+    const invalidChars = [...(sim.localInput || '')].filter(ch => !validAlphabet.has(ch));
+    if (invalidChars.length > 0) {
+      const unique = [...new Set(invalidChars)];
+      setInputError(`Invalid character${unique.length > 1 ? 's' : ''}: ${unique.map(c => `"${c}"`).join(', ')}`);
+    } else {
+      setInputError(null);
+    }
+  }, [sim.localInput, validAlphabet]);
 
   const isAccepted = sim.status === 'ACCEPTED';
   const isRejected = sim.status === 'REJECTED';
@@ -983,24 +1000,35 @@ export default function ConvertedDiagramModal({ nodes: mtNodes, edges: mtEdges, 
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <label style={{ fontWeight: 500, color: '#555', fontSize: 13 }}>Input:</label>
-              <input
-                type="text"
-                value={sim.localInput}
-                onChange={e => sim.setLocalInput(e.target.value)}
-                disabled={sim.isRunning}
-                style={{
-                  padding: '5px 8px', borderRadius: 4, border: '1px solid #ccc',
-                  fontSize: 13, width: 160, fontFamily: 'monospace',
-                }}
-              />
+              <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+                {inputError && (
+                  <div className="input-error-bubble">
+                    {inputError}
+                    <span className="input-error-bubble-tail" />
+                  </div>
+                )}
+                <input
+                  type="text"
+                  value={sim.localInput}
+                  onChange={e => sim.setLocalInput(e.target.value)}
+                  disabled={sim.isRunning}
+                  style={{
+                    padding: '5px 8px', borderRadius: 4,
+                    border: inputError ? '1.5px solid #d9534f' : '1px solid #ccc',
+                    fontSize: 13, width: 160, fontFamily: 'monospace',
+                    background: inputError ? '#fff5f5' : undefined,
+                    outline: inputError ? 'none' : undefined,
+                  }}
+                />
+              </div>
             </div>
 
             <PlaybackControls
-              onStepForward={sim.step}
-              onStart={() => sim.setIsRunning(true)}
+              onStepForward={() => { if (!inputError) sim.step(); }}
+              onStart={() => { if (!inputError) sim.setIsRunning(true); }}
               onStop={() => sim.setIsRunning(false)}
               onSkipToStart={sim.initialize}
-              onSkipToEnd={sim.runToEnd}
+              onSkipToEnd={() => { if (!inputError) sim.runToEnd(); }}
               onClear={sim.handleClear}
               onStepBack={sim.undo}
               isRunning={sim.isRunning}
