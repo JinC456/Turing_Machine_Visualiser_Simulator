@@ -40,7 +40,7 @@ const exampleMap = {
   Find_hash: FindHashData
 };
 
-export default function Visualiser({ engine, selectedExample, showTable, setShowTable }) {
+export default function Visualiser({ engine, selectedExample, showTable, setShowTable, onContentChange }) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
@@ -142,6 +142,43 @@ export default function Visualiser({ engine, selectedExample, showTable, setShow
     document.addEventListener("keydown", handleGlobalSpace, true);
     return () => document.removeEventListener("keydown", handleGlobalSpace, true);
   }, []);
+
+  // Ctrl+Z → Undo, Ctrl+Shift+Z → Redo
+  useEffect(() => {
+    const handleUndoRedo = (e) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      if (e.key === "z" || e.key === "Z") {
+        e.preventDefault();
+        if (e.shiftKey) {
+          handleRedo();
+        } else {
+          handleUndo();
+        }
+      }
+    };
+    document.addEventListener("keydown", handleUndoRedo);
+    return () => document.removeEventListener("keydown", handleUndoRedo);
+  }, [handleUndo, handleRedo]);
+
+  // Warn on page refresh / tab close if the canvas has content
+  useEffect(() => {
+    onContentChange?.(nodes.length > 0);
+  }, [nodes.length, onContentChange]);
+
+  // Warn on page refresh / tab close if the canvas has content
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      // Skip if user has opted out of warnings
+      if (localStorage.getItem("skipSaveWarning") === "true") return;
+      // Only trigger if there is something on the canvas
+      if (nodes.length === 0) return;
+      e.preventDefault();
+      // Modern browsers ignore custom messages but require returnValue to be set
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [nodes.length]);
 
   // Clear workspace/tape when engine changes
   useEffect(() => {

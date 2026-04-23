@@ -26,17 +26,29 @@ export default function HelpMenu({ onClose }) {
               <div className="formal-def-box">
                 <h4>The Components</h4>
                 <ul>
-                  <li><strong>Tape</strong>: an infinite strip of cells, each holding one symbol. Initially the input is written on the tape and the rest is blank.</li>
-                  <li><strong>Read/Write Head</strong>: positioned over one cell at a time. It can read the symbol in that cell, write a new symbol, and then move one step left or right.</li>
-                  <li><strong>States</strong>: the machine is always in one state at a time. The current state, combined with the symbol being read, determines what the machine does next.</li>
-                  <li><strong>Transition Rules</strong>: a table of instructions of the form: given this state and this symbol, write this symbol, move the head left or right, and go to this next state.</li>
+                  <li><strong>1: Tape</strong>: an infinite strip of cells, each holding one symbol. Initially the input is written on the tape and the rest is blank.</li>
+                  <li><strong>2: Read/Write Head</strong>: positioned over one cell at a time. It can read the symbol in that cell, write a new symbol, and then move one step left or right.</li>
+                  <li><strong>3: States</strong>: the machine is always in one state at a time. The current state, combined with the symbol being read, determines what the machine does next.</li>
+                  <li><strong>4: Transition Rules</strong>: a table of instructions of the form: given this state and this symbol, write this symbol, move the head left or right, and go to this next state.</li>
                 </ul>
+
+                <div style={{ textAlign: 'center', margin: '10px 0' }}>
+                <img src="./LabelledInterface.png" alt="Labelled Interface image" />
+                </div>
 
                 <h4>How it Runs</h4>
                 <p>
                   The machine starts in the <strong>Start State</strong> with the head at the beginning of the input. 
                   At each step it reads the symbol under the head, looks up the matching transition rule, writes a symbol, moves the head, and changes state. 
                   This continues until the machine enters an <strong>Accept State</strong> (input accepted), a <strong>Reject State</strong> (input rejected), or loops forever.
+                </p>
+
+                <h4>How to Read the Diagram</h4>
+                <p>
+                  Transitions between states are labeled using the syntax: <strong>Read, Write, Direction</strong>.
+                </p>
+                <p>
+                  For example, a label of <code>1, 0, L</code> means: if the machine reads a <strong>1</strong>, it will write a <strong>0</strong> in its place, and move the head to the <strong>Left</strong>.
                 </p>
               </div>
             </>
@@ -54,9 +66,6 @@ export default function HelpMenu({ onClose }) {
                 Computation always begins here, with the read/write head positioned 
                 at the start of the input on the tape.
               </p>
-              <p>
-                Formally, this corresponds to <strong>q₀</strong> in the 7-tuple definition.
-              </p>
 
               <div style={{ textAlign: 'center', margin: '10px 0' }}>
                 <img src="./start.png" alt="Start State image" />
@@ -67,7 +76,6 @@ export default function HelpMenu({ onClose }) {
                 A <strong>Normal State</strong> represents an intermediate step in the computation. 
                 The machine transitions between normal states as it reads symbols, 
                 writes new symbols, and moves the tape head.
-                These states belong to the set <strong>Q</strong>.
               </p>
 
               <div style={{ textAlign: 'center', margin: '10px 0' }}>
@@ -77,7 +85,6 @@ export default function HelpMenu({ onClose }) {
               <h4>Accept State</h4>
               <p>
                 An <strong>Accept State</strong> indicates that the input has been accepted. When the machine enters this state, the computation halts and the input is considered valid.
-                Formally, accept states belong to the set <strong>F ⊆ Q</strong>.
               </p>
               <p>
                 In this simulator, reaching an Accept State immediately stops execution.
@@ -267,7 +274,7 @@ export default function HelpMenu({ onClose }) {
           content: (
             <>
               <p>
-                Hover over a state to see the black dots around it, then hover over the dot of your choice and your cursor will change. Click and drag to a target state to create a transition. To create a self-loop, drag the line back to a dot on the source state itself.
+                Hover over a state to see the black dots around it, then hover over the dot of your choice and your cursor will change. Click and drag to a target state to create a transition. To create a self-loop, click the black dot where you want to insert the loop.
               </p>
               <div className="formal-def-box">
                  <h4>Syntax Format</h4>

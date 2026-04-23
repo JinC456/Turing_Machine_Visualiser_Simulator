@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Visualiser from "./Visualiser";
 import HelpModal from "./visualComponents/HelpMenu";
+import SaveWarningModal from "./visualComponents/SaveWarningModal";
 import "./App.css";
 
 
@@ -31,14 +32,39 @@ function App() {
   const [example, setExample] = useState("");
   const [showTable, setShowTable] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
-  
+
+  // Warning modal state
+  const [showWarningModal, setShowWarningModal] = useState(false);
+  const [pendingEngine, setPendingEngine] = useState(null);
+  const [hasContent, setHasContent] = useState(false);
+
   // Reset example when engine changes to avoid invalid states
   useEffect(() => {
     setExample("");
   }, [engine]);
 
   const handleEngineChange = (e) => {
-    setEngine(e.target.value);
+    const newEngine = e.target.value;
+    const skipWarning = localStorage.getItem("skipSaveWarning") === "true";
+
+    if (!hasContent || skipWarning) {
+      setEngine(newEngine);
+      return;
+    }
+
+    setPendingEngine(newEngine);
+    setShowWarningModal(true);
+  };
+
+  const handleWarningConfirm = () => {
+    setEngine(pendingEngine);
+    setPendingEngine(null);
+    setShowWarningModal(false);
+  };
+
+  const handleWarningCancel = () => {
+    setPendingEngine(null);
+    setShowWarningModal(false);
   };
 
   const currentExamples = EXAMPLES[engine] || [];
@@ -103,9 +129,18 @@ function App() {
         engine={engine} 
         selectedExample={example} 
         showTable={showTable} 
-        setShowTable={setShowTable} 
+        setShowTable={setShowTable}
+        onContentChange={setHasContent}
       />
+
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
+
+      {showWarningModal && (
+        <SaveWarningModal
+          onConfirm={handleWarningConfirm}
+          onCancel={handleWarningCancel}
+        />
+      )}
     </div>
   );
 }
